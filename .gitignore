@@ -1,0 +1,28 @@
+# Caches / build / IDE
+__pycache__/
+*.pyc
+.pytest_cache/
+.idea/
+.vs/
+.claude/
+bin/
+obj/
+*.user
+
+# Binaires & données volumineuses (régénérables)
+*.dll
+*.exe
+*.pdb
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Moteur LEAN cloné (reconstructible)
+backtesting/backtests/lean/
+
+# Système
+Thumbs.db
+.DS_Store

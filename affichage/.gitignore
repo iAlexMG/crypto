@@ -1,0 +1,17 @@
+# Caches Python / IDE / outils
+__pycache__/
+*.pyc
+.pytest_cache/
+.idea/
+.claude/
+
+# Données capturées et journaux locaux (volumineux, régénérables)
+data/
+logs/
+
+# Notes de travail locales (jamais publiées)
+REVUE_CRITIQUE.md
+
+# Système
+Thumbs.db
+.DS_Store

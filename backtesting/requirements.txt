@@ -1,0 +1,32 @@
+# ============================================================================
+# Environnement GLOBAL unique du projet Backtesting
+# conda `backtesting`  —  Python 3.11
+# ----------------------------------------------------------------------------
+# Un seul environnement couvre les 3 sous-projets :
+#   - history_extractor/   : stdlib pure  -> AUCUNE dépendance (rien à installer)
+#   - backtests/           : normalize.py + figures + moteur vbt (pandas/numpy/matplotlib)
+#   - backtests/lean/      : CLI `lean` (le moteur LEAN tourne dans Docker)
+#
+# Création / mise en place :
+#   conda create -n backtesting python=3.11 -y
+#   conda activate backtesting
+#   pip install -r requirements.txt
+#   # puis vectorbtpro À PART (voir section dédiée plus bas)
+# ============================================================================
+
+# --- Données / analyse / figures -------------------------------------------
+numpy<2            # épinglé < 2 : vectorbtpro 2024.12.15 n'est PAS numpy-2 safe
+pandas>=2.0,<3     # borné < 3 : pandas 3 est post-vectorbtpro 2024.12.15 (réf. 2.2.x)
+matplotlib>=3.8
+
+# --- Moteur ÉVÉNEMENTIEL : QuantConnect LEAN -------------------------------
+# CLI uniquement ; le backtest s'exécute DANS le conteneur Docker (Python embarqué).
+# Prérequis SYSTÈME (non pip) : Docker Desktop installé et démarré.
+lean
+
+# --- Moteur VECTORISÉ : vectorbt Pro (SOUS LICENCE, HORS PyPI) -------------
+# ⚠️ NE s'installe PAS via ce fichier (dépôt privé licencié).
+#    À installer À PART, une fois l'accès GitHub rétabli, p. ex. :
+#       pip install "vectorbtpro @ git+ssh://git@github.com/polakowo/vectorbt.pro.git"
+#    Version de référence du projet : vectorbtpro 2024.12.15
+#    (tire lui-même numpy/pandas/numba dans des versions compatibles).

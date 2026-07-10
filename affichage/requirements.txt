@@ -1,0 +1,9 @@
+# Bornes HAUTES epinglees au major suivant (build reproductible : evite qu'un
+# PySide6 7.x / pyqtgraph 0.15 / numpy 3 cassant ne rompe le build en silence).
+websockets>=12.0,<17
+numpy>=1.26,<3
+pyqtgraph>=0.13,<0.15
+PySide6>=6.6,<7
+tzdata>=2024.1
+# tests (dev) : suite pytest dans tests/ (python -m pytest)
+pytest>=8.0,<10
