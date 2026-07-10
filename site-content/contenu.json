@@ -1,0 +1,84 @@
+{
+  "sections": [
+    {
+      "id": "historique",
+      "titre": {
+        "fr": "Historique — extraction des données",
+        "en": "History — data extraction"
+      },
+      "accroche": {
+        "fr": "Tout l'historique tick-par-tick de Binance, en un seul fichier autonome.",
+        "en": "Binance's full tick-by-tick history, in a single standalone file."
+      },
+      "intro": {
+        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique le plus long possible des transactions tick-par-tick, pour alimenter le backtesting.",
+        "en": "The starting point of the chain: fetching and normalizing the longest possible tick-by-tick trade history, to feed the backtesting."
+      },
+      "texte": {
+        "fr": "## Le pilier\n\nRécupérer l'historique le plus long possible des trades tick-par-tick (aggTrades) d'un symbole — par défaut BTCUSDT en futures perpétuels — et le normaliser au schéma commun du projet : horodatage en millisecondes UTC, prix, taille, côté agresseur.\n\n## L'astuce : les archives plutôt que le REST\n\nPaginer le REST jusqu'au listing du contrat (fin 2019) demanderait des millions de requêtes. Binance publie les mêmes trades en archives quotidiennes et mensuelles : une centaine de fichiers suffisent, vérifiés par SHA256, avec un complément REST pour la dernière journée.\n\n## Ce qui est livré\n\nUn extracteur en un seul fichier, bibliothèque standard uniquement, repriseable (chaque archive ingérée est marquée ; une interruption est sûre) et cumulatif (déduplication par identifiant de trade dans une base SQLite en mode WAL).\n\nUn outil de contrôle qui reconstruit les chandelles OHLCV (1H / 4H / journalier) depuis les ticks et produit un graphique chandelier interactif autonome — canvas pur, zéro dépendance, ouvrable hors-ligne.",
+        "en": "## The pillar\n\nFetching the longest possible history of tick-by-tick trades (aggTrades) for a symbol — BTCUSDT perpetual futures by default — and normalizing it to the project's shared schema: UTC millisecond timestamps, price, size, aggressor side.\n\n## The trick: archives instead of REST\n\nPaginating the REST API back to the contract's listing (late 2019) would take millions of requests. Binance publishes the same trades as daily and monthly archives: about a hundred files are enough, SHA256-verified, with a REST tail for the last day.\n\n## What is delivered\n\nA single-file extractor, standard library only, resumable (every ingested archive is marked; interrupting is safe) and cumulative (deduplication by trade id into a WAL-mode SQLite database).\n\nA control tool that rebuilds OHLCV candles (1H / 4H / daily) from the ticks and produces a standalone interactive candlestick chart — pure canvas, zero dependencies, usable offline."
+      }
+    },
+    {
+      "id": "affichage",
+      "titre": {
+        "fr": "Affichage — terminal d'orderflow",
+        "en": "Display — orderflow terminal"
+      },
+      "accroche": {
+        "fr": "Six exchanges réconciliés en un marché « hybride », avec détection d'arbitrage en direct.",
+        "en": "Six exchanges reconciled into one \"hybrid\" market, with live arbitrage detection."
+      },
+      "intro": {
+        "fr": "Un terminal d'orderflow façon Bookmap qui réconcilie six exchanges crypto en une vue cohérente : footprint, heatmap de liquidité, carnet et trades, le tout normalisé puis fusionné en un marché « hybride » avec détection d'arbitrage en direct. Le vrai sujet n'est pas « j'ai branché six exchanges », mais que chacun s'est battu pour rentrer dans le moule : choisissez-en un pour voir ses embûches et leurs solutions, puis suivez l'hybride, l'arbitrage et l'architecture.",
+        "en": "A Bookmap-style orderflow terminal that reconciles six crypto exchanges into one coherent view: footprint, liquidity heatmap, order book and trades, all normalized then merged into a \"hybrid\" market with live arbitrage detection. The real story isn't \"I plugged in six exchanges\" but that each one had to fight its way into the mold: pick one to see its pitfalls and fixes, then follow the hybrid, arbitrage and architecture."
+      },
+      "statut": {
+        "fr": "6 exchanges + hybride",
+        "en": "6 exchanges + hybrid"
+      },
+      "sousHub": true,
+      "inclure": "affichage"
+    },
+    {
+      "id": "backtesting",
+      "titre": {
+        "fr": "Backtesting — LEAN & vectorbt",
+        "en": "Backtesting — LEAN & vectorbt"
+      },
+      "accroche": {
+        "fr": "Tester avant de miser : deux résultats phares, et une formation en trois temps.",
+        "en": "Test before you bet: two headline results, and a course in three parts."
+      },
+      "intro": {
+        "fr": "Construire un backtesting de niveau pro sur de vraies données crypto : deux résultats phares, et une formation en trois temps — LEAN, vectorbt, réconciliation.",
+        "en": "Building professional-grade backtesting on real crypto data: two headline results, and a course in three parts — LEAN, vectorbt, reconciliation."
+      },
+      "statut": {
+        "fr": "Vitrines + formation",
+        "en": "Showcases + course"
+      },
+      "sousHub": true,
+      "inclure": "backtesting"
+    },
+    {
+      "id": "automatisation",
+      "titre": {
+        "fr": "Automatisation — bot Bitget",
+        "en": "Automation — Bitget bot"
+      },
+      "accroche": {
+        "fr": "Un bot Python d'exécution sur Bitget — validé en démo d'abord.",
+        "en": "A Python execution bot on Bitget — validated on the demo first."
+      },
+      "statut": {
+        "fr": "À venir",
+        "en": "Coming up"
+      },
+      "texte": {
+        "fr": "## L'objectif\n\nExécuter automatiquement les stratégies validées par le backtesting, directement sur l'API de Bitget — l'exchange de référence du terminal d'affichage.\n\n## La démarche\n\nDéveloppement et validation sur l'environnement de démonstration de Bitget (fonds virtuels, mêmes API que la production) : aucun risque tant que la stratégie n'a pas fait ses preuves. Le connecteur Bitget écrit pour l'affichage (WebSocket + REST) est réutilisé tel quel.\n\n## Le passage en réel\n\nSeulement une fois les stratégies validées en démo, avec des garde-fous d'exécution : taille de position limitée, arrêt d'urgence, journal des ordres.",
+        "en": "## The goal\n\nAutomatically executing the strategies validated by the backtesting, directly on the Bitget API — the display terminal's reference exchange.\n\n## The approach\n\nDevelopment and validation on Bitget's demo environment (virtual funds, same APIs as production): zero risk until a strategy has proven itself. The Bitget connector written for the display (WebSocket + REST) is reused as is.\n\n## Going live\n\nOnly once the strategies are validated on the demo, with execution safeguards: capped position size, emergency stop, order journal."
+      }
+    }
+  ]
+}
