@@ -3,8 +3,8 @@
     {
       "id": "historique",
       "titre": {
-        "fr": "Historique — extraction des données",
-        "en": "History — data extraction"
+        "fr": "Historique",
+        "en": "History"
       },
       "accroche": {
         "fr": "Tout l'historique tick-par-tick de Binance, en un seul fichier autonome.",
@@ -22,8 +22,8 @@
     {
       "id": "affichage",
       "titre": {
-        "fr": "Affichage — terminal d'orderflow",
-        "en": "Display — orderflow terminal"
+        "fr": "Affichage",
+        "en": "Display"
       },
       "accroche": {
         "fr": "Six exchanges réconciliés en un marché « hybride », avec détection d'arbitrage en direct.",
@@ -43,8 +43,8 @@
     {
       "id": "backtesting",
       "titre": {
-        "fr": "Backtesting — LEAN & vectorbt",
-        "en": "Backtesting — LEAN & vectorbt"
+        "fr": "Backtesting",
+        "en": "Backtesting"
       },
       "accroche": {
         "fr": "Tester avant de miser : deux résultats phares, et une formation en trois temps.",
@@ -64,8 +64,8 @@
     {
       "id": "automatisation",
       "titre": {
-        "fr": "Automatisation — bot Bitget",
-        "en": "Automation — Bitget bot"
+        "fr": "Automatisation",
+        "en": "Automation"
       },
       "accroche": {
         "fr": "Un bot Python d'exécution sur Bitget — validé en démo d'abord.",
