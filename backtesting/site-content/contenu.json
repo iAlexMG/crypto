@@ -22,7 +22,7 @@
         {
           "id": "fig-optim",
           "type": "figure",
-          "url": "assets/backtesting/figures/optim-heatmap-isoos.png",
+          "url": "assets/crypto/backtesting/figures/optim-heatmap-isoos.png",
           "titre": {
             "fr": "Balayage réel LEAN + démasquage in/out-of-sample",
             "en": "Real LEAN sweep + in/out-of-sample unmasking"
@@ -56,7 +56,7 @@
         {
           "id": "fig-vp",
           "type": "figure",
-          "url": "assets/backtesting/figures/vp-multiscale.png",
+          "url": "assets/crypto/backtesting/figures/vp-multiscale.png",
           "titre": {
             "fr": "Volume profile multi-échelles",
             "en": "Multi-scale volume profile"
@@ -69,7 +69,7 @@
         {
           "id": "fig-footprint",
           "type": "figure",
-          "url": "assets/backtesting/figures/footprint-multiscale.png",
+          "url": "assets/crypto/backtesting/figures/footprint-multiscale.png",
           "titre": {
             "fr": "Footprint : l'agression par niveau",
             "en": "Footprint: aggression per level"
@@ -133,7 +133,7 @@
         {
           "id": "lecon-01",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-01-docker-vs-source.png",
+          "url": "assets/crypto/backtesting/figures/lecon-01-docker-vs-source.png",
           "titre": {
             "fr": "Leçon 01 — Compiler LEAN sans Docker",
             "en": "Lesson 01 — Compiling LEAN without Docker"
@@ -150,7 +150,7 @@
         {
           "id": "lecon-02",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-02-boucle-evenementielle.png",
+          "url": "assets/crypto/backtesting/figures/lecon-02-boucle-evenementielle.png",
           "titre": {
             "fr": "Leçon 02 — Le moteur à l'œuvre et nos données",
             "en": "Lesson 02 — The engine at work, and our data"
@@ -167,7 +167,7 @@
         {
           "id": "lecon-03",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-03-buyhold-equite.png",
+          "url": "assets/crypto/backtesting/figures/lecon-03-buyhold-equite.png",
           "titre": {
             "fr": "Leçon 03 — Buy & Hold : le sol de vérité",
             "en": "Lesson 03 — Buy & Hold: the ground truth"
@@ -184,7 +184,7 @@
         {
           "id": "lecon-04",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-04-sma-croisement.png",
+          "url": "assets/crypto/backtesting/figures/lecon-04-sma-croisement.png",
           "titre": {
             "fr": "Leçon 04 — Suivre la tendance : SMA & MACD",
             "en": "Lesson 04 — Trend following: SMA & MACD"
@@ -201,7 +201,7 @@
         {
           "id": "lecon-05",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-05-rsi.png",
+          "url": "assets/crypto/backtesting/figures/lecon-05-rsi.png",
           "titre": {
             "fr": "Leçon 05 — Le retour à la moyenne : RSI & Bollinger",
             "en": "Lesson 05 — Mean reversion: RSI & Bollinger"
@@ -218,7 +218,7 @@
         {
           "id": "lecon-06",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-06-risque.png",
+          "url": "assets/crypto/backtesting/figures/lecon-06-risque.png",
           "titre": {
             "fr": "Leçon 06 — La gestion du risque",
             "en": "Lesson 06 — Risk management"
@@ -235,7 +235,7 @@
         {
           "id": "lecon-07",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-07-metriques.png",
+          "url": "assets/crypto/backtesting/figures/lecon-07-metriques.png",
           "titre": {
             "fr": "Leçon 07 — Métriques & optimisation",
             "en": "Lesson 07 — Metrics & optimization"
@@ -252,7 +252,7 @@
         {
           "id": "lecon-08",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-08-synthese.png",
+          "url": "assets/crypto/backtesting/figures/lecon-08-synthese.png",
           "titre": {
             "fr": "Leçon 08 — La stratégie avancée : tout assembler",
             "en": "Lesson 08 — The advanced strategy: putting it all together"
@@ -269,7 +269,7 @@
         {
           "id": "lecon-09",
           "type": "figure",
-          "url": "assets/backtesting/figures/lecon-09-volume-profile-sessions.png",
+          "url": "assets/crypto/backtesting/figures/lecon-09-volume-profile-sessions.png",
           "titre": {
             "fr": "Leçon 09 — Le volume profile par session",
             "en": "Lesson 09 — Session volume profile"
@@ -351,7 +351,7 @@
         {
           "id": "bt-1",
           "type": "pdf",
-          "fichier": "assets/backtesting/01- QuantConnect_LEAN.pdf",
+          "fichier": "assets/crypto/backtesting/01- QuantConnect_LEAN.pdf",
           "titre": {
             "fr": "QuantConnect / LEAN",
             "en": "QuantConnect / LEAN"
@@ -364,7 +364,7 @@
         {
           "id": "bt-2",
           "type": "pdf",
-          "fichier": "assets/backtesting/02- VectorbtPro.pdf",
+          "fichier": "assets/crypto/backtesting/02- VectorbtPro.pdf",
           "titre": {
             "fr": "VectorbtPro",
             "en": "VectorbtPro"
