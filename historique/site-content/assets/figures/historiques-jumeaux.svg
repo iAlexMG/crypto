@@ -94,5 +94,5 @@
 <text x="691.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:25</text>
 <text x="896.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:30</text>
 <text x="76" y="556" font-size="11.5" fill="#c3c2b7" text-anchor="start">Cet extrait fait 20 secondes ; sur toute la fenêtre comparée (1er juin → 10 juillet 2026), 39 jours sur 40 sont identiques au trade près.</text>
-<text x="76" y="572" font-size="11.5" fill="#c3c2b7" text-anchor="start">Mêmes high/low sur les 57 600 minutes communes ; la contre-épreuve s’arrête aux trades (aucune voie n’archive le carnet d’ordres).</text>
+<text x="76" y="572" font-size="11.5" fill="#c3c2b7" text-anchor="start">Mêmes high/low sur chacune des 57 600 minutes de la fenêtre commune.</text>
 </svg>
