@@ -3,20 +3,20 @@
     {
       "id": "historique",
       "titre": {
-        "fr": "Historique",
-        "en": "History"
+        "fr": "Historiques",
+        "en": "Histories"
       },
       "accroche": {
-        "fr": "L'historique tick-par-tick de Binance, par deux voies indépendantes — et la preuve chiffrée qu'elles racontent la même histoire.",
-        "en": "Binance's tick-by-tick history, through two independent routes — and the numbers proving they tell the same story."
+        "fr": "L'historique tick-par-tick, venue par venue : archives publiques, REST borné ou rien du tout — chaque page dit ce que l'exchange permet, preuve à l'appui.",
+        "en": "Tick-by-tick history, venue by venue: public archives, capped REST or nothing at all — each page states what the exchange allows, with proof."
       },
       "intro": {
-        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick (cible courante : juin–juillet 2026, extensible) pour alimenter le backtesting — par deux voies indépendantes, puis les confronter minute par minute pour que l'une serve de contre-épreuve à l'autre.",
-        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history (current target: June–July 2026, extensible) to feed the backtesting — through two independent routes, then confronting them minute by minute so that one cross-checks the other."
+        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick pour alimenter le backtesting — désormais décliné exchange par exchange. Binance, validé par deux voies indépendantes confrontées minute par minute (r = 0,999 999 99), sert de modèle ; chaque autre venue est documentée honnêtement, sur le même plan : ce qu'elle offre, les voies d'extraction, ce qu'on en a tiré, et ses limites constatées — qui sont du contenu au même titre que les réussites.",
+        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history to feed the backtesting — now broken down exchange by exchange. Binance, validated through two independent routes confronted minute by minute (r = 0.99999999), sets the model; every other venue is documented honestly, on the same outline: what it offers, the extraction routes, what we got out of it, and its observed limits — which are content just as much as the successes."
       },
       "statut": {
-        "fr": "2 voies validées, r = 0,999 999 99",
-        "en": "2 routes validated, r = 0.99999999"
+        "fr": "Exchange par exchange — Binance validé",
+        "en": "Exchange by exchange — Binance validated"
       },
       "sousHub": true,
       "inclure": "historique"
