@@ -1,0 +1,64 @@
+{
+  "sections": [
+    {
+      "id": "historique",
+      "titre": {
+        "fr": "Historique",
+        "en": "History"
+      },
+      "accroche": {
+        "fr": "L'historique tick-par-tick de Binance, par deux voies indépendantes — et la preuve chiffrée qu'elles racontent la même histoire.",
+        "en": "Binance's tick-by-tick history, through two independent routes — and the numbers proving they tell the same story."
+      },
+      "intro": {
+        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick (cible courante : juin–juillet 2026, extensible) pour alimenter le backtesting — par deux voies indépendantes, puis les confronter minute par minute pour que l'une serve de contre-épreuve à l'autre.",
+        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history (current target: June–July 2026, extensible) to feed the backtesting — through two independent routes, then confronting them minute by minute so that one cross-checks the other."
+      },
+      "texte": {
+        "fr": "## Le pilier\n\nRécupérer l'historique des trades tick-par-tick d'un symbole — par défaut BTCUSDT en futures perpétuels, cible courante : juin–juillet 2026, extensible à volonté — et le normaliser au schéma commun du projet : horodatage en millisecondes UTC, prix, taille, côté agresseur. Deux voies produisent la même base SQLite (`BTCUSDT-um-api.db` et `BTCUSDT-um-quantower.db`), ce qui permet de les confronter.\n\n## Voie A : les archives plutôt que le REST\n\nPaginer le REST jusqu'au listing du contrat (fin 2019) demanderait des millions de requêtes. Binance publie les mêmes trades en archives quotidiennes et mensuelles : une poignée de fichiers suffit — onze pour juin–juillet 2026 —, vérifiés par SHA256, avec un complément REST pour la dernière journée. L'extracteur tient en un seul fichier, bibliothèque standard uniquement, repriseable et cumulatif (déduplication par identifiant de trade officiel).\n\n## Voie B : les mêmes ticks via Quantower\n\nLa plateforme Quantower embarque une connexion Binance ; une stratégie C# — adaptée d'un extracteur NQ/Rithmic écrit pour un projet antérieur — télécharge les ticks jour par jour via son API interne et les écrit au même schéma SQLite. Contraintes structurelles constatées : pas d'identifiant de trade exposé (déduplication remplacée par un marquage jour par jour) et une collecte possible seulement quand Quantower est ouvert et connecté.\n\n## La corrélation, mesurée\n\nSur la fenêtre commune — 40 jours, 57 600 minutes, 72,2 millions de trades — la confrontation des deux bases donne :\n\n- **39 jours sur 40 identiques au trade près** : mêmes comptes, mêmes volumes, même répartition acheteur/vendeur ;\n- **high/low identiques sur chacune des 57 600 minutes** : les deux bases contiennent exactement les mêmes prix ;\n- corrélation des clôtures 1 minute : **r = 0,999 999 99** ; des rendements : 0,999 96 ; des volumes : 0,999 999 7 ;\n- 53 746 chandelles 1 m sur 57 600 sont strictement identiques (OHLC). Les 3 854 restantes ne diffèrent que par l'open/close : quand plusieurs trades partagent la même milliseconde, la voie A conserve l'ordre officiel des identifiants alors que la voie B n'a que l'horodatage — un artefact d'ordre, pas une différence de donnée ;\n- la seule vraie divergence tient sur les 9–10 juillet : 118 BTC d'écart de volume sur 7,75 millions (0,0015 %) et 3 trades de plus côté Quantower.\n\nLimite assumée : la comparaison s'arrête aux trades. Aucune des deux voies n'archive le carnet d'ordres — les archives choisies comme l'API interne de Quantower ne servent que l'historique des transactions — donc pas de contre-épreuve possible sur l'orderbook historique.\n\n## Le verdict\n\nLes deux voies produisent la même donnée au trade près — c'est précisément ce qui donne sa valeur à la seconde. La voie A reste la voie principale : intégrité vérifiable par sommes de contrôle, automatisation sans plateforme ouverte, profondeur garantie jusqu'au listing du contrat. La voie B, validée comme contre-épreuve, offre une source de contrôle indépendante et un complément pratique quand Quantower tourne déjà au quotidien.\n\n## Ce qui est livré\n\nLes deux extracteurs (script Python autonome et stratégie Quantower), l'outil de comparaison minute par minute, et un outil de contrôle qui reconstruit les chandelles OHLCV à n'importe quel pas (de la seconde au journalier — le 1 minute en vue de travail scalping) depuis les ticks et produit un graphique chandelier interactif autonome — canvas pur, zéro dépendance, ouvrable hors-ligne.",
+        "en": "## The pillar\n\nFetching the tick-by-tick trade history of a symbol — BTCUSDT perpetual futures by default, current target: June–July 2026, freely extensible — and normalizing it to the project's shared schema: UTC millisecond timestamps, price, size, aggressor side. Two routes produce the same SQLite database (`BTCUSDT-um-api.db` and `BTCUSDT-um-quantower.db`), which makes them directly comparable.\n\n## Route A: archives instead of REST\n\nPaginating the REST API back to the contract's listing (late 2019) would take millions of requests. Binance publishes the same trades as daily and monthly archives: a handful of files is enough — eleven for June–July 2026 —, SHA256-verified, with a REST tail for the last day. The extractor fits in a single file, standard library only, resumable and cumulative (deduplication by official trade id).\n\n## Route B: the same ticks through Quantower\n\nThe Quantower platform ships a Binance connection; a C# strategy — adapted from an NQ/Rithmic extractor written for an earlier project — downloads the ticks day by day through its internal API and writes them to the same SQLite schema. Structural constraints found along the way: no trade id exposed (deduplication replaced by day-by-day bookkeeping) and collection only possible while Quantower is open and connected.\n\n## The correlation, measured\n\nOver the common window — 40 days, 57,600 minutes, 72.2 million trades — confronting the two databases yields:\n\n- **39 out of 40 days identical down to the trade**: same counts, same volumes, same buyer/seller split;\n- **identical high/low on every one of the 57,600 minutes**: both databases contain exactly the same prices;\n- correlation of 1-minute closes: **r = 0.99999999**; of returns: 0.99996; of volumes: 0.9999997;\n- 53,746 of the 57,600 1-minute candles are strictly identical (OHLC). The remaining 3,854 differ only in open/close: when several trades share the same millisecond, route A keeps the official id order while route B only has the timestamp — an ordering artifact, not a data difference;\n- the only real divergence sits on July 9–10: 118 BTC of volume difference out of 7.75 million (0.0015%) and 3 extra trades on the Quantower side.\n\nAcknowledged limit: the comparison stops at trades. Neither route archives the order book — the chosen archives and Quantower's internal API only serve trade history — so no cross-check is possible on the historical orderbook.\n\n## The verdict\n\nBoth routes produce the same data down to the trade — which is precisely what makes the second one valuable. Route A remains the main route: checksum-verifiable integrity, automation without a platform running, depth guaranteed back to the contract's listing. Route B, validated as a cross-check, provides an independent control source and a practical complement when Quantower is already running daily.\n\n## What is delivered\n\nBoth extractors (a standalone Python script and a Quantower strategy), the minute-by-minute comparison tool, plus a control tool that rebuilds OHLCV candles at any resolution (from seconds to daily — 1-minute as the scalping working view) from the ticks and produces a standalone interactive candlestick chart — pure canvas, zero dependencies, usable offline."
+      },
+      "items": [
+        {
+          "id": "jumeaux",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/historiques-jumeaux.svg",
+          "titre": {
+            "fr": "Deux historiques indépendants, le même flux tick par tick",
+            "en": "Two independent histories, the same tick-by-tick flow"
+          },
+          "description": {
+            "fr": "Vingt secondes au cœur du décrochage du 5 juin 2026 (16:12:10 → :30 UTC), extraites des deux bases : la voie A (archives officielles) en haut, la voie B (Quantower) en bas. Chaque point est un trade — temps, prix, taille, côté agresseur — et les deux nuages de 7 118 ticks se superposent point pour point, jusqu'au creux à 59 739,1 $ sur la même milliseconde.",
+            "en": "Twenty seconds inside the June 5, 2026 sell-off (16:12:10 → :30 UTC), pulled from both databases: route A (official archives) on top, route B (Quantower) below. Each dot is one trade — time, price, size, aggressor side — and the two 7,118-tick clouds overlap dot for dot, down to the 59,739.1 low on the same millisecond."
+          }
+        },
+        {
+          "id": "correlation",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/correlation-1m.svg",
+          "titre": {
+            "fr": "57 600 minutes, une seule diagonale",
+            "en": "57,600 minutes, a single diagonal"
+          },
+          "description": {
+            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : tous les points tombent sur la diagonale y = x. Corrélation mesurée r = 0,999 999 99 ; 53 746 chandelles sur 57 600 sont strictement identiques.",
+            "en": "Each minute's close from route A against route B: every point falls on the y = x diagonal. Measured correlation r = 0.99999999; 53,746 of 57,600 candles are strictly identical."
+          }
+        },
+        {
+          "id": "ecart",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/ecart-residuel.svg",
+          "titre": {
+            "fr": "L'écart résiduel, expliqué",
+            "en": "The residual gap, explained"
+          },
+          "description": {
+            "fr": "Les minutes dont la chandelle diffère, jour par jour. L'essentiel est un artefact d'ordre : à même milliseconde, la voie A garde l'ordre officiel des trade_id que la voie B n'a pas — open/close bougent, les prix restent identiques. La seule vraie divergence (9–10 juillet) pèse 0,0015 % du volume.",
+            "en": "Minutes whose candle differs, day by day. Most of it is an ordering artifact: within the same millisecond, route A keeps the official trade_id order that route B lacks — open/close move, prices stay identical. The only real divergence (July 9–10) weighs 0.0015% of the volume."
+          }
+        }
+      ]
+    }
+  ]
+}

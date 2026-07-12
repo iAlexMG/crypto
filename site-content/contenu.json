@@ -7,17 +7,19 @@
         "en": "History"
       },
       "accroche": {
-        "fr": "Tout l'historique tick-par-tick de Binance, en un seul fichier autonome.",
-        "en": "Binance's full tick-by-tick history, in a single standalone file."
+        "fr": "L'historique tick-par-tick de Binance, par deux voies indépendantes — et la preuve chiffrée qu'elles racontent la même histoire.",
+        "en": "Binance's tick-by-tick history, through two independent routes — and the numbers proving they tell the same story."
       },
       "intro": {
-        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique le plus long possible des transactions tick-par-tick, pour alimenter le backtesting.",
-        "en": "The starting point of the chain: fetching and normalizing the longest possible tick-by-tick trade history, to feed the backtesting."
+        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick (cible courante : juin–juillet 2026, extensible) pour alimenter le backtesting — par deux voies indépendantes, puis les confronter minute par minute pour que l'une serve de contre-épreuve à l'autre.",
+        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history (current target: June–July 2026, extensible) to feed the backtesting — through two independent routes, then confronting them minute by minute so that one cross-checks the other."
       },
-      "texte": {
-        "fr": "## Le pilier\n\nRécupérer l'historique le plus long possible des trades tick-par-tick (aggTrades) d'un symbole — par défaut BTCUSDT en futures perpétuels — et le normaliser au schéma commun du projet : horodatage en millisecondes UTC, prix, taille, côté agresseur.\n\n## L'astuce : les archives plutôt que le REST\n\nPaginer le REST jusqu'au listing du contrat (fin 2019) demanderait des millions de requêtes. Binance publie les mêmes trades en archives quotidiennes et mensuelles : une centaine de fichiers suffisent, vérifiés par SHA256, avec un complément REST pour la dernière journée.\n\n## Ce qui est livré\n\nUn extracteur en un seul fichier, bibliothèque standard uniquement, repriseable (chaque archive ingérée est marquée ; une interruption est sûre) et cumulatif (déduplication par identifiant de trade dans une base SQLite en mode WAL).\n\nUn outil de contrôle qui reconstruit les chandelles OHLCV (1H / 4H / journalier) depuis les ticks et produit un graphique chandelier interactif autonome — canvas pur, zéro dépendance, ouvrable hors-ligne.",
-        "en": "## The pillar\n\nFetching the longest possible history of tick-by-tick trades (aggTrades) for a symbol — BTCUSDT perpetual futures by default — and normalizing it to the project's shared schema: UTC millisecond timestamps, price, size, aggressor side.\n\n## The trick: archives instead of REST\n\nPaginating the REST API back to the contract's listing (late 2019) would take millions of requests. Binance publishes the same trades as daily and monthly archives: about a hundred files are enough, SHA256-verified, with a REST tail for the last day.\n\n## What is delivered\n\nA single-file extractor, standard library only, resumable (every ingested archive is marked; interrupting is safe) and cumulative (deduplication by trade id into a WAL-mode SQLite database).\n\nA control tool that rebuilds OHLCV candles (1H / 4H / daily) from the ticks and produces a standalone interactive candlestick chart — pure canvas, zero dependencies, usable offline."
-      }
+      "statut": {
+        "fr": "2 voies validées, r = 0,999 999 99",
+        "en": "2 routes validated, r = 0.99999999"
+      },
+      "sousHub": true,
+      "inclure": "historique"
     },
     {
       "id": "affichage",

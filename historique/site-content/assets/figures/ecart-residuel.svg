@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 470" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" role="img" aria-label="Ce qui sépare encore les deux bases, minute par minute">
+<rect width="920" height="470" fill="#0d1117"/>
+<text x="76" y="34" font-size="19" fill="#ffffff" text-anchor="start" font-weight="600">L’écart résiduel, minute par minute</text>
+<text x="76" y="56" font-size="12.5" fill="#c3c2b7" text-anchor="start">Minutes (sur 1 440 par jour) dont la chandelle 1 m diffère entre les deux voies — high/low et prix restent identiques partout</text>
+<text x="68" y="370.0" font-size="11" fill="#898781" text-anchor="end">0</text>
+<line x1="76" y1="298.5" x2="896" y2="298.5" stroke="#21262d"/>
+<text x="68" y="302.5" font-size="11" fill="#898781" text-anchor="end">50</text>
+<line x1="76" y1="231.0" x2="896" y2="231.0" stroke="#21262d"/>
+<text x="68" y="235.0" font-size="11" fill="#898781" text-anchor="end">100</text>
+<line x1="76" y1="163.5" x2="896" y2="163.5" stroke="#21262d"/>
+<text x="68" y="167.5" font-size="11" fill="#898781" text-anchor="end">150</text>
+<line x1="76" y1="96.0" x2="896" y2="96.0" stroke="#21262d"/>
+<text x="68" y="100.0" font-size="11" fill="#898781" text-anchor="end">200</text>
+<path d="M77.5 366.0 v-79.3 q0 -3 3 -3 h11.5 q3 0 3 3 v79.3 z" fill="#898781"/>
+<path d="M98.0 366.0 v-125.2 q0 -3 3 -3 h11.5 q3 0 3 3 v125.2 z" fill="#898781"/>
+<path d="M118.5 366.0 v-173.8 q0 -3 3 -3 h11.5 q3 0 3 3 v173.8 z" fill="#898781"/>
+<path d="M139.0 366.0 v-215.7 q0 -3 3 -3 h11.5 q3 0 3 3 v215.7 z" fill="#898781"/>
+<path d="M159.5 366.0 v-265.6 q0 -3 3 -3 h11.5 q3 0 3 3 v265.6 z" fill="#898781"/>
+<path d="M180.0 366.0 v-199.5 q0 -3 3 -3 h11.5 q3 0 3 3 v199.5 z" fill="#898781"/>
+<path d="M200.5 366.0 v-159.0 q0 -3 3 -3 h11.5 q3 0 3 3 v159.0 z" fill="#898781"/>
+<path d="M221.0 366.0 v-235.9 q0 -3 3 -3 h11.5 q3 0 3 3 v235.9 z" fill="#898781"/>
+<path d="M241.5 366.0 v-163.1 q0 -3 3 -3 h11.5 q3 0 3 3 v163.1 z" fill="#898781"/>
+<path d="M262.0 366.0 v-177.9 q0 -3 3 -3 h11.5 q3 0 3 3 v177.9 z" fill="#898781"/>
+<path d="M282.5 366.0 v-142.8 q0 -3 3 -3 h11.5 q3 0 3 3 v142.8 z" fill="#898781"/>
+<path d="M303.0 366.0 v-137.4 q0 -3 3 -3 h11.5 q3 0 3 3 v137.4 z" fill="#898781"/>
+<path d="M323.5 366.0 v-67.2 q0 -3 3 -3 h11.5 q3 0 3 3 v67.2 z" fill="#898781"/>
+<path d="M344.0 366.0 v-60.4 q0 -3 3 -3 h11.5 q3 0 3 3 v60.4 z" fill="#898781"/>
+<path d="M364.5 366.0 v-107.7 q0 -3 3 -3 h11.5 q3 0 3 3 v107.7 z" fill="#898781"/>
+<path d="M385.0 366.0 v-114.5 q0 -3 3 -3 h11.5 q3 0 3 3 v114.5 z" fill="#898781"/>
+<path d="M405.5 366.0 v-144.2 q0 -3 3 -3 h11.5 q3 0 3 3 v144.2 z" fill="#898781"/>
+<path d="M426.0 366.0 v-105.0 q0 -3 3 -3 h11.5 q3 0 3 3 v105.0 z" fill="#898781"/>
+<path d="M446.5 366.0 v-113.1 q0 -3 3 -3 h11.5 q3 0 3 3 v113.1 z" fill="#898781"/>
+<path d="M467.0 366.0 v-69.9 q0 -3 3 -3 h11.5 q3 0 3 3 v69.9 z" fill="#898781"/>
+<path d="M487.5 366.0 v-73.9 q0 -3 3 -3 h11.5 q3 0 3 3 v73.9 z" fill="#898781"/>
+<path d="M508.0 366.0 v-126.6 q0 -3 3 -3 h11.5 q3 0 3 3 v126.6 z" fill="#898781"/>
+<path d="M528.5 366.0 v-127.9 q0 -3 3 -3 h11.5 q3 0 3 3 v127.9 z" fill="#898781"/>
+<path d="M549.0 366.0 v-149.5 q0 -3 3 -3 h11.5 q3 0 3 3 v149.5 z" fill="#898781"/>
+<path d="M569.5 366.0 v-138.8 q0 -3 3 -3 h11.5 q3 0 3 3 v138.8 z" fill="#898781"/>
+<path d="M590.0 366.0 v-173.8 q0 -3 3 -3 h11.5 q3 0 3 3 v173.8 z" fill="#898781"/>
+<path d="M610.5 366.0 v-72.6 q0 -3 3 -3 h11.5 q3 0 3 3 v72.6 z" fill="#898781"/>
+<path d="M631.0 366.0 v-110.4 q0 -3 3 -3 h11.5 q3 0 3 3 v110.4 z" fill="#898781"/>
+<path d="M651.5 366.0 v-171.2 q0 -3 3 -3 h11.5 q3 0 3 3 v171.2 z" fill="#898781"/>
+<path d="M672.0 366.0 v-99.6 q0 -3 3 -3 h11.5 q3 0 3 3 v99.6 z" fill="#898781"/>
+<path d="M692.5 366.0 v-94.2 q0 -3 3 -3 h11.5 q3 0 3 3 v94.2 z" fill="#898781"/>
+<path d="M713.0 366.0 v-121.2 q0 -3 3 -3 h11.5 q3 0 3 3 v121.2 z" fill="#898781"/>
+<path d="M733.5 366.0 v-87.5 q0 -3 3 -3 h11.5 q3 0 3 3 v87.5 z" fill="#898781"/>
+<path d="M754.0 366.0 v-99.6 q0 -3 3 -3 h11.5 q3 0 3 3 v99.6 z" fill="#898781"/>
+<path d="M774.5 366.0 v-91.5 q0 -3 3 -3 h11.5 q3 0 3 3 v91.5 z" fill="#898781"/>
+<path d="M795.0 366.0 v-115.8 q0 -3 3 -3 h11.5 q3 0 3 3 v115.8 z" fill="#898781"/>
+<path d="M815.5 366.0 v-103.7 q0 -3 3 -3 h11.5 q3 0 3 3 v103.7 z" fill="#898781"/>
+<path d="M836.0 366.0 v-110.4 q0 -3 3 -3 h11.5 q3 0 3 3 v110.4 z" fill="#898781"/>
+<path d="M856.5 366.0 v-91.5 q0 -3 3 -3 h11.5 q3 0 3 3 v91.5 z" fill="#898781"/>
+<path d="M877.0 366.0 v-65.8 q0 -3 3 -3 h11.5 q3 0 3 3 v65.8 z" fill="#898781"/>
+<line x1="76" y1="366" x2="896" y2="366" stroke="#383835" stroke-width="1.5"/>
+<text x="86.25" y="388" font-size="11" fill="#898781" text-anchor="middle">1 juin</text>
+<text x="229.75" y="388" font-size="11" fill="#898781" text-anchor="middle">8 juin</text>
+<text x="373.25" y="388" font-size="11" fill="#898781" text-anchor="middle">15 juin</text>
+<text x="516.75" y="388" font-size="11" fill="#898781" text-anchor="middle">22 juin</text>
+<text x="660.25" y="388" font-size="11" fill="#898781" text-anchor="middle">29 juin</text>
+<text x="803.75" y="388" font-size="11" fill="#898781" text-anchor="middle">6 juil.</text>
+<text x="885.75" y="388" font-size="11" fill="#898781" text-anchor="middle">10 juil.</text>
+<circle cx="865.2" cy="259.5" r="4.5" fill="#9085e9"/>
+<circle cx="885.8" cy="285.1" r="4.5" fill="#9085e9"/>
+<line x1="865.2" y1="249.5" x2="865.2" y2="183" stroke="#898781" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="871.25" y="160" font-size="11.5" fill="#c3c2b7" text-anchor="end">9–10 juil. : mêmes prix, mais 118 BTC d’écart de volume</text>
+<text x="871.25" y="175" font-size="11.5" fill="#c3c2b7" text-anchor="end">sur 7,75 M (0,0015 %) et +3 trades côté B</text>
+<rect x="76" y="70" width="10" height="10" rx="2" fill="#898781"/>
+<text x="92" y="79" font-size="12" fill="#ffffff" text-anchor="start">open/close seuls — ordre des trades au sein d’une même milliseconde (mêmes trades)</text>
+<circle cx="671" cy="75" r="5" fill="#9085e9"/>
+<text x="682" y="79" font-size="12" fill="#ffffff" text-anchor="start">vraie divergence (volume / nb de trades)</text>
+<text x="76" y="430" font-size="11.5" fill="#c3c2b7" text-anchor="start">Lecture : la voie A conserve l’ordre officiel des trade_id ; la voie B n’a que l’horodatage milliseconde.</text>
+<text x="76" y="446" font-size="11.5" fill="#c3c2b7" text-anchor="start">Quand plusieurs trades partagent la même milliseconde, l’open/close de la minute peut différer — les prix, eux, sont identiques.</text>
+</svg>
