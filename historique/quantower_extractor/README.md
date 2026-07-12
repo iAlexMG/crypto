@@ -1,12 +1,21 @@
-# Méthode B — ticks Binance via Quantower → SQLite
+# Méthode B — ticks crypto via Quantower → SQLite (multi-exchange)
 
-Stratégie Quantower (`Crypto Tick Extractor (Binance)`) qui télécharge les ticks d'un symbole
-crypto via la connexion Binance **déjà authentifiée dans Quantower** et les écrit au **schéma
-exact** de la méthode A (`binance_history.py`) → la chaîne Python aval (`candles.py`, …)
+Stratégie Quantower (`Crypto Tick Extractor`) qui télécharge les ticks d'un symbole crypto
+via une connexion **déjà authentifiée dans Quantower** — Binance, Bybit, OKX, … : c'est la
+connexion du symbole choisi qui fixe l'exchange — et les écrit au **schéma exact** de la
+méthode A (`binance_history.py`, `bybit_history.py`) → la chaîne Python aval (`candles.py`, …)
 tourne sans modification. Adaptée de l'extracteur NQ/Rithmic archivé
 (`Portfolio/_archive/Quantower/extractor`), dont les mesures de Phase 0 ont fixé
 l'architecture : le BusinessLayer ne se connecte pas hors du process Quantower, donc le code
 tourne **dans** Quantower.
+
+L'exchange est déduit de `Symbol.Connection.VendorName` (vérifié par réflexion v1.146.14 ;
+non renommable par l'utilisateur, contrairement au nom de connexion) et nomme la base :
+
+| Connexion | Base produite (défaut) | Voie A homologue |
+|---|---|---|
+| Binance | `<sym>-<um\|spot>-quantower.db` (schéma d'origine, rétro-compat) | `<sym>-<um\|spot>-api.db` |
+| Bybit (et toute autre venue) | `<sym>-bybit-quantower.db` | `<sym>-bybit-api.db` |
 
 ## Schéma produit (identique à la méthode A)
 
@@ -15,7 +24,7 @@ trades(trade_id INTEGER PRIMARY KEY,  -- rowid, insertion append = ordre chronol
        ts INTEGER,                    -- ms UTC
        price REAL, size REAL,
        side TEXT)                     -- 'buy'/'sell' = côté agresseur (AggressorFlag)
-_meta(k,v)        -- symbol, market, exchange, connection, tick_size, source=quantower-binance
+_meta(k,v)        -- symbol, market, exchange, connection, tick_size, source=quantower-<exchange>
 _ingested(name,rows,at)   -- 'day/YYYY-MM-DD' pour les jours complets déjà collectés
 idx_trades_ts ON trades(ts)
 ```
@@ -37,7 +46,7 @@ par jour. Les ticks sans côté agresseur sont exclus (jamais de `side` vide) et
   fenêtre).
 - Paramètre **« Collecte auto toutes les N heures »** (défaut 6, `0` = one-shot) : recollecte
   seule à cet intervalle tant que la stratégie tourne. ⚠️ La collecte n'a lieu **que quand
-  Quantower est ouvert** avec la connexion Binance active — limite structurelle de la
+  Quantower est ouvert** avec la connexion du symbole active — limite structurelle de la
   méthode, à mettre en regard des archives de la méthode A téléchargeables à toute heure.
 
 ## Déployer & lancer
@@ -48,12 +57,13 @@ par jour. Les ticks sans côté agresseur sont exclus (jamais de `side` vide) et
 powershell -ExecutionPolicy Bypass -File historique\quantower_extractor\deploy.ps1
 ```
 
-Puis dans Quantower (connexion Binance active) : panneau **Strategies** →
-`Crypto Tick Extractor (Binance)` → paramètre **Symbole = BTCUSDT** (futures perp si la
-connexion les expose, sinon spot) → **Start**. Suivre l'onglet **Logs**.
-Résultat par défaut : `historique\data\BTCUSDT-um-quantower.db` — schéma de nommage
-`<symbole>-<marché>-<source>.db`, comme la méthode A (`…-um-api.db`) : la paire à comparer
-se lit dans les noms, et aucune voie ne peut écraser l'autre.
+Puis dans Quantower (connexion voulue active — Binance, Bybit, …) : panneau **Strategies** →
+`Crypto Tick Extractor` → paramètre **Symbole = BTCUSDT** *depuis la bonne connexion*
+(futures perp si la connexion les expose, sinon spot) → **Start**. Suivre l'onglet **Logs**
+(la première ligne « Base : … » confirme le fichier et la connexion utilisés).
+Résultat par défaut : `historique\data\BTCUSDT-um-quantower.db` (Binance) ou
+`historique\data\BTCUSDT-bybit-quantower.db` (Bybit, etc.) — la paire à comparer se lit
+dans les noms, et aucune voie ne peut écraser l'autre.
 
 ## Mesures — premier run réel (2026-07-11, janvier 2026)
 

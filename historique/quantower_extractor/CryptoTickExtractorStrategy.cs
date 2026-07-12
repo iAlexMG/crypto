@@ -5,11 +5,12 @@ using TradingPlatform.BusinessLayer;
 namespace CryptoTickExtractor;
 
 /// <summary>
-/// Méthode B du pilier « historique » — extracteur incrémental de ticks crypto via le channel
-/// Binance de Quantower, vers SQLite au schéma EXACT de la méthode A (binance_history.py) :
+/// Méthode B du pilier « historique » — extracteur incrémental de ticks crypto via une
+/// connexion Quantower (Binance, Bybit, OKX, … : c'est le Symbol choisi qui décide), vers
+/// SQLite au schéma EXACT de la méthode A (binance_history.py / bybit_history.py) :
 /// `trades(trade_id PK, ts, price, size, side)` + `_meta` k/v + `_ingested` → toute la chaîne
 /// Python aval (candles.py, …) fonctionne telle quelle. Tourne DANS Quantower (la connexion
-/// Binance n'est authentifiée que là — même verrou que Rithmic, mesuré Phase 0 du projet NQ).
+/// n'est authentifiée que là — même verrou que Rithmic, mesuré Phase 0 du projet NQ).
 ///
 /// Adapté de l'extracteur NQ/Rithmic archivé (_archive/Quantower/extractor). Différences :
 /// borne de départ par date (cible projet : juin 2026 →) au lieu d'un backfill en jours, et
@@ -21,13 +22,20 @@ namespace CryptoTickExtractor;
 /// (comme Rithmic) → `trade_id` = rowid d'insertion, et l'incrémental repose sur le marquage
 /// par jour (jours complets marqués dans `_ingested`, jour courant purgé puis ré-inséré).
 /// Insertion en ordre chronologique → rowid croissant = hypothèse de candles.py.
+///
+/// Multi-exchange (2026-07-12) : l'exchange est déduit de la connexion du symbole
+/// (Symbol.Connection.VendorName, vérifié par réflexion v1.146.14) et nomme la base —
+/// Binance garde le schéma historique `<sym>-<um|spot>-quantower.db` (rétro-compat avec la
+/// base validée), toute autre venue produit `<sym>-<exchange>-quantower.db` (aligné sur la
+/// voie A correspondante, ex. BTCUSDT-bybit-api.db ↔ BTCUSDT-bybit-quantower.db) : la paire
+/// à comparer se lit dans les noms, et aucune venue ne peut écraser la base d'une autre.
 /// </summary>
 public sealed class CryptoTickExtractorStrategy : Strategy
 {
     /// <summary>Dossier data du pilier historique (dépôt Portfolio). Modifiable via « Base SQLite ».</summary>
     private const string DefaultDataDir = @"C:\Users\Moi\Desktop\Claude_Code\Portfolio\crypto\historique\data";
 
-    [InputParameter("Symbole (ex. BTCUSDT via connexion Binance)", 0)]
+    [InputParameter("Symbole (ex. BTCUSDT — la connexion du symbole fixe l'exchange)", 0)]
     public Symbol? Instrument { get; set; }
 
     [InputParameter("Base SQLite (vide = auto historique\\data\\<symbole>-<marché>-quantower.db)", 1)]
@@ -45,7 +53,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     private volatile bool _busy;
     private volatile bool _stopRequested;
 
-    public CryptoTickExtractorStrategy() => Name = "Crypto Tick Extractor (Binance)";
+    public CryptoTickExtractorStrategy() => Name = "Crypto Tick Extractor";
 
     protected override void OnRun()
     {
@@ -242,10 +250,10 @@ public sealed class CryptoTickExtractorStrategy : Strategy
         {
             ("symbol", s.Name),                                        // candles.py lit cette clé
             ("market", s.SymbolType.ToString().ToLowerInvariant()),    // candles.py lit cette clé
-            ("exchange", s.Exchange?.ExchangeName ?? "Binance"),
+            ("exchange", ExchangeSlug(s)),
             ("connection", s.ConnectionId ?? ""),
             ("tick_size", s.TickSize.ToString(CultureInfo.InvariantCulture)),
-            ("source", "quantower-binance"),
+            ("source", $"quantower-{ExchangeSlug(s)}"),
         };
         try // les perpétuels n'expirent pas : n'écrire l'échéance que si elle existe vraiment
         {
@@ -281,12 +289,30 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     {
         if (!string.IsNullOrWhiteSpace(DbPath)) return DbPath;
         var safe = string.Concat(s.Name.Split(Path.GetInvalidFileNameChars()));
-        // Schéma <symbole>-<marché>-<source>.db, aligné sur la méthode A (…-um-api.db) pour que
-        // la paire à comparer saute aux yeux. Marché : perp/futures = um (périmètre projet,
-        // USDⓈ-M ; COIN-M hors périmètre), le reste = spot.
-        var st = s.SymbolType.ToString().ToLowerInvariant();
-        string market = st is "swap" or "futures" ? "um" : "spot";
-        return Path.Combine(DefaultDataDir, $"{safe}-{market}-quantower.db");
+        var exchange = ExchangeSlug(s);
+        if (exchange == "binance")
+        {
+            // Rétro-compat : la base Binance validée (comparatif A/B du README) garde le
+            // schéma d'origine <symbole>-<marché>-quantower.db. Marché : perp/futures = um
+            // (périmètre projet, USDⓈ-M ; COIN-M hors périmètre), le reste = spot.
+            var st = s.SymbolType.ToString().ToLowerInvariant();
+            string market = st is "swap" or "futures" ? "um" : "spot";
+            return Path.Combine(DefaultDataDir, $"{safe}-{market}-quantower.db");
+        }
+        // Autres venues : <symbole>-<exchange>-quantower.db, aligné sur la voie A homologue
+        // (ex. BTCUSDT-bybit-api.db ↔ BTCUSDT-bybit-quantower.db) — la paire à comparer se
+        // lit dans les noms, et aucune venue ne peut écraser la base d'une autre.
+        return Path.Combine(DefaultDataDir, $"{safe}-{exchange}-quantower.db");
+    }
+
+    /// <summary>Identifiant d'exchange en minuscules/alphanumérique, déduit de la CONNEXION du
+    /// symbole (VendorName : « Binance », « Bybit », … — pas renommable par l'utilisateur,
+    /// contrairement à Connection.Name), repli sur l'Exchange du symbole.</summary>
+    private static string ExchangeSlug(Symbol s)
+    {
+        string raw = s.Connection?.VendorName ?? s.Exchange?.ExchangeName ?? "inconnu";
+        var slug = new string(raw.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+        return slug.Length > 0 ? slug : "inconnu";
     }
 
     private static void Exec(SQLiteConnection c, string sql)

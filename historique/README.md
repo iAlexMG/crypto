@@ -1,18 +1,22 @@
-# Historique — les trades tick-par-tick de Binance, par deux voies
+# Historique — les trades tick-par-tick, par deux voies, exchange par exchange
 
-Récupérer l'historique des **trades tick-par-tick** d'un symbole — par défaut **BTCUSDT,
-Futures perp (USDⓈ-M)** — normalisés au schéma commun du projet : `ts` (ms UTC), `price`,
-`size` (en BTC), `side` (`buy`/`sell` = côté agresseur), `trade_id`. **Cible courante :
-juin–juillet 2026** (du 2026-06-01 à aujourd'hui, extensible), les données vivent dans
-`data\` (gitignoré), dans le dépôt.
+Récupérer l'historique des **trades tick-par-tick** d'un symbole — par défaut **BTCUSDT** —
+normalisés au schéma commun du projet : `ts` (ms UTC), `price`, `size` (en BTC), `side`
+(`buy`/`sell` = côté agresseur), `trade_id`. **Cible courante : juin–juillet 2026** (du
+2026-06-01 à aujourd'hui, extensible), les données vivent dans `data\` (gitignoré), dans
+le dépôt. **Binance** (validé, comparatif plus bas) est le modèle de référence ; **Bybit**
+suit le même montage (section dédiée plus bas).
 
 Deux méthodes produisent la **même base SQLite**, comparées plus bas :
 
-- **Méthode A — API Binance** (`binance_history.py`) : archives officielles
-  data.binance.vision + complément REST. Un **seul fichier**, **stdlib pure** (aucun
-  `pip install`), **zéro import du projet Crypto**, copiable tel quel ailleurs.
-- **Méthode B — channel Binance de Quantower** ([`quantower_extractor/`](quantower_extractor/README.md)) :
-  stratégie C# qui tourne dans Quantower et télécharge les ticks via le BusinessLayer.
+- **Méthode A — archives officielles** (`binance_history.py`, `bybit_history.py`) :
+  data.binance.vision (+ complément REST) / public.bybit.com. Un **seul fichier** par
+  exchange, **stdlib pure** (aucun `pip install`), **zéro import du projet Crypto**,
+  copiable tel quel ailleurs.
+- **Méthode B — Quantower** ([`quantower_extractor/`](quantower_extractor/README.md)) :
+  stratégie C# multi-exchange qui tourne dans Quantower et télécharge les ticks via le
+  BusinessLayer — la connexion du symbole choisi (Binance, Bybit, …) fixe l'exchange et le
+  nom de la base.
 
 ## Méthode A — pourquoi des dumps et pas le REST ?
 
@@ -65,16 +69,18 @@ piloté par les 3 run configs :
 ## Méthode B — les mêmes ticks via Quantower
 
 [`quantower_extractor/`](quantower_extractor/README.md) : une stratégie Quantower
-(`Crypto Tick Extractor (Binance)`) adaptée de l'extracteur NQ/Rithmic archivé
-(`Portfolio/_archive/Quantower/extractor`). Elle tourne **dans** Quantower (la connexion
-Binance n'est authentifiée que là), télécharge les ticks jour par jour via
-`GetTickHistory(HistoryType.Last, …)` et écrit `data\BTCUSDT-um-quantower.db` au **même schéma** —
-`candles.py` la lit sans modification. Incrémentale (jours complets marqués) et idempotente
-(jour courant purgé/ré-inséré).
+(`Crypto Tick Extractor`, **multi-exchange** : la connexion du symbole choisi fixe
+l'exchange et le nom de la base) adaptée de l'extracteur NQ/Rithmic archivé
+(`Portfolio/_archive/Quantower/extractor`). Elle tourne **dans** Quantower (les connexions
+n'y sont authentifiées que là), télécharge les ticks jour par jour via
+`GetTickHistory(HistoryType.Last, …)` et écrit `data\BTCUSDT-um-quantower.db` (Binance) /
+`data\BTCUSDT-bybit-quantower.db` (Bybit, …) au **même schéma** — `candles.py` les lit sans
+modification. Incrémentale (jours complets marqués) et idempotente (jour courant
+purgé/ré-inséré).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File quantower_extractor\deploy.ps1   # build + copie dans Settings\Scripts\Strategies
-# puis dans Quantower : Strategies -> Crypto Tick Extractor (Binance) -> Symbole BTCUSDT -> Start
+# puis dans Quantower : Strategies -> Crypto Tick Extractor -> Symbole (sa connexion fixe l'exchange) -> Start
 ```
 
 ### Comparatif A / B
@@ -109,6 +115,45 @@ comparaison sur une autre fenêtre, reconstruire les chandelles des deux côtés
 python candles.py --db data\BTCUSDT-um-api.db --chart candles\BTCUSDT-um-api.html --open
 python candles.py --db data\BTCUSDT-um-quantower.db --chart candles\BTCUSDT-um-quantower.html --open
 ```
+
+## Bybit — le même montage, deux voies (`bybit_history.py`)
+
+Le pendant Bybit du montage Binance, mêmes philosophies (stdlib pure, reprise, schéma
+commun) et même paire de bases : `data\BTCUSDT-bybit-api.db` (voie A) ↔
+`data\BTCUSDT-bybit-quantower.db` (voie B).
+
+- **Méthode A** : archives publiques quotidiennes de **public.bybit.com** (un csv.gz par
+  jour et par symbole ; BTCUSDT dérivés remonte au **2020-03-25**). Le REST public est
+  inutilisable pour le passé (recent-trade plafonné, sans pagination) — constat documenté
+  sur la page Bybit du pilier affichage.
+- **Méthode B** : la même stratégie Quantower (multi-exchange) sur un symbole de la
+  connexion Bybit.
+
+Différences structurelles avec Binance, mesurées sur fichier témoin (2026-07-10) :
+
+| Point | Binance | Bybit |
+|---|---|---|
+| Identifiant de trade | `trade_id` entier officiel → dédup `INSERT OR IGNORE` | `trdMatchID` = UUID → **rowid**, ingestion **transactionnelle par fichier** (interrompu = rollback, jamais de doublon) |
+| Ordre chronologique | garanti par le `trade_id` PK | flux vérifié monotone à l'ingestion (repli : tri stable par ts) + **refus de backfill** avant le contenu existant (hypothèse `candles.py` : rowid = chrono) |
+| Horodatage | ms entières | secondes epoch à fraction sous-ms → arrondi ms |
+| Côté agresseur | `is_buyer_maker` à inverser | `side` Buy/Sell = agresseur direct |
+| Intégrité | SHA256 vs `.CHECKSUM` publiés | pas de somme publiée → **CRC32 du gzip** (décompression complète avant ingestion) |
+| Granularité | aggTrades (agrégés par prix/côté/ms) | trades bruts |
+
+```bash
+# voir le plan sans rien télécharger
+python bybit_history.py --start 2026-06 --dry-run
+
+# la cible du projet : juin-juillet 2026 -> data\BTCUSDT-bybit-api.db (reprenable)
+python bybit_history.py --start 2026-06
+
+# contrôle visuel post-extraction
+python candles.py --db data\BTCUSDT-bybit-api.db --chart candles\BTCUSDT-bybit-api.html --open
+```
+
+Mesuré au premier run (juin–juillet 2026) : ~50–60 Mo et ~2–6 M de trades par jour,
+ingestion ~150 k trades/s. La validation croisée A/B façon Binance se rejoue avec
+`candles.py` sur les deux bases dès que la voie B a collecté la même fenêtre.
 
 ## Suite du pipeline (côté cours, hors de ce sous-projet)
 

@@ -19,4 +19,4 @@ foreach ($f in "CryptoTickExtractor.dll","CryptoTickExtractor.deps.json","Crypto
     Copy-Item (Join-Path $out $f) $dest -Force
 }
 Write-Host "Déployé dans : $dest"
-Write-Host "Dans Quantower : panneau Strategies -> Crypto Tick Extractor (Binance) -> choisir BTCUSDT -> Start."
+Write-Host "Dans Quantower : panneau Strategies -> Crypto Tick Extractor -> choisir le symbole (sa connexion fixe l'exchange) -> Start."
