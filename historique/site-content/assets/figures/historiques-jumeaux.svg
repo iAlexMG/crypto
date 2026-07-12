@@ -83,15 +83,16 @@
 <path d="M409.8 469.7h.01M515.0 432.6h.01M516.5 432.4h.01M641.8 429.1h.01M815.0 393.0h.01" fill="none" stroke="#199e70" stroke-width="5.6" stroke-linecap="round" opacity="0.6"/>
 <path d="M383.7 473.8h.01M750.4 422.0h.01M821.0 370.3h.01" fill="none" stroke="#199e70" stroke-width="6.0" stroke-linecap="round" opacity="0.6"/>
 <path d="M79.1 498.9h.01M412.0 469.7h.01M421.3 469.7h.01M423.6 469.7h.01M426.3 469.7h.01M515.0 432.4h.01M536.3 432.4h.01M583.5 432.9h.01M638.9 422.0h.01M638.9 422.1h.01M638.9 424.6h.01M706.4 422.0h.01M755.5 422.0h.01M802.2 422.0h.01M813.9 422.0h.01M815.1 370.2h.01M815.1 370.3h.01M815.1 377.4h.01M815.3 370.2h.01M816.3 370.2h.01M821.1 370.2h.01M852.2 370.2h.01M852.4 370.2h.01" fill="none" stroke="#199e70" stroke-width="6.4" stroke-linecap="round" opacity="0.6"/>
-<circle cx="109.4" cy="283.3" r="6" fill="none" stroke="#c3c2b7" stroke-width="1.2" stroke-dasharray="2.5 2.5"/>
-<circle cx="109.4" cy="505.3" r="6" fill="none" stroke="#c3c2b7" stroke-width="1.2" stroke-dasharray="2.5 2.5"/>
-<line x1="109.4" y1="291.3" x2="109.4" y2="303" stroke="#898781" stroke-width="1" stroke-dasharray="3 3"/>
-<text x="119.4" y="307" font-size="11.5" fill="#c3c2b7" text-anchor="start">creux à 59 739,1 $ (16:12:10.814) — le même tick, à la même milliseconde, dans les deux bases</text>
+<line x1="109.4" y1="132" x2="109.4" y2="275.3" stroke="#c3c2b7" stroke-width="1" stroke-dasharray="4 4" opacity="0.75"/>
+<circle cx="109.4" cy="283.3" r="5.5" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+<line x1="109.4" y1="334" x2="109.4" y2="497.3" stroke="#c3c2b7" stroke-width="1" stroke-dasharray="4 4" opacity="0.75"/>
+<circle cx="109.4" cy="505.3" r="5.5" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+<text x="117.4" y="126" font-size="11.5" fill="#c3c2b7" text-anchor="start">creux à 59 739,1 $ — 16:12:10.814, le même tick à la même milliseconde dans les deux nuages</text>
 <text x="76.0" y="528" font-size="11" fill="#898781" text-anchor="middle">16:12:10</text>
 <text x="281.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:15</text>
 <text x="486.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:20</text>
 <text x="691.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:25</text>
 <text x="896.0" y="528" font-size="11" fill="#898781" text-anchor="middle">:30</text>
-<text x="76" y="556" font-size="11.5" fill="#c3c2b7" text-anchor="start">Les deux nuages se superposent au tick près — 39 jours sur 40 identiques au trade près, mêmes high/low sur les 57 600 minutes.</text>
-<text x="76" y="572" font-size="11.5" fill="#c3c2b7" text-anchor="start">La contre-épreuve s’arrête aux trades : aucune des deux voies n’archive le carnet d’ordres historique.</text>
+<text x="76" y="556" font-size="11.5" fill="#c3c2b7" text-anchor="start">Cet extrait fait 20 secondes ; sur toute la fenêtre comparée (1er juin → 10 juillet 2026), 39 jours sur 40 sont identiques au trade près.</text>
+<text x="76" y="572" font-size="11.5" fill="#c3c2b7" text-anchor="start">Mêmes high/low sur les 57 600 minutes communes ; la contre-épreuve s’arrête aux trades (aucune voie n’archive le carnet d’ordres).</text>
 </svg>
