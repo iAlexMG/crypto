@@ -7,6 +7,11 @@ normalisés au schéma commun du projet : `ts` (ms UTC), `price`, `size` (en BTC
 le dépôt. **Binance** (validé, comparatif plus bas) est le modèle de référence ; **Bybit**
 suit le même montage (section dédiée plus bas).
 
+Nommage standard des bases : **`<SYMBOLE>-<exchange>-<marché>-<source>.db`** — marché
+`perp`/`spot` toujours visible (le piège spot/perp ne peut pas passer inaperçu), source
+`api` (voie A) ou `qt` (voie B). La paire à comparer ne diffère que par la source :
+`BTCUSDT-bybit-perp-api.db` ↔ `BTCUSDT-bybit-perp-qt.db`.
+
 Deux méthodes produisent la **même base SQLite**, comparées plus bas :
 
 - **Méthode A — archives officielles** (`binance_history.py`, `bybit_history.py`) :
@@ -33,7 +38,7 @@ de millions d'appels. Même donnée, **même normalisation** (`is_buyer_maker=tr
 python binance_history.py --start 2026-06 --dry-run
 # -> 11 fichiers (le mensuel de juin + juillet en quotidiens), 2026-06 → aujourd'hui
 
-# La cible du projet : juin–juillet 2026 -> data\BTCUSDT-um-api.db (reprenable)
+# La cible du projet : juin–juillet 2026 -> data\BTCUSDT-binance-perp-api.db (reprenable)
 python binance_history.py --start 2026-06
 
 # Une fenêtre précise -> CSV gzip (1 fichier par période)
@@ -58,10 +63,10 @@ piloté par les 3 run configs :
 | Config PyCharm | Commande équivalente | Rôle |
 |---|---|---|
 | `1 - dry-run` | `binance_history.py --start 2026-06 --dry-run` | voir le plan (fichiers, tailles) sans télécharger |
-| `2 - Extraction` | `binance_history.py --start 2026-06` | extraction réelle → `data\BTCUSDT-um-api.db` (cache `data\_dumps`) |
-| `3 - Chandelles` | `candles.py --chart candles\BTCUSDT-um-api.html --open` | contrôle visuel post-extraction (pas par défaut : 1m 1H D) |
+| `2 - Extraction` | `binance_history.py --start 2026-06` | extraction réelle → `data\BTCUSDT-binance-perp-api.db` (cache `data\_dumps`) |
+| `3 - Chandelles` | `candles.py --chart candles\BTCUSDT-binance-perp-api.html --open` | contrôle visuel post-extraction (pas par défaut : 1m 1H D) |
 
-> La base `data\BTCUSDT-um-api.db` est **cumulative** (`INSERT OR IGNORE` dédoublonne) : pour
+> La base `data\BTCUSDT-binance-perp-api.db` est **cumulative** (`INSERT OR IGNORE` dédoublonne) : pour
 > ajouter de l'historique, relancez avec une autre plage `--start`/`--end`, ça s'ajoute sans
 > doublon. Le plan bascule automatiquement sur les dumps **quotidiens** pour le mois courant /
 > partiel.
@@ -73,8 +78,8 @@ piloté par les 3 run configs :
 l'exchange et le nom de la base) adaptée de l'extracteur NQ/Rithmic archivé
 (`Portfolio/_archive/Quantower/extractor`). Elle tourne **dans** Quantower (les connexions
 n'y sont authentifiées que là), télécharge les ticks jour par jour via
-`GetTickHistory(HistoryType.Last, …)` et écrit `data\BTCUSDT-um-quantower.db` (Binance) /
-`data\BTCUSDT-bybit-quantower.db` (Bybit, …) au **même schéma** — `candles.py` les lit sans
+`GetTickHistory(HistoryType.Last, …)` et écrit `data\<symbole>-<exchange>-<marché>-qt.db`
+(ex. `BTCUSDT-binance-perp-qt.db`, `BTCUSDT-bybit-perp-qt.db`) au **même schéma** — `candles.py` les lit sans
 modification. Incrémentale (jours complets marqués) et idempotente (jour courant
 purgé/ré-inséré).
 
@@ -112,15 +117,15 @@ volume des deux côtés, répartition acheteur comprise — identité parfaite.*
 comparaison sur une autre fenêtre, reconstruire les chandelles des deux côtés :
 
 ```bash
-python candles.py --db data\BTCUSDT-um-api.db --chart candles\BTCUSDT-um-api.html --open
-python candles.py --db data\BTCUSDT-um-quantower.db --chart candles\BTCUSDT-um-quantower.html --open
+python candles.py --db data\BTCUSDT-binance-perp-api.db --chart candles\BTCUSDT-binance-perp-api.html --open
+python candles.py --db data\BTCUSDT-binance-perp-qt.db --chart candles\BTCUSDT-binance-perp-qt.html --open
 ```
 
 ## Bybit — le même montage, deux voies (`bybit_history.py`)
 
 Le pendant Bybit du montage Binance, mêmes philosophies (stdlib pure, reprise, schéma
-commun) et même paire de bases : `data\BTCUSDT-bybit-api.db` (voie A) ↔
-`data\BTCUSDT-bybit-quantower.db` (voie B).
+commun) et même paire de bases : `data\BTCUSDT-bybit-perp-api.db` (voie A) ↔
+`data\BTCUSDT-bybit-perp-qt.db` (voie B).
 
 - **Méthode A** : archives publiques quotidiennes de **public.bybit.com** (un csv.gz par
   jour et par symbole ; BTCUSDT dérivés remonte au **2020-03-25**). Le REST public est
@@ -144,11 +149,11 @@ Différences structurelles avec Binance, mesurées sur fichier témoin (2026-07-
 # voir le plan sans rien télécharger
 python bybit_history.py --start 2026-06 --dry-run
 
-# la cible du projet : juin-juillet 2026 -> data\BTCUSDT-bybit-api.db (reprenable)
+# la cible du projet : juin-juillet 2026 -> data\BTCUSDT-bybit-perp-api.db (reprenable)
 python bybit_history.py --start 2026-06
 
 # contrôle visuel post-extraction
-python candles.py --db data\BTCUSDT-bybit-api.db --chart candles\BTCUSDT-bybit-api.html --open
+python candles.py --db data\BTCUSDT-bybit-perp-api.db --chart candles\BTCUSDT-bybit-perp-api.html --open
 ```
 
 Mesuré au premier run (juin–juillet 2026) : ~50–60 Mo et ~2–6 M de trades par jour,
@@ -171,7 +176,7 @@ python backtests\check_causality.py                # 4) garde-fou parité (prefi
 ```
 
 > ⚠️ Les scripts de `backtesting/` référencent encore `F:/data` en dur (base de ticks et
-> sorties OHLCV). Depuis le rapatriement, la base de ticks est `historique\data\BTCUSDT-um-api.db` :
+> sorties OHLCV). Depuis le rapatriement, la base de ticks est `historique\data\BTCUSDT-binance-perp-api.db` :
 > pointer ces constantes dessus (ou les migrer) à la prochaine régénération.
 
 L'ordre compte : `normalize.py` lit la base de ticks, `volume_profile.py` aussi (ajuster
@@ -195,9 +200,9 @@ PGCD des pas demandés puis chaque pas est un rollup exact.
 - **sélecteur de pas de temps** (un bouton par pas demandé) si plusieurs `--tf` sont fournis.
 
 ```bash
-python candles.py --chart btc.html --open                # 1m/1H/D depuis data\BTCUSDT-um-api.db
+python candles.py --chart btc.html --open                # 1m/1H/D depuis data\BTCUSDT-binance-perp-api.db
 python candles.py --tf 15s 1m 5m --chart scalp.html      # résolutions scalping, pas libres
-python candles.py --db data\BTCUSDT-um-quantower.db --csv ./candles  # base méthode B + séries CSV complètes
+python candles.py --db data\BTCUSDT-binance-perp-qt.db --csv ./candles  # base méthode B + séries CSV complètes
 ```
 
 ## Options (`binance_history.py`)
@@ -208,7 +213,7 @@ python candles.py --db data\BTCUSDT-um-quantower.db --csv ./candles  # base mét
 | `--market` | `um` | `um` (USDⓈ-M futures), `cm` (COIN-M), `spot` |
 | `--start` / `--end` | début dispo / mois courant | `YYYY`, `YYYY-MM` ou `YYYY-MM-DD` |
 | `--format` | `sqlite` | `sqlite` ou `csv` (gzip) |
-| `--out` | `data\<SYMBOLE>-<marché>-api.db` | fichier `.db` (sqlite) ou dossier (csv) |
+| `--out` | `data\<SYMBOLE>-binance-<marché>-api.db` | fichier `.db` (sqlite) ou dossier (csv) |
 | `--cache` | `data\_dumps` | cache des zips téléchargés |
 | `--prefetch` | `2` | zips téléchargés en avance (borne le disque) |
 | `--keep-zips` | off | garder les zips bruts après ingestion |
@@ -230,7 +235,7 @@ trades(trade_id INTEGER PRIMARY KEY, ts INTEGER, price REAL, size REAL, side TEX
 
 ```python
 import sqlite3
-c = sqlite3.connect(r"data\BTCUSDT-um-api.db")
+c = sqlite3.connect(r"data\BTCUSDT-binance-perp-api.db")
 c.execute("SELECT ts, price, size, side FROM trades WHERE ts BETWEEN ? AND ? ORDER BY ts",
           (start_ms, end_ms))
 ```

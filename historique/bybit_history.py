@@ -30,14 +30,15 @@ DIFFÉRENCES STRUCTURELLES avec Binance (mesurées sur fichier témoin 2026-07-1
   - PAS de .CHECKSUM publié → l'intégrité repose sur le CRC32 du gzip (vérifié en
     décompressant intégralement chaque fichier avant ingestion).
 
-SORTIE : SQLite (défaut) `data\<SYMBOLE>-bybit-api.db` — schéma identique aux autres
+SORTIE : SQLite (défaut) `data\<SYMBOLE>-bybit-perp-api.db` — nommage standard
+  `<SYMBOLE>-<exchange>-<marché>-<source>.db` — schéma identique aux autres
   voies (`trades`, `_meta`, `_ingested`, index ts différé) ; ou CSV gzip normalisé.
 
 EXEMPLES :
   # voir le plan sans rien télécharger
   python bybit_history.py --start 2026-06 --dry-run
 
-  # la cible du projet : juin-juillet 2026 -> data\BTCUSDT-bybit-api.db (reprenable)
+  # la cible du projet : juin-juillet 2026 -> data\BTCUSDT-bybit-perp-api.db (reprenable)
   python bybit_history.py --start 2026-06
 
   # une fenêtre précise -> CSV gzip
@@ -378,11 +379,11 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     if args.format == "sqlite":
-        out = args.out or os.path.join(DATA_DIR, f"{symbol}-bybit-api.db")
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-bybit-perp-api.db")
         os.makedirs(os.path.dirname(os.path.abspath(out)) or ".", exist_ok=True)
         sink: SqliteSink | CsvSink = SqliteSink(out, symbol)
     else:
-        out = args.out or os.path.join(DATA_DIR, f"{symbol}-bybit-trades")
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-bybit-perp-trades")
         sink = CsvSink(out, symbol)
 
     done = sink.done()
@@ -489,7 +490,7 @@ def main() -> int:
     p.add_argument("--end", default=None, help="YYYY | YYYY-MM | YYYY-MM-DD (défaut: dernier publié)")
     p.add_argument("--format", default="sqlite", choices=["sqlite", "csv"])
     p.add_argument("--out", default=None,
-                   help="fichier .db (sqlite) ou dossier (csv) ; défaut : data\\<SYMBOLE>-bybit-api.db")
+                   help="fichier .db (sqlite) ou dossier (csv) ; défaut : data\\<SYMBOLE>-bybit-perp-api.db")
     p.add_argument("--cache", default=os.path.join(DATA_DIR, "_dumps"),
                    help="cache des csv.gz téléchargés (défaut : data\\_dumps)")
     p.add_argument("--prefetch", type=int, default=2, help="fichiers téléchargés en avance")

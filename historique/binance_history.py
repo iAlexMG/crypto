@@ -83,6 +83,10 @@ MARKETS = {
     "spot": ("data/spot",       "https://api.binance.com", "/api/v3/aggTrades"),
 }
 
+# Classe de marché pour le nommage standard <SYMBOLE>-<exchange>-<marché>-<source>.db
+# (um = USDⓈ-M perp, le périmètre du projet ; cm reste « cm » pour ne pas se confondre).
+MARKET_CLASS = {"um": "perp", "cm": "cm", "spot": "spot"}
+
 BATCH = 50_000          # lignes par executemany / par flush gzip
 HOLE_LOG_EVERY = 5_000_000
 
@@ -481,7 +485,7 @@ def run(args: argparse.Namespace) -> int:
 
     # Sink (sqlite/csv) + reprise
     if args.format == "sqlite":
-        out = args.out or os.path.join(DATA_DIR, f"{symbol}-{market}-api.db")
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-binance-{MARKET_CLASS[market]}-api.db")
         # L'index ts différé est construit à la fin : son tri externe (milliards de
         # lignes) a besoin de place TEMP -> sur le MÊME disque que la base (jamais C:).
         tmpdir = os.path.join(os.path.dirname(os.path.abspath(out)) or ".", "_sqlite_tmp")
@@ -489,7 +493,7 @@ def run(args: argparse.Namespace) -> int:
         os.environ["TMP"] = os.environ["TEMP"] = os.environ["SQLITE_TMPDIR"] = tmpdir
         sink: SqliteSink | CsvSink = SqliteSink(out, market, symbol)
     else:
-        out = args.out or os.path.join(DATA_DIR, f"{symbol}-{market}-aggtrades")
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-binance-{MARKET_CLASS[market]}-aggtrades")
         sink = CsvSink(out, market, symbol)
 
     def finalize_if_complete() -> None:
@@ -598,7 +602,7 @@ def main() -> int:
     p.add_argument("--end", default=None, help="YYYY | YYYY-MM | YYYY-MM-DD (défaut: mois courant)")
     p.add_argument("--format", default="sqlite", choices=["sqlite", "csv"])
     p.add_argument("--out", default=None,
-                   help="fichier .db (sqlite) ou dossier (csv) ; défaut : data\\<SYMBOLE>-<marché>-api.db")
+                   help="fichier .db (sqlite) ou dossier (csv) ; défaut : data\\<SYMBOLE>-binance-<marché>-api.db")
     p.add_argument("--cache", default=os.path.join(DATA_DIR, "_dumps"),
                    help="cache des zips téléchargés (défaut : data\\_dumps)")
     p.add_argument("--prefetch", type=int, default=2, help="zips téléchargés en avance (borne le disque)")

@@ -24,11 +24,11 @@ namespace CryptoTickExtractor;
 /// Insertion en ordre chronologique → rowid croissant = hypothèse de candles.py.
 ///
 /// Multi-exchange (2026-07-12) : l'exchange est déduit de la connexion du symbole
-/// (Symbol.Connection.VendorName, vérifié par réflexion v1.146.14) et nomme la base —
-/// Binance garde le schéma historique `<sym>-<um|spot>-quantower.db` (rétro-compat avec la
-/// base validée), toute autre venue produit `<sym>-<exchange>-quantower.db` (aligné sur la
-/// voie A correspondante, ex. BTCUSDT-bybit-api.db ↔ BTCUSDT-bybit-quantower.db) : la paire
-/// à comparer se lit dans les noms, et aucune venue ne peut écraser la base d'une autre.
+/// (Symbol.Connection.VendorName, vérifié par réflexion v1.146.14) et nomme la base au
+/// standard du pilier `<sym>-<exchange>-<marché>-qt.db` (marché = perp|spot), aligné sur
+/// la voie A homologue `<sym>-<exchange>-<marché>-api.db` (ex. BTCUSDT-bybit-perp-api.db ↔
+/// BTCUSDT-bybit-perp-qt.db) : la paire à comparer se lit dans les noms, le marché est
+/// toujours visible (piège spot/perp), et aucune venue ne peut écraser la base d'une autre.
 /// </summary>
 public sealed class CryptoTickExtractorStrategy : Strategy
 {
@@ -38,7 +38,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     [InputParameter("Symbole (ex. BTCUSDT — la connexion du symbole fixe l'exchange)", 0)]
     public Symbol? Instrument { get; set; }
 
-    [InputParameter("Base SQLite (vide = auto historique\\data\\<symbole>-<marché>-quantower.db)", 1)]
+    [InputParameter("Base SQLite (vide = auto historique\\data\\<symbole>-<exchange>-<marché>-qt.db)", 1)]
     public string DbPath = "";
 
     [InputParameter("Début historique YYYY-MM-DD (cible projet : juin 2026 →)", 2)]
@@ -311,26 +311,22 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     }
 
     private string ResolveDbPath(Symbol s)
+        => string.IsNullOrWhiteSpace(DbPath)
+            // Standard du pilier <symbole>-<exchange>-<marché>-qt.db : le marché (perp|spot)
+            // est TOUJOURS dans le nom (piège spot/perp du premier run Bybit), la voie A
+            // homologue s'obtient en remplaçant qt par api.
+            ? Path.Combine(DefaultDataDir, $"{SymbolSlug(s)}-{ExchangeSlug(s)}-{MarketClass(s)}-qt.db")
+            : DbPath;
+
+    /// <summary>Symbole pour le nom de fichier : premier mot du Symbol.Name (Bybit nomme le
+    /// perp « BTC/USDT Perpetual » → le suffixe décoratif sortirait dans le nom), débarrassé
+    /// de tout caractère non alphanumérique (« BTC/USDT » → BTCUSDT).</summary>
+    private static string SymbolSlug(Symbol s)
     {
-        if (!string.IsNullOrWhiteSpace(DbPath)) return DbPath;
-        var safe = string.Concat(s.Name.Split(Path.GetInvalidFileNameChars()));
-        var exchange = ExchangeSlug(s);
-        if (exchange == "binance")
-        {
-            // Rétro-compat : la base Binance validée (comparatif A/B du README) garde le
-            // schéma d'origine <symbole>-<marché>-quantower.db. Marché : perp/futures = um
-            // (périmètre projet, USDⓈ-M ; COIN-M hors périmètre), le reste = spot.
-            var st = s.SymbolType.ToString().ToLowerInvariant();
-            string market = st is "swap" or "futures" ? "um" : "spot";
-            return Path.Combine(DefaultDataDir, $"{safe}-{market}-quantower.db");
-        }
-        // Autres venues : <symbole>-<exchange>-quantower.db pour les dérivés (périmètre
-        // projet, aligné sur la voie A homologue : BTCUSDT-bybit-api.db ↔
-        // BTCUSDT-bybit-quantower.db) ; le spot reçoit un suffixe explicite pour ne jamais
-        // partager le fichier du perp (« BTC/USDT » et « BTCUSDT » donnent le même nom sûr).
-        return Path.Combine(DefaultDataDir, MarketClass(s) == "perp"
-            ? $"{safe}-{exchange}-quantower.db"
-            : $"{safe}-{exchange}-spot-quantower.db");
+        var first = s.Name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                          .FirstOrDefault() ?? s.Name;
+        var slug = new string(first.Where(char.IsLetterOrDigit).ToArray());
+        return slug.Length > 0 ? slug : "symbole";
     }
 
     /// <summary>Identifiant d'exchange en minuscules/alphanumérique, déduit de la CONNEXION du

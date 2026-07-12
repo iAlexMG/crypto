@@ -11,13 +11,15 @@ tourne **dans** Quantower.
 
 L'exchange est déduit de `Symbol.Connection.VendorName` (vérifié par réflexion v1.146.14 ;
 non renommable par l'utilisateur, contrairement au nom de connexion), débarrassé du suffixe
-de version du connecteur (« Bybit V5 » → `bybit`), et nomme la base avec le marché :
+de version du connecteur (« Bybit V5 » → `bybit`). Le symbole est réduit à son premier mot
+alphanumérique (« BTC/USDT Perpetual » → `BTCUSDT`). La base suit le nommage standard du
+pilier `<sym>-<exchange>-<marché>-qt.db` :
 
 | Connexion / symbole | Base produite (défaut) | Voie A homologue |
 |---|---|---|
-| Binance | `<sym>-<um\|spot>-quantower.db` (schéma d'origine, rétro-compat) | `<sym>-<um\|spot>-api.db` |
-| Autre venue, **perp/futures** (ex. Bybit « BTCUSDT » type Swap) | `<sym>-bybit-quantower.db` | `<sym>-bybit-api.db` |
-| Autre venue, **spot** (ex. Bybit « BTC/USDT ») | `<sym>-bybit-spot-quantower.db` | — |
+| Binance « BTCUSDT » perp | `BTCUSDT-binance-perp-qt.db` | `BTCUSDT-binance-perp-api.db` |
+| Bybit « BTCUSDT » type Swap | `BTCUSDT-bybit-perp-qt.db` | `BTCUSDT-bybit-perp-api.db` |
+| Spot (ex. Bybit « BTC/USDT ») | `BTCUSDT-bybit-spot-qt.db` | — |
 
 ⚠️ Le spot et le perp d'une même venue sont des instruments DIFFÉRENTS (prix décalés du
 basis, volume spot ≪ perp — mesuré au premier run Bybit : 7 267 vs 59 391 BTC sur la journée
@@ -84,9 +86,9 @@ Puis dans Quantower (connexion voulue active — Binance, Bybit, …) : panneau 
 `Crypto Tick Extractor` → paramètre **Symbole = BTCUSDT** *depuis la bonne connexion*
 (futures perp si la connexion les expose, sinon spot) → **Start**. Suivre l'onglet **Logs**
 (la première ligne « Base : … » confirme le fichier et la connexion utilisés).
-Résultat par défaut : `historique\data\BTCUSDT-um-quantower.db` (Binance) ou
-`historique\data\BTCUSDT-bybit-quantower.db` (Bybit, etc.) — la paire à comparer se lit
-dans les noms, et aucune voie ne peut écraser l'autre.
+Résultat par défaut : `historique\data\BTCUSDT-binance-perp-qt.db` (Binance) ou
+`historique\data\BTCUSDT-bybit-perp-qt.db` (Bybit, etc.) — la paire à comparer se lit
+dans les noms (`qt` ↔ `api`), et aucune voie ne peut écraser l'autre.
 
 ## Mesures — premier run réel (2026-07-11, janvier 2026)
 
@@ -106,6 +108,6 @@ Identité parfaite constatée sur la journée témoin (voir tableau). Pour rejou
 comparaison sur une autre fenêtre, reconstruire les chandelles des deux côtés :
 
 ```powershell
-python ..\candles.py --db ..\data\BTCUSDT-um-quantower.db --chart candles\BTCUSDT-um-quantower.html --open
-python ..\candles.py --db ..\data\BTCUSDT-um-api.db --chart candles\BTCUSDT-um-api.html --open
+python ..\candles.py --db ..\data\BTCUSDT-binance-perp-qt.db --chart candles\BTCUSDT-binance-perp-qt.html --open
+python ..\candles.py --db ..\data\BTCUSDT-binance-perp-api.db --chart candles\BTCUSDT-binance-perp-api.html --open
 ```

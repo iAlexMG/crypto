@@ -428,8 +428,8 @@ def main() -> int:
     p = argparse.ArgumentParser(
         description="Reconstruit des chandelles OHLCV à pas libre depuis les trades (sqlite).")
     p.add_argument("--db",
-                   default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "BTCUSDT-um-api.db"),
-                   help="base sqlite des trades (défaut : data\\BTCUSDT-um-api.db)")
+                   default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "BTCUSDT-binance-perp-api.db"),
+                   help="base sqlite des trades (défaut : data\\BTCUSDT-binance-perp-api.db)")
     p.add_argument("--tf", nargs="+", type=parse_tf, default=[parse_tf(t) for t in TF_DEFAULT],
                    metavar="PAS", help="pas de temps libres : <n>s|m|H|D, ex. 30s 1m 5m 1H D "
                                        f"(défaut : {' '.join(TF_DEFAULT)})")
