@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Reconstruction de chandelles OHLCV (D / 4H / 1H) depuis les trades — AUTONOME (stdlib seule).
+"""Reconstruction de chandelles OHLCV à pas LIBRE depuis les trades — AUTONOME (stdlib seule).
 
 Lit la base produite par `binance_history.py` (table `trades(trade_id PK, ts, price,
 size, side)`) et reconstruit des chandelles :
     open / high / low / close / volume + volume agresseur "buy" + nombre de trades,
-aux pas de temps **1H, 4H et 1 jour (D)**, bornés sur l'UTC (minuit UTC pour D).
+à **n'importe quel pas de temps** — `--tf` accepte `<n>s`, `<n>m`, `<n>H`, `<n>D` (et `D`
+seul) : `30s`, `1m`, `5m`, `15m`, `1H`, `4H`, `D`… Bornes alignées sur l'UTC (minuit UTC
+pour D). Le projet vise le scalping/HFT : défaut `1m 1H D` (le 1m est la vue de travail,
+1H/D le contexte).
 
 POURQUOI une seule passe ?
   Les `trade_id` (aggTrades) sont croissants dans le temps : parcourir la table dans
   l'ordre du `trade_id` (= le rowid) donne les trades DÉJÀ triés chronologiquement, sans
-  tri coûteux ni index `ts`. On agrège en streaming les chandelles **1H**, puis on les
-  **rollup** en 4H et D (14 400 000 ms = 4×3 600 000 et 86 400 000 = 24×3 600 000 : chaque
-  borne 4H/D coïncide avec une borne 1H → l'agrégat est exact).
+  tri coûteux ni index `ts`. On agrège en streaming au **PGCD des pas demandés** (ex. 1m
+  pour `1m 1H D`), puis on **rollup** chaque pas demandé : tout pas étant un multiple du
+  PGCD, chaque borne large coïncide avec une borne fine → l'agrégat est exact.
 
 SORTIE :
   - par défaut : un tableau texte des N dernières chandelles de chaque pas de temps ;
@@ -21,8 +24,9 @@ SORTIE :
     et pan (glisser), et un sélecteur de pas de temps. `--open` l'ouvre dans le navigateur.
 
 EXEMPLES :
-  python candles.py                          # 20 dernières D/4H/1H de la base par défaut
-  python candles.py --tail 50 --tf 1H        # 50 dernières chandelles 1H
+  python candles.py                          # 20 dernières 1m/1H/D de la base par défaut
+  python candles.py --tf 1m --tail 50        # 50 dernières chandelles 1 minute
+  python candles.py --tf 15s 1m 5m           # résolutions scalping (n'importe quel pas)
   python candles.py --csv ./candles          # persiste tout en CSV
   python candles.py --chart btc.html --open  # graphique chandelier interactif (ouvre le navigateur)
   python candles.py --limit 2000000          # aperçu rapide (2 M premiers trades)
@@ -33,27 +37,45 @@ import argparse
 import csv
 import datetime as dt
 import json
+import math
 import os
 import pathlib
+import re
 import sqlite3
 import sys
 import time
 import webbrowser
 
 # Pas de temps -> largeur en millisecondes (alignés sur l'epoch = minuit UTC).
-HOUR_MS = 3_600_000
-TF_MS = {"1H": HOUR_MS, "4H": 4 * HOUR_MS, "D": 24 * HOUR_MS}
-TF_ORDER = ["D", "4H", "1H"]          # ordre d'affichage (du plus large au plus fin)
+SEC_MS = 1_000
+MIN_MS = 60 * SEC_MS
+HOUR_MS = 60 * MIN_MS
+DAY_MS = 24 * HOUR_MS
+UNIT_MS = {"s": SEC_MS, "m": MIN_MS, "h": HOUR_MS, "d": DAY_MS}
+TF_DEFAULT = ["1m", "1H", "D"]        # scalping : le 1m est la vue de travail, 1H/D le contexte
+
+
+def parse_tf(spec: str) -> tuple[str, int]:
+    """`30s` / `1m` / `4H` / `D` -> (nom canonique, largeur en ms). Pas libre, unité s/m/H/D."""
+    m = re.fullmatch(r"(\d*)([smhdSMHD])", spec.strip())
+    n = int(m.group(1) or 1) if m else 0
+    if not m or n <= 0:
+        raise argparse.ArgumentTypeError(
+            f"pas de temps invalide : « {spec} » (attendu <n>s|m|H|D, ex. 30s, 1m, 4H, D)")
+    unit = m.group(2).lower()
+    canon = "D" if (unit == "d" and n == 1) else f"{n}{'H' if unit == 'h' else 'D' if unit == 'd' else unit}"
+    return canon, n * UNIT_MS[unit]
 
 # Index d'une chandelle (tuple compact, pas d'objet par chandelle).
 START, OPEN, HIGH, LOW, CLOSE, VOL, BUYVOL, N = range(8)
 
 
 # --------------------------------------------------------------------------- #
-# Construction des chandelles 1H en streaming (une passe sur la table)
+# Construction des chandelles au pas de base en streaming (une passe sur la table)
 # --------------------------------------------------------------------------- #
-def build_1h(conn: sqlite3.Connection, limit: int = 0, progress: bool = True) -> list[tuple]:
-    """Parcourt les trades dans l'ordre du trade_id et émet les chandelles 1H."""
+def build_base(conn: sqlite3.Connection, width_ms: int,
+               limit: int = 0, progress: bool = True) -> list[tuple]:
+    """Parcourt les trades dans l'ordre du trade_id et émet les chandelles au pas donné."""
     sql = "SELECT ts, price, size, side='buy' FROM trades ORDER BY trade_id"
     if limit > 0:
         sql += f" LIMIT {int(limit)}"
@@ -68,7 +90,7 @@ def build_1h(conn: sqlite3.Connection, limit: int = 0, progress: bool = True) ->
     t0 = time.monotonic()
 
     for ts, price, size, isbuy in cur:
-        b = ts // HOUR_MS * HOUR_MS
+        b = ts // width_ms * width_ms
         if b != cur_b:
             if cur_b >= 0:
                 out.append((cur_b, o, hi, lo, cl, vol, bvol, n))
@@ -100,7 +122,7 @@ def build_1h(conn: sqlite3.Connection, limit: int = 0, progress: bool = True) ->
 
 
 def rollup(base: list[tuple], width_ms: int) -> list[tuple]:
-    """Agrège des chandelles fines (1H) en chandelles plus larges (4H, D)."""
+    """Agrège des chandelles fines en chandelles plus larges (largeur multiple du pas fin)."""
     out: list[tuple] = []
     cur_b = -1
     o = hi = lo = cl = vol = bvol = 0.0
@@ -130,30 +152,35 @@ def rollup(base: list[tuple], width_ms: int) -> list[tuple]:
 # --------------------------------------------------------------------------- #
 # Affichage / écriture
 # --------------------------------------------------------------------------- #
-def fdate(ms: int, with_time: bool) -> str:
+def fdate(ms: int, width_ms: int) -> str:
+    """Date UTC adaptée au pas : jour seul (>= 1D), +heures:minutes, +secondes (< 1m)."""
     d = dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc)
-    return d.strftime("%Y-%m-%d %H:%M" if with_time else "%Y-%m-%d")
+    if width_ms >= DAY_MS:
+        return d.strftime("%Y-%m-%d")
+    if width_ms < MIN_MS:
+        return d.strftime("%Y-%m-%d %H:%M:%S")
+    return d.strftime("%Y-%m-%d %H:%M")
 
 
 def num(x: float, dec: int) -> str:
     return f"{x:,.{dec}f}".replace(",", " ")
 
 
-def print_table(tf: str, candles: list[tuple], tail: int, symbol: str, market: str) -> None:
-    with_time = tf != "D"
-    span = (f"{fdate(candles[0][START], with_time)} → {fdate(candles[-1][START], with_time)}"
+def print_table(tf: str, width_ms: int, candles: list[tuple],
+                tail: int, symbol: str, market: str) -> None:
+    span = (f"{fdate(candles[0][START], width_ms)} → {fdate(candles[-1][START], width_ms)}"
             if candles else "—")
     print(f"\n== {symbol} [{market}] — chandelles {tf} : "
           f"{len(candles)} au total ({span} UTC) ==")
     if not candles:
         print("  (aucune)")
         return
-    dh = 16 if with_time else 10
+    dh = 10 if width_ms >= DAY_MS else 19 if width_ms < MIN_MS else 16
     print(f"{'date (UTC)':<{dh}}  {'open':>11} {'high':>11} {'low':>11} {'close':>11} "
           f"{'volume':>14} {'buy%':>6} {'trades':>10}")
     for c in candles[-tail:]:
         buy_pct = (100 * c[BUYVOL] / c[VOL]) if c[VOL] else 0.0
-        print(f"{fdate(c[START], with_time):<{dh}}  "
+        print(f"{fdate(c[START], width_ms):<{dh}}  "
               f"{num(c[OPEN], 2):>11} {num(c[HIGH], 2):>11} {num(c[LOW], 2):>11} "
               f"{num(c[CLOSE], 2):>11} {num(c[VOL], 3):>14} {buy_pct:>5.1f}% "
               f"{num(c[N], 0):>10}")
@@ -165,7 +192,7 @@ def write_csv(path: str, candles: list[tuple]) -> None:
         w.writerow(["ts", "date_utc", "open", "high", "low", "close",
                     "volume", "buy_volume", "sell_volume", "trades"])
         for c in candles:
-            w.writerow([c[START], fdate(c[START], True), c[OPEN], c[HIGH], c[LOW],
+            w.writerow([c[START], fdate(c[START], SEC_MS), c[OPEN], c[HIGH], c[LOW],
                         c[CLOSE], c[VOL], c[BUYVOL], c[VOL] - c[BUYVOL], c[N]])
 
 
@@ -186,7 +213,7 @@ def write_chart(path: str, candles_by_tf: dict[str, list[tuple]],
              for c in candles_by_tf[tf]]
         for tf in tfs
     }
-    default_tf = "1H" if "1H" in tfs else tfs[-1]
+    default_tf = tfs[-1]  # le pas le plus fin (les listes vont du plus large au plus fin)
     html = (CHART_HTML
             .replace("__TITLE__", f"{symbol} [{market}]")
             .replace("__DATA__", json.dumps(data, separators=(",", ":")))
@@ -242,14 +269,15 @@ const tip = document.getElementById('tip'), meta = document.getElementById('meta
 const PADL = 8, PADR = 64, PADT = 12, PADB = 24, VOLH = 0.18; // ratio hauteur volume
 let series = DATA[TF], view = {i0: 0, n: 0}, hover = -1, dpr = 1;
 
-function fmtDate(ms, withTime) {
+function fmtDate(ms, mode) { // 0 = jour seul, 1 = +HH:MM, 2 = +HH:MM:SS
   const d = new Date(ms);
   const p = x => String(x).padStart(2,'0');
   let s = d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate());
-  if (withTime) s += ' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
+  if (mode >= 1) s += ' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
+  if (mode >= 2) s += ':'+p(d.getUTCSeconds());
   return s;
 }
-const withTime = () => TF !== 'D';
+const tmode = () => /D$/.test(TF) ? 0 : (/s$/.test(TF) ? 2 : 1); // selon le pas courant
 function fmtNum(x, dec){ return x.toLocaleString('fr-FR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
 
 function resetView(){
@@ -304,7 +332,7 @@ function draw(){
     const idx = Math.floor(k*(n-1)/Math.max(1,tlabels-1));
     const x = plotL + (idx+0.5)*cw;
     ctx.strokeStyle='#161b22'; ctx.beginPath(); ctx.moveTo(x,plotT); ctx.lineTo(x,plotB); ctx.stroke();
-    ctx.fillStyle='#8b949e'; ctx.fillText(fmtDate(slice[idx][0], withTime()), x, plotB+4*dpr);
+    ctx.fillStyle='#8b949e'; ctx.fillText(fmtDate(slice[idx][0], tmode()), x, plotB+4*dpr);
   }
 
   // chandelles + volume
@@ -331,7 +359,7 @@ function draw(){
     ctx.beginPath(); ctx.moveTo(x,plotT); ctx.lineTo(x,plotB); ctx.stroke(); ctx.setLineDash([]);
     const up = c[4]>=c[1], cls = up?'up':'dn', buyPct = c[5]>0 ? 100*c[6]/c[5] : 0;
     tip.innerHTML =
-      '<b>'+fmtDate(c[0], true)+' UTC</b><br>'+
+      '<b>'+fmtDate(c[0], 2)+' UTC</b><br>'+
       'O '+fmtNum(c[1],2)+'  H '+fmtNum(c[2],2)+'<br>'+
       'L '+fmtNum(c[3],2)+'  C <span class="'+cls+'">'+fmtNum(c[4],2)+'</span><br>'+
       'Vol '+fmtNum(c[5],3)+'  ·  achat '+buyPct.toFixed(1)+'%<br>'+
@@ -344,8 +372,8 @@ function draw(){
   } else tip.style.display='none';
 
   const s0 = slice[0][0], s1 = slice[n-1][0];
-  meta.textContent = series.length+' chandelles '+TF+' · vue '+fmtDate(s0,withTime())+
-                     ' → '+fmtDate(s1,withTime())+' UTC';
+  meta.textContent = series.length+' chandelles '+TF+' · vue '+fmtDate(s0,tmode())+
+                     ' → '+fmtDate(s1,tmode())+' UTC';
 }
 
 // interactions
@@ -398,10 +426,13 @@ resetView(); resize();
 # --------------------------------------------------------------------------- #
 def main() -> int:
     p = argparse.ArgumentParser(
-        description="Reconstruit des chandelles OHLCV D/4H/1H depuis les trades (sqlite).")
-    p.add_argument("--db", default=r"F:\data\BTCUSDT-um.db", help="base sqlite des trades")
-    p.add_argument("--tf", nargs="+", choices=TF_ORDER, default=TF_ORDER,
-                   help="pas de temps à afficher (défaut : D 4H 1H)")
+        description="Reconstruit des chandelles OHLCV à pas libre depuis les trades (sqlite).")
+    p.add_argument("--db",
+                   default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "BTCUSDT-um-api.db"),
+                   help="base sqlite des trades (défaut : data\\BTCUSDT-um-api.db)")
+    p.add_argument("--tf", nargs="+", type=parse_tf, default=[parse_tf(t) for t in TF_DEFAULT],
+                   metavar="PAS", help="pas de temps libres : <n>s|m|H|D, ex. 30s 1m 5m 1H D "
+                                       f"(défaut : {' '.join(TF_DEFAULT)})")
     p.add_argument("--tail", type=int, default=20, help="nb de chandelles affichées par pas")
     p.add_argument("--csv", default=None, metavar="DOSSIER",
                    help="écrire la série complète en CSV (un fichier par pas de temps)")
@@ -412,6 +443,12 @@ def main() -> int:
     p.add_argument("--limit", type=int, default=0,
                    help="ne scanner que les N premiers trades (aperçu rapide ; 0 = tout)")
     args = p.parse_args()
+
+    # Pas demandés, dédoublonnés, du plus large au plus fin ; base de streaming = leur PGCD
+    # (tout pas demandé en est un multiple -> chaque rollup est exact).
+    tf_ms = dict(sorted(set(args.tf), key=lambda t: -t[1]))
+    tf_order = list(tf_ms)
+    base_ms = math.gcd(*tf_ms.values())
 
     if not os.path.exists(args.db):
         print(f"ERREUR : base introuvable : {args.db}", file=sys.stderr)
@@ -432,39 +469,38 @@ def main() -> int:
               + (f" (limite {args.limit:,} trades)".replace(",", " ") if args.limit else "")
               + " — une passe, peut prendre 1–2 min sur l'historique complet…")
         t0 = time.monotonic()
-        c1h = build_1h(conn, limit=args.limit)
+        base = build_base(conn, base_ms, limit=args.limit)
     finally:
         conn.close()
 
-    if not c1h:
+    if not base:
         print("Aucun trade -> aucune chandelle.")
         return 0
 
-    candles = {"1H": c1h, "4H": rollup(c1h, TF_MS["4H"]), "D": rollup(c1h, TF_MS["D"])}
-    total = sum(c[N] for c in c1h)
+    candles = {tf: base if ms == base_ms else rollup(base, ms) for tf, ms in tf_ms.items()}
+    total = sum(c[N] for c in base)
     print(f"{total:,}".replace(",", " ")
           + f" trades agrégés en {time.monotonic() - t0:.0f}s "
-          + " / ".join(f"{len(candles[tf])} {tf}" for tf in TF_ORDER) + ".")
+          + " / ".join(f"{len(candles[tf])} {tf}" for tf in tf_order) + ".")
 
     if args.csv:
         os.makedirs(args.csv, exist_ok=True)
-        for tf in TF_ORDER:
+        for tf in tf_order:
             path = os.path.join(args.csv, f"{symbol}-{market}-{tf}.csv")
             write_csv(path, candles[tf])
             print(f"  CSV : {path}  ({len(candles[tf])} chandelles)")
 
     if args.chart:
-        chart_tfs = [tf for tf in TF_ORDER if tf in args.tf]  # respecte l'ordre D/4H/1H
         d = os.path.dirname(os.path.abspath(args.chart))
         if d:
             os.makedirs(d, exist_ok=True)
-        write_chart(args.chart, candles, chart_tfs, symbol, market)
-        print(f"  Graphique : {args.chart}  ({', '.join(f'{len(candles[tf])} {tf}' for tf in chart_tfs)})")
+        write_chart(args.chart, candles, tf_order, symbol, market)
+        print(f"  Graphique : {args.chart}  ({', '.join(f'{len(candles[tf])} {tf}' for tf in tf_order)})")
         if args.open:
             webbrowser.open(pathlib.Path(args.chart).resolve().as_uri())
 
-    for tf in args.tf:
-        print_table(tf, candles[tf], args.tail, symbol, market)
+    for tf in tf_order:
+        print_table(tf, tf_ms[tf], candles[tf], args.tail, symbol, market)
     return 0
 
 

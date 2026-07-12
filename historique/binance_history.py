@@ -68,6 +68,10 @@ import zipfile
 # --------------------------------------------------------------------------- #
 VISION = "https://data.binance.vision"
 S3_LIST = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
+
+# Dossier de données du pilier, ancré sur le script (pas le cwd) : historique\data\,
+# gitignoré à la racine. Remplace F:\data depuis le rapatriement dans le dépôt (2026-07).
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 S3_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 UA = {"User-Agent": "Mozilla/5.0 (binance-history-extractor)"}
 
@@ -477,7 +481,7 @@ def run(args: argparse.Namespace) -> int:
 
     # Sink (sqlite/csv) + reprise
     if args.format == "sqlite":
-        out = args.out or f"{symbol}-{market}-aggtrades.db"
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-{market}-api.db")
         # L'index ts différé est construit à la fin : son tri externe (milliards de
         # lignes) a besoin de place TEMP -> sur le MÊME disque que la base (jamais C:).
         tmpdir = os.path.join(os.path.dirname(os.path.abspath(out)) or ".", "_sqlite_tmp")
@@ -485,7 +489,7 @@ def run(args: argparse.Namespace) -> int:
         os.environ["TMP"] = os.environ["TEMP"] = os.environ["SQLITE_TMPDIR"] = tmpdir
         sink: SqliteSink | CsvSink = SqliteSink(out, market, symbol)
     else:
-        out = args.out or f"{symbol}-{market}-aggtrades"
+        out = args.out or os.path.join(DATA_DIR, f"{symbol}-{market}-aggtrades")
         sink = CsvSink(out, market, symbol)
 
     def finalize_if_complete() -> None:
@@ -593,8 +597,10 @@ def main() -> int:
     p.add_argument("--start", default=None, help="YYYY | YYYY-MM | YYYY-MM-DD (défaut: début dispo)")
     p.add_argument("--end", default=None, help="YYYY | YYYY-MM | YYYY-MM-DD (défaut: mois courant)")
     p.add_argument("--format", default="sqlite", choices=["sqlite", "csv"])
-    p.add_argument("--out", default=None, help="fichier .db (sqlite) ou dossier (csv)")
-    p.add_argument("--cache", default="./_binance_dumps", help="cache des zips téléchargés")
+    p.add_argument("--out", default=None,
+                   help="fichier .db (sqlite) ou dossier (csv) ; défaut : data\\<SYMBOLE>-<marché>-api.db")
+    p.add_argument("--cache", default=os.path.join(DATA_DIR, "_dumps"),
+                   help="cache des zips téléchargés (défaut : data\\_dumps)")
     p.add_argument("--prefetch", type=int, default=2, help="zips téléchargés en avance (borne le disque)")
     p.add_argument("--keep-zips", action="store_true", help="garder les zips après ingestion")
     p.add_argument("--no-verify", action="store_true", help="ne pas vérifier les SHA256")

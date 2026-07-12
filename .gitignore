@@ -10,6 +10,7 @@ obj/
 *.user
 
 # Binaires & données volumineuses (régénérables)
+historique/candles/
 *.dll
 *.exe
 *.pdb
