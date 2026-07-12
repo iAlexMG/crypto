@@ -124,7 +124,8 @@ public sealed class CryptoTickExtractorStrategy : Strategy
 
         string dbPath = ResolveDbPath(s);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-        this.LogInfo($"Base : {dbPath} | symbole {s.Name} ({s.Id}) | exchange {ExchangeSlug(s)} | connexion {s.ConnectionId}");
+        this.LogInfo($"Base : {dbPath} | symbole {s.Name} ({s.Id}) | exchange {ExchangeSlug(s)} "
+                   + $"| marché {MarketClass(s)} ({s.SymbolType}) | connexion {s.ConnectionId}");
 
         string cs = new SQLiteConnectionStringBuilder { DataSource = dbPath }.ToString();
         using var conn = new SQLiteConnection(cs);
@@ -323,10 +324,13 @@ public sealed class CryptoTickExtractorStrategy : Strategy
             string market = st is "swap" or "futures" ? "um" : "spot";
             return Path.Combine(DefaultDataDir, $"{safe}-{market}-quantower.db");
         }
-        // Autres venues : <symbole>-<exchange>-quantower.db, aligné sur la voie A homologue
-        // (ex. BTCUSDT-bybit-api.db ↔ BTCUSDT-bybit-quantower.db) — la paire à comparer se
-        // lit dans les noms, et aucune venue ne peut écraser la base d'une autre.
-        return Path.Combine(DefaultDataDir, $"{safe}-{exchange}-quantower.db");
+        // Autres venues : <symbole>-<exchange>-quantower.db pour les dérivés (périmètre
+        // projet, aligné sur la voie A homologue : BTCUSDT-bybit-api.db ↔
+        // BTCUSDT-bybit-quantower.db) ; le spot reçoit un suffixe explicite pour ne jamais
+        // partager le fichier du perp (« BTC/USDT » et « BTCUSDT » donnent le même nom sûr).
+        return Path.Combine(DefaultDataDir, MarketClass(s) == "perp"
+            ? $"{safe}-{exchange}-quantower.db"
+            : $"{safe}-{exchange}-spot-quantower.db");
     }
 
     /// <summary>Identifiant d'exchange en minuscules/alphanumérique, déduit de la CONNEXION du
@@ -335,11 +339,25 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     private static string ExchangeSlug(Symbol s)
     {
         var slug = Slug(s.Connection?.VendorName ?? s.Exchange?.ExchangeName ?? "inconnu");
+        // « Bybit V5 » → bybitv5 : la version du connecteur n'identifie pas la venue
+        // (constaté au premier run Bybit) → suffixe v<n> retiré.
+        var m = System.Text.RegularExpressions.Regex.Match(slug, @"^(.+?)v\d+$");
+        if (m.Success) slug = m.Groups[1].Value;
         return slug.Length > 0 ? slug : "inconnu";
     }
 
     private static string Slug(string raw)
         => new(raw.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+    /// <summary>« perp » pour les dérivés (le périmètre du projet), « spot » pour le reste.
+    /// Sert au nommage ET au garde-fou : « BTC/USDT » (spot) et « BTCUSDT » (perp) d'une même
+    /// venue donneraient sinon le même nom de fichier — constaté au premier run Bybit, où le
+    /// spot a été collecté à la place du perpétuel.</summary>
+    private static string MarketClass(Symbol s)
+    {
+        var st = s.SymbolType.ToString().ToLowerInvariant();
+        return st is "swap" or "futures" ? "perp" : "spot";
+    }
 
     /// <summary>Garde-fou d'identité : refuse d'écrire dans une base NON VIDE construite pour
     /// une autre venue (ex. ticks Bybit dans la base Binance validée — le scénario du premier
@@ -350,15 +368,34 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     {
         using (var any = new SQLiteCommand("SELECT EXISTS(SELECT 1 FROM trades)", c))
             if (Convert.ToInt64(any.ExecuteScalar()) == 0) return true;
-        string have = "";
-        using (var cmd = new SQLiteCommand("SELECT v FROM _meta WHERE k='exchange'", c))
-            if (cmd.ExecuteScalar() is string v) have = Slug(v);
+        string Meta(string k)
+        {
+            using var cmd = new SQLiteCommand("SELECT v FROM _meta WHERE k=@k", c);
+            cmd.Parameters.AddWithValue("@k", k);
+            return cmd.ExecuteScalar() as string ?? "";
+        }
+        string have = Slug(Meta("exchange"));
         string want = ExchangeSlug(s);
-        if (have.Length == 0 || have.Contains(want) || want.Contains(have)) return true;
-        this.LogError($"REFUS : cette base contient des ticks « {have} », le symbole choisi vient "
-                    + $"de « {want} ». Laisser « Base SQLite » vide (nommage auto par exchange) "
-                    + "ou pointer une autre base.");
-        return false;
+        if (have.Length > 0 && !have.Contains(want) && !want.Contains(have))
+        {
+            this.LogError($"REFUS : cette base contient des ticks « {have} », le symbole choisi "
+                        + $"vient de « {want} ». Laisser « Base SQLite » vide (nommage auto par "
+                        + "exchange) ou pointer une autre base.");
+            return false;
+        }
+        // Même venue mais autre marché (spot vs perp) = autres prix, autres volumes → refus
+        // aussi (constaté au premier run Bybit : BTC/USDT spot collecté à la place du perp).
+        string haveMkt = Slug(Meta("market"));
+        string haveClass = haveMkt.Length == 0 ? "" : (haveMkt is "swap" or "futures" or "perp" or "um" ? "perp" : "spot");
+        string wantClass = MarketClass(s);
+        if (haveClass.Length > 0 && haveClass != wantClass)
+        {
+            this.LogError($"REFUS : cette base contient du {haveClass} et le symbole choisi est "
+                        + $"du {wantClass} (type {s.SymbolType}). Vérifier le symbole (perp = "
+                        + "« BTCUSDT » type Swap ; spot = « BTC/USDT ») ou pointer une autre base.");
+            return false;
+        }
+        return true;
     }
 
     private static void Exec(SQLiteConnection c, string sql)

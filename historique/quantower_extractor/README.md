@@ -10,12 +10,20 @@ l'architecture : le BusinessLayer ne se connecte pas hors du process Quantower, 
 tourne **dans** Quantower.
 
 L'exchange est déduit de `Symbol.Connection.VendorName` (vérifié par réflexion v1.146.14 ;
-non renommable par l'utilisateur, contrairement au nom de connexion) et nomme la base :
+non renommable par l'utilisateur, contrairement au nom de connexion), débarrassé du suffixe
+de version du connecteur (« Bybit V5 » → `bybit`), et nomme la base avec le marché :
 
-| Connexion | Base produite (défaut) | Voie A homologue |
+| Connexion / symbole | Base produite (défaut) | Voie A homologue |
 |---|---|---|
 | Binance | `<sym>-<um\|spot>-quantower.db` (schéma d'origine, rétro-compat) | `<sym>-<um\|spot>-api.db` |
-| Bybit (et toute autre venue) | `<sym>-bybit-quantower.db` | `<sym>-bybit-api.db` |
+| Autre venue, **perp/futures** (ex. Bybit « BTCUSDT » type Swap) | `<sym>-bybit-quantower.db` | `<sym>-bybit-api.db` |
+| Autre venue, **spot** (ex. Bybit « BTC/USDT ») | `<sym>-bybit-spot-quantower.db` | — |
+
+⚠️ Le spot et le perp d'une même venue sont des instruments DIFFÉRENTS (prix décalés du
+basis, volume spot ≪ perp — mesuré au premier run Bybit : 7 267 vs 59 391 BTC sur la journée
+témoin du 2026-07-10). Le périmètre du projet est le **perp** : dans la recherche de symbole,
+prendre « BTCUSDT » (type Swap/Perpetual), pas « BTC/USDT ». Le garde-fou d'identité refuse
+de mélanger les deux dans une même base.
 
 ## Schéma produit (identique à la méthode A)
 
