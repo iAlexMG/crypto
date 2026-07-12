@@ -97,6 +97,19 @@
           }
         },
         {
+          "id": "correlation-bybit",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/correlation-1m-bybit.svg",
+          "titre": {
+            "fr": "59 040 minutes, une seule diagonale",
+            "en": "59,040 minutes, a single diagonal"
+          },
+          "description": {
+            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : tous les points tombent sur la diagonale y = x. Corrélation mesurée r = 0,999 999 98 ; 50 362 chandelles sur 59 040 sont strictement identiques.",
+            "en": "Each minute's close from route A against route B: every point falls on the y = x diagonal. Measured correlation r = 0.99999998; 50,362 of 59,040 candles are strictly identical."
+          }
+        },
+        {
           "id": "ecart-bybit",
           "type": "figure",
           "url": "assets/crypto/historique/figures/ecart-residuel-bybit.svg",
