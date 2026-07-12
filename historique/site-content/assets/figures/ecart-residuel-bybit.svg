@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 470" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" role="img" aria-label="Ce qui sépare encore les deux bases Bybit, minute par minute">
+<rect width="920" height="470" fill="#0d1117"/>
+<text x="76" y="34" font-size="19" fill="#ffffff" text-anchor="start" font-weight="600">L’écart résiduel, minute par minute</text>
+<text x="76" y="56" font-size="12.5" fill="#c3c2b7" text-anchor="start">Minutes (sur 1 440 par jour) dont la chandelle 1 m diffère entre les deux voies — comptes, volumes et high/low identiques partout ailleurs</text>
+<text x="68" y="370.0" font-size="11" fill="#898781" text-anchor="end">0</text>
+<line x1="76" y1="298.5" x2="896" y2="298.5" stroke="#21262d"/>
+<text x="68" y="302.5" font-size="11" fill="#898781" text-anchor="end">100</text>
+<line x1="76" y1="231.0" x2="896" y2="231.0" stroke="#21262d"/>
+<text x="68" y="235.0" font-size="11" fill="#898781" text-anchor="end">200</text>
+<line x1="76" y1="163.5" x2="896" y2="163.5" stroke="#21262d"/>
+<text x="68" y="167.5" font-size="11" fill="#898781" text-anchor="end">300</text>
+<line x1="76" y1="96.0" x2="896" y2="96.0" stroke="#21262d"/>
+<text x="68" y="100.0" font-size="11" fill="#898781" text-anchor="end">400</text>
+<path d="M78.8 366.0 v-125.9 q0 -3 3 -3 h8.4 q3 0 3 3 v125.9 z" fill="#898781"/>
+<path d="M98.8 366.0 v-173.9 q0 -3 3 -3 h8.4 q3 0 3 3 v173.9 z" fill="#898781"/>
+<path d="M118.8 366.0 v-144.8 q0 -3 3 -3 h8.4 q3 0 3 3 v144.8 z" fill="#898781"/>
+<path d="M138.8 366.0 v-209.6 q0 -3 3 -3 h8.4 q3 0 3 3 v209.6 z" fill="#898781"/>
+<path d="M158.8 366.0 v-238.0 q0 -3 3 -3 h8.4 q3 0 3 3 v238.0 z" fill="#898781"/>
+<path d="M178.8 366.0 v-237.3 q0 -3 3 -3 h8.4 q3 0 3 3 v237.3 z" fill="#898781"/>
+<path d="M198.8 366.0 v-197.5 q0 -3 3 -3 h8.4 q3 0 3 3 v197.5 z" fill="#898781"/>
+<path d="M218.8 366.0 v-194.1 q0 -3 3 -3 h8.4 q3 0 3 3 v194.1 z" fill="#898781"/>
+<path d="M238.8 366.0 v-171.2 q0 -3 3 -3 h8.4 q3 0 3 3 v171.2 z" fill="#898781"/>
+<path d="M258.8 366.0 v-190.1 q0 -3 3 -3 h8.4 q3 0 3 3 v190.1 z" fill="#898781"/>
+<path d="M278.8 366.0 v-134.7 q0 -3 3 -3 h8.4 q3 0 3 3 v134.7 z" fill="#898781"/>
+<path d="M298.8 366.0 v-125.2 q0 -3 3 -3 h8.4 q3 0 3 3 v125.2 z" fill="#898781"/>
+<path d="M318.8 366.0 v-76.7 q0 -3 3 -3 h8.4 q3 0 3 3 v76.7 z" fill="#898781"/>
+<path d="M338.8 366.0 v-88.1 q0 -3 3 -3 h8.4 q3 0 3 3 v88.1 z" fill="#898781"/>
+<path d="M358.8 366.0 v-90.2 q0 -3 3 -3 h8.4 q3 0 3 3 v90.2 z" fill="#898781"/>
+<path d="M378.8 366.0 v-132.7 q0 -3 3 -3 h8.4 q3 0 3 3 v132.7 z" fill="#898781"/>
+<path d="M398.8 366.0 v-120.5 q0 -3 3 -3 h8.4 q3 0 3 3 v120.5 z" fill="#898781"/>
+<path d="M418.8 366.0 v-136.1 q0 -3 3 -3 h8.4 q3 0 3 3 v136.1 z" fill="#898781"/>
+<path d="M438.8 366.0 v-117.2 q0 -3 3 -3 h8.4 q3 0 3 3 v117.2 z" fill="#898781"/>
+<path d="M458.8 366.0 v-102.3 q0 -3 3 -3 h8.4 q3 0 3 3 v102.3 z" fill="#898781"/>
+<path d="M478.8 366.0 v-95.6 q0 -3 3 -3 h8.4 q3 0 3 3 v95.6 z" fill="#898781"/>
+<path d="M498.8 366.0 v-128.6 q0 -3 3 -3 h8.4 q3 0 3 3 v128.6 z" fill="#898781"/>
+<path d="M518.8 366.0 v-136.1 q0 -3 3 -3 h8.4 q3 0 3 3 v136.1 z" fill="#898781"/>
+<path d="M538.8 366.0 v-171.8 q0 -3 3 -3 h8.4 q3 0 3 3 v171.8 z" fill="#898781"/>
+<path d="M558.8 366.0 v-171.2 q0 -3 3 -3 h8.4 q3 0 3 3 v171.2 z" fill="#898781"/>
+<path d="M578.8 366.0 v-219.8 q0 -3 3 -3 h8.4 q3 0 3 3 v219.8 z" fill="#898781"/>
+<path d="M598.8 366.0 v-98.9 q0 -3 3 -3 h8.4 q3 0 3 3 v98.9 z" fill="#898781"/>
+<path d="M618.8 366.0 v-138.1 q0 -3 3 -3 h8.4 q3 0 3 3 v138.1 z" fill="#898781"/>
+<path d="M638.8 366.0 v-168.5 q0 -3 3 -3 h8.4 q3 0 3 3 v168.5 z" fill="#898781"/>
+<path d="M658.8 366.0 v-142.8 q0 -3 3 -3 h8.4 q3 0 3 3 v142.8 z" fill="#898781"/>
+<path d="M678.8 366.0 v-136.7 q0 -3 3 -3 h8.4 q3 0 3 3 v136.7 z" fill="#898781"/>
+<path d="M698.8 366.0 v-138.1 q0 -3 3 -3 h8.4 q3 0 3 3 v138.1 z" fill="#898781"/>
+<path d="M718.8 366.0 v-118.5 q0 -3 3 -3 h8.4 q3 0 3 3 v118.5 z" fill="#898781"/>
+<path d="M738.8 366.0 v-100.3 q0 -3 3 -3 h8.4 q3 0 3 3 v100.3 z" fill="#898781"/>
+<path d="M758.8 366.0 v-93.5 q0 -3 3 -3 h8.4 q3 0 3 3 v93.5 z" fill="#898781"/>
+<path d="M778.8 366.0 v-107.7 q0 -3 3 -3 h8.4 q3 0 3 3 v107.7 z" fill="#898781"/>
+<path d="M798.8 366.0 v-123.2 q0 -3 3 -3 h8.4 q3 0 3 3 v123.2 z" fill="#898781"/>
+<path d="M818.8 366.0 v-135.4 q0 -3 3 -3 h8.4 q3 0 3 3 v135.4 z" fill="#898781"/>
+<path d="M838.8 366.0 v-135.4 q0 -3 3 -3 h8.4 q3 0 3 3 v135.4 z" fill="#898781"/>
+<path d="M858.8 366.0 v-97.6 q0 -3 3 -3 h8.4 q3 0 3 3 v97.6 z" fill="#898781"/>
+<path d="M878.8 366.0 v-71.2 q0 -3 3 -3 h8.4 q3 0 3 3 v71.2 z" fill="#898781"/>
+<line x1="76" y1="366" x2="896" y2="366" stroke="#383835" stroke-width="1.5"/>
+<text x="86.00" y="388" font-size="11" fill="#898781" text-anchor="middle">1 juin</text>
+<text x="226.00" y="388" font-size="11" fill="#898781" text-anchor="middle">8 juin</text>
+<text x="366.00" y="388" font-size="11" fill="#898781" text-anchor="middle">15 juin</text>
+<text x="506.00" y="388" font-size="11" fill="#898781" text-anchor="middle">22 juin</text>
+<text x="646.00" y="388" font-size="11" fill="#898781" text-anchor="middle">29 juin</text>
+<text x="786.00" y="388" font-size="11" fill="#898781" text-anchor="middle">6 juil.</text>
+<text x="886.00" y="388" font-size="11" fill="#898781" text-anchor="middle">11 juil.</text>
+<circle cx="886.0" cy="281.8" r="4.5" fill="#9085e9"/>
+<line x1="886.0" y1="271.8" x2="886.0" y2="183" stroke="#898781" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="892.00" y="160" font-size="11.5" fill="#c3c2b7" text-anchor="end">11 juil. : un trade de 0,001 BTC absent de la voie B</text>
+<text x="892.00" y="175" font-size="11.5" fill="#c3c2b7" text-anchor="end">— le seul sur 103,6 millions</text>
+<rect x="76" y="70" width="10" height="10" rx="2" fill="#898781"/>
+<text x="92" y="79" font-size="12" fill="#ffffff" text-anchor="start">chandelle 1 m différente — ordre intra-ms et convention de la milliseconde (mêmes trades)</text>
+<circle cx="672" cy="75" r="5" fill="#9085e9"/>
+<text x="683" y="79" font-size="12" fill="#ffffff" text-anchor="start">le trade manquant (11 juil.)</text>
+<text x="76" y="430" font-size="11.5" fill="#c3c2b7" text-anchor="start">Lecture : les archives arrondissent la milliseconde, Quantower la tronque — 496 trades sur 103,6 M glissent dans la minute voisine.</text>
+<text x="76" y="446" font-size="11.5" fill="#c3c2b7" text-anchor="start">Le reste des minutes ne diffère que par l’open/close (ordre intra-ms) ; jour par jour, comptes, volumes et high/low sont identiques.</text>
+</svg>
