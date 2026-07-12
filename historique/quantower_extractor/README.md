@@ -41,9 +41,19 @@ par jour. Les ticks sans côté agresseur sont exclus (jamais de `side` vide) et
 - Backfill depuis **« Début historique »** (défaut `2026-06-01`, cible projet juin–juillet
   2026). Cette date **prime sur la reprise** : la relever fait sauter les jours plus anciens
   (trou assumé dans la base) ; la baisser ne re-télécharge PAS les jours déjà marqués.
-- **Stop = arrêt propre** : la passe s'interrompt à la fin du jour en cours (constaté sur le
-  premier run : sans ce garde-fou, la boucle continuait après Stop jusqu'au bout de la
-  fenêtre).
+- **« Fin historique »** (optionnel, vide = aujourd'hui) : borne la fenêtre — sans borne, la
+  collecte va de Début historique à AUJOURD'HUI (même fenêtre que la voie A), c'est le
+  comportement voulu pour la validation croisée.
+- **Stop = arrêt propre** : la passe s'interrompt à la **fin du jour en cours** (un jour dont
+  le téléchargement est lancé va au bout ; le log le dit dès le clic). ⚠️ Après Stop, la
+  plateforme peut continuer d'afficher des dates qui avancent : c'est le téléchargeur
+  d'historique de **Quantower** qui vide sa file, pas la stratégie.
+- **Garde-fous** (ajoutés après le premier essai Bybit, nuit du 2026-07-12) :
+  - connexion du symbole **non active** → refus immédiat avec la cause (avant : passe
+    « vide » silencieuse, 0 tick servi, base créée pour rien) ;
+  - **identité de base** : écrire dans une base non vide construite pour une AUTRE venue est
+    refusé (ex. ticks Bybit dans la base Binance validée) — comparaison par slug d'exchange,
+    tolérante aux métadonnées des anciennes versions.
 - Paramètre **« Collecte auto toutes les N heures »** (défaut 6, `0` = one-shot) : recollecte
   seule à cet intervalle tant que la stratégie tourne. ⚠️ La collecte n'a lieu **que quand
   Quantower est ouvert** avec la connexion du symbole active — limite structurelle de la
@@ -56,6 +66,11 @@ par jour. Les ticks sans côté agresseur sont exclus (jamais de `side` vide) et
 # que pour cette commande, sans changer la configuration.
 powershell -ExecutionPolicy Bypass -File historique\quantower_extractor\deploy.ps1
 ```
+
+⚠️ **Quantower ne charge les DLL de stratégies qu'au démarrage** : après un déploiement,
+redémarrer la plateforme, sinon c'est l'ancienne version qui tourne (vérifiable au nom —
+l'ancienne s'appelait « Crypto Tick Extractor (Binance) », l'actuelle « Crypto Tick
+Extractor » tout court).
 
 Puis dans Quantower (connexion voulue active — Binance, Bybit, …) : panneau **Strategies** →
 `Crypto Tick Extractor` → paramètre **Symbole = BTCUSDT** *depuis la bonne connexion*

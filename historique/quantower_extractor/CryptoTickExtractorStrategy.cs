@@ -44,7 +44,10 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     [InputParameter("Début historique YYYY-MM-DD (cible projet : juin 2026 →)", 2)]
     public string StartDate = "2026-06-01";
 
-    [InputParameter("Collecte auto toutes les N heures (0 = one-shot)", 3, 0, 24, 1, 0)]
+    [InputParameter("Fin historique YYYY-MM-DD (vide = aujourd'hui)", 3)]
+    public string EndDate = "";
+
+    [InputParameter("Collecte auto toutes les N heures (0 = one-shot)", 4, 0, 24, 1, 0)]
     public int IntervalHours = 6;
 
     private static readonly DateTime Epoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -64,7 +67,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
             var period = TimeSpan.FromHours(IntervalHours);
             _timer = new System.Threading.Timer(_ => RunOnce(), null, period, period);
             this.LogInfo($"Collecte automatique ACTIVE : toutes les {IntervalHours} h tant que "
-                       + "la stratégie tourne (Quantower ouvert + Binance connecté). Laisser en Working.");
+                       + "la stratégie tourne (Quantower ouvert + connexion du symbole active). Laisser en Working.");
         }
         else { this.Stop(); } // mode one-shot
     }
@@ -74,6 +77,9 @@ public sealed class CryptoTickExtractorStrategy : Strategy
         // Le flag est indispensable : sans lui, la passe en cours (boucle de jours) continue
         // jusqu'au bout même après Stop — constaté sur le premier run (janvier → février…).
         _stopRequested = true;
+        this.LogInfo("Arrêt demandé — la passe s'interrompra à la FIN du jour en cours. "
+                   + "Le téléchargement d'historique déjà lancé côté plateforme peut, lui, "
+                   + "continuer d'afficher des dates : c'est Quantower qui vide sa file, pas la stratégie.");
         _timer?.Dispose();
         _timer = null;
     }
@@ -95,26 +101,44 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     {
         var s = Instrument;
         if (s is null) { this.LogError("Aucun symbole sélectionné (choisir ex. BTCUSDT)."); return; }
+        // Connexion inactive = chaque GetTickHistory rendrait 0 tick (passe « vide » silencieuse,
+        // constaté au premier essai Bybit) → refus net avec la cause.
+        if (s.Connection is { } cx && cx.State != ConnectionState.Connected)
+        {
+            this.LogError($"Connexion « {cx.Name} » non active (état : {cx.State}) — aucun tick ne "
+                        + "serait servi. Connecter la venue puis relancer.");
+            return;
+        }
         if (!DateTime.TryParseExact(StartDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var startDay))
         { this.LogError($"Début historique invalide : « {StartDate} » (attendu YYYY-MM-DD)."); return; }
         startDay = DateTime.SpecifyKind(startDay.Date, DateTimeKind.Utc);
+        DateTime? endDay = null;
+        if (!string.IsNullOrWhiteSpace(EndDate))
+        {
+            if (!DateTime.TryParseExact(EndDate.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var e))
+            { this.LogError($"Fin historique invalide : « {EndDate} » (attendu YYYY-MM-DD, ou vide)."); return; }
+            endDay = DateTime.SpecifyKind(e.Date, DateTimeKind.Utc);
+        }
 
         string dbPath = ResolveDbPath(s);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-        this.LogInfo($"Base : {dbPath} | symbole {s.Name} ({s.Id}) | connexion {s.ConnectionId}");
+        this.LogInfo($"Base : {dbPath} | symbole {s.Name} ({s.Id}) | exchange {ExchangeSlug(s)} | connexion {s.ConnectionId}");
 
         string cs = new SQLiteConnectionStringBuilder { DataSource = dbPath }.ToString();
         using var conn = new SQLiteConnection(cs);
         conn.Open();
         Pragmas(conn);
         EnsureSchema(conn);
+        if (!CheckIdentity(conn, s)) return;
         WriteMeta(conn, s);
 
         // Jour de reprise : lendemain du dernier jour complet marqué, MAIS jamais avant
         // StartDate — relever « Début historique » doit primer sur la reprise (sinon une base
         // commencée plus tôt repartirait de son dernier jour, comme le run janvier→février).
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var lastDay = endDay is DateTime bound && bound < today ? bound : today;
         DateTime fromDay = startDay;
         if (LastIngestedDay(conn) is DateTime last)
         {
@@ -123,7 +147,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
             if (resume < startDay)
                 this.LogInfo($"Reprise à {startDay:yyyy-MM-dd} (Début historique) — trou assumé depuis {last:yyyy-MM-dd}.");
         }
-        if (fromDay > today) { this.LogInfo("Déjà à jour (aucun jour à collecter)."); LogFooter(conn); return; }
+        if (fromDay > lastDay) { this.LogInfo($"Déjà à jour (aucun jour à collecter jusqu'à {lastDay:yyyy-MM-dd})."); LogFooter(conn); return; }
 
         // Purge du reliquat non marqué (jour courant partiel des runs précédents) : c'est la
         // QUEUE de la table (rowids les plus hauts) → ré-insertion conserve l'ordre chrono.
@@ -134,7 +158,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
         long grand = 0, buys = 0, sells = 0, unknown = 0;
         DateTime? firstServedDay = null;
         (double price, double size, double quoteVol)? sample = null;
-        for (var day = fromDay; day <= today; day = day.AddDays(1))
+        for (var day = fromDay; day <= lastDay; day = day.AddDays(1))
         {
             if (_stopRequested)
             { this.LogInfo($"Arrêt demandé — passe interrompue proprement avant {day:yyyy-MM-dd} (reprise sûre au prochain Start)."); break; }
@@ -310,9 +334,31 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     /// contrairement à Connection.Name), repli sur l'Exchange du symbole.</summary>
     private static string ExchangeSlug(Symbol s)
     {
-        string raw = s.Connection?.VendorName ?? s.Exchange?.ExchangeName ?? "inconnu";
-        var slug = new string(raw.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+        var slug = Slug(s.Connection?.VendorName ?? s.Exchange?.ExchangeName ?? "inconnu");
         return slug.Length > 0 ? slug : "inconnu";
+    }
+
+    private static string Slug(string raw)
+        => new(raw.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+    /// <summary>Garde-fou d'identité : refuse d'écrire dans une base NON VIDE construite pour
+    /// une autre venue (ex. ticks Bybit dans la base Binance validée — le scénario du premier
+    /// essai Bybit, où l'ancien nommage envoyait tout vers la même base). Comparaison par
+    /// slugs avec inclusion, pour tolérer les métadonnées des anciennes versions
+    /// (« Binance USDT-M Futures » ⊇ « binance »). Base vide = adopte l'identité courante.</summary>
+    private bool CheckIdentity(SQLiteConnection c, Symbol s)
+    {
+        using (var any = new SQLiteCommand("SELECT EXISTS(SELECT 1 FROM trades)", c))
+            if (Convert.ToInt64(any.ExecuteScalar()) == 0) return true;
+        string have = "";
+        using (var cmd = new SQLiteCommand("SELECT v FROM _meta WHERE k='exchange'", c))
+            if (cmd.ExecuteScalar() is string v) have = Slug(v);
+        string want = ExchangeSlug(s);
+        if (have.Length == 0 || have.Contains(want) || want.Contains(have)) return true;
+        this.LogError($"REFUS : cette base contient des ticks « {have} », le symbole choisi vient "
+                    + $"de « {want} ». Laisser « Base SQLite » vide (nommage auto par exchange) "
+                    + "ou pointer une autre base.");
+        return false;
     }
 
     private static void Exec(SQLiteConnection c, string sql)
