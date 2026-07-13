@@ -87,7 +87,12 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     /// <summary>Une passe de collecte, protégée contre le recouvrement (timer + démarrage).</summary>
     private void RunOnce()
     {
-        if (_busy) return;
+        // Log obligatoire : deux fois (premier run OKX), un Start pendant qu'une passe
+        // restait coincée dans GetTickHistory s'est « sauté » sans aucune trace, laissant
+        // croire à une stratégie morte. Le recouvrement reste interdit, mais il se DIT.
+        if (_busy)
+        { this.LogInfo("Passe précédente encore en cours (téléchargement d'historique côté "
+                     + "plateforme) — ce déclenchement est ignoré. Si ça persiste : redémarrer Quantower."); return; }
         lock (_lock)
         {
             _busy = true;
@@ -150,6 +155,13 @@ public sealed class CryptoTickExtractorStrategy : Strategy
         }
         if (fromDay > lastDay) { this.LogInfo($"Déjà à jour (aucun jour à collecter jusqu'à {lastDay:yyyy-MM-dd})."); LogFooter(conn); return; }
 
+        // Annonce de fenêtre AVANT le premier GetTickHistory : sur une venue lente (OKX :
+        // ~100 trades/requête côté API), le premier jour peut rester muet 30-60 min — sans
+        // cette ligne, impossible de vérifier depuis le log que les réglages sont les bons.
+        this.LogInfo($"Fenêtre de collecte : {fromDay:yyyy-MM-dd} → {lastDay:yyyy-MM-dd} "
+                   + $"({(lastDay - fromDay).Days + 1} jour(s)) — le premier jour peut être long "
+                   + "(le téléchargement ne se voit qu'à la fin du jour).");
+
         // Purge du reliquat non marqué (jour courant partiel des runs précédents) : c'est la
         // QUEUE de la table (rowids les plus hauts) → ré-insertion conserve l'ordre chrono.
         long fromMs = ToMs(fromDay);
@@ -197,8 +209,20 @@ public sealed class CryptoTickExtractorStrategy : Strategy
             if (pct > 0.1) this.LogError("MESURE agresseur : > 0,1 % d'inconnus exclus — volume sous-estimé, à investiguer.");
         }
         if (sample is { } t)
-            this.LogInfo($"MESURE unités : 1er tick price={t.price} size={t.size} quoteVol={t.quoteVol} "
-                       + $"(size×price={t.price * t.size:0.####} ; ≈ quoteVol ⇒ size en actif de base, ex. BTC)");
+        {
+            // Verdict CALCULÉ (v5) : l'ancien suffixe « ≈ quoteVol ⇒ actif de base » était un
+            // texte figé, lu comme une conclusion au premier run KuCoin alors que les nombres
+            // disaient l'inverse (size en contrats, facteur 1000).
+            double notional = t.price * t.size;
+            string verdict = double.IsNaN(t.quoteVol) || t.quoteVol <= 0
+                ? "quoteVol indisponible — trancher via le ratio de volumes A/B (compare_ab.py)"
+                : Math.Abs(notional / t.quoteVol - 1) < 0.05
+                    ? "size×price ≈ quoteVol ⇒ size en actif de base (ex. BTC)"
+                    : $"size×price/quoteVol = {notional / t.quoteVol:0.####} ⇒ size vraisemblablement "
+                    + $"en CONTRATS (multiplier ≈ {t.quoteVol / notional:0.######})";
+            this.LogInfo($"MESURE unités : 1er tick price={t.price} size={t.size} "
+                       + $"quoteVol={t.quoteVol} — {verdict}");
+        }
         LogFooter(conn);
     }
 
@@ -320,36 +344,58 @@ public sealed class CryptoTickExtractorStrategy : Strategy
 
     /// <summary>Symbole pour le nom de fichier : premier mot du Symbol.Name (Bybit nomme le
     /// perp « BTC/USDT Perpetual » → le suffixe décoratif sortirait dans le nom), débarrassé
-    /// de tout caractère non alphanumérique (« BTC/USDT » → BTCUSDT).</summary>
-    private static string SymbolSlug(Symbol s)
+    /// des suffixes de marché PORTÉS PAR LE NOM (OKX nomme le perp « BTC-USDT-SWAP », sans
+    /// espace : le premier mot est tout le nom → BTCUSDTSWAP au premier run OKX ; le marché a
+    /// déjà sa place dans le nom de base via MarketClass) puis de tout caractère non
+    /// alphanumérique (« BTC/USDT » → BTCUSDT, « BTC-USDT-SWAP » → BTCUSDT).
+    /// KuCoin (préparé AVANT le premier run, à confirmer au diagnostic) : le perp linéaire
+    /// se nomme <BASE>USDTM (M = margine USDT) et BTC garde son ancien code XBT côté API
+    /// (XBTUSDTM) → « USDTM » perd son M final puis « XBT » → « BTC », pour retomber sur le
+    /// slug commun de la voie A (BTCUSDT-kucoin-perp-api.db, cf. kucoin_history.py).</summary>
+    internal static string SymbolSlug(Symbol s)  // internal : partagé avec CryptoBarsExtractorStrategy
     {
         var first = s.Name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
                           .FirstOrDefault() ?? s.Name;
+        foreach (var suffix in new[] { "-SWAP", "-PERP", "-PERPETUAL" })
+            if (first.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            { first = first[..^suffix.Length]; break; }
         var slug = new string(first.Where(char.IsLetterOrDigit).ToArray());
+        if (slug.EndsWith("USDTM", StringComparison.OrdinalIgnoreCase))
+            slug = slug[..^1]; // <BASE>USDTM (KuCoin) -> <BASE>USDT
+        if (slug.StartsWith("XBT", StringComparison.OrdinalIgnoreCase))
+            slug = "BTC" + slug[3..]; // XBT (ancien code BTC, KuCoin API) -> BTC
         return slug.Length > 0 ? slug : "symbole";
     }
 
     /// <summary>Identifiant d'exchange en minuscules/alphanumérique, déduit de la CONNEXION du
     /// symbole (VendorName : « Binance », « Bybit », … — pas renommable par l'utilisateur,
     /// contrairement à Connection.Name), repli sur l'Exchange du symbole.</summary>
-    private static string ExchangeSlug(Symbol s)
+    internal static string ExchangeSlug(Symbol s)  // internal : partagé avec CryptoBarsExtractorStrategy
     {
         var slug = Slug(s.Connection?.VendorName ?? s.Exchange?.ExchangeName ?? "inconnu");
         // « Bybit V5 » → bybitv5 : la version du connecteur n'identifie pas la venue
         // (constaté au premier run Bybit) → suffixe v<n> retiré.
         var m = System.Text.RegularExpressions.Regex.Match(slug, @"^(.+?)v\d+$");
         if (m.Success) slug = m.Groups[1].Value;
+        // Alias historiques de venue : Quantower nomme la connexion OKX « OKEx » (ancien nom)
+        // → normalisé vers le slug de la voie A (BTCUSDT-okx-perp-api.db), sinon la règle
+        // « qt ↔ api en changeant le suffixe » casse (constaté au premier run OKX).
+        if (slug == "okex") slug = "okx";
+        // « KuCoin Futures » → kucoin : le segment de marché n'identifie pas la venue
+        // (il a déjà sa place via MarketClass) — préparé AVANT le premier run KuCoin.
+        if (slug.EndsWith("futures") && slug.Length > "futures".Length)
+            slug = slug[..^"futures".Length];
         return slug.Length > 0 ? slug : "inconnu";
     }
 
-    private static string Slug(string raw)
+    internal static string Slug(string raw)  // internal : partagé avec CryptoBarsExtractorStrategy
         => new(raw.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
     /// <summary>« perp » pour les dérivés (le périmètre du projet), « spot » pour le reste.
     /// Sert au nommage ET au garde-fou : « BTC/USDT » (spot) et « BTCUSDT » (perp) d'une même
     /// venue donneraient sinon le même nom de fichier — constaté au premier run Bybit, où le
     /// spot a été collecté à la place du perpétuel.</summary>
-    private static string MarketClass(Symbol s)
+    internal static string MarketClass(Symbol s)  // internal : partagé avec CryptoBarsExtractorStrategy
     {
         var st = s.SymbolType.ToString().ToLowerInvariant();
         return st is "swap" or "futures" ? "perp" : "spot";
