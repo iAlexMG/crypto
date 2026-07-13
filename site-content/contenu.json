@@ -15,8 +15,8 @@
         "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history to feed the backtesting — now broken down exchange by exchange. Binance, validated through two independent routes confronted minute by minute (r = 0.99999999), sets the model; every other venue is documented honestly, on the same outline: what it offers, the extraction routes, what we got out of it, and its observed limits — which are content just as much as the successes."
       },
       "statut": {
-        "fr": "Exchange par exchange — Binance validé",
-        "en": "Exchange by exchange — Binance validated"
+        "fr": "Exchange par exchange — Binance, Bybit, OKX, KuCoin validés",
+        "en": "Exchange by exchange — Binance, Bybit, OKX, KuCoin validated"
       },
       "sousHub": true,
       "inclure": "historique"

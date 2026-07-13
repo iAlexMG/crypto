@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 470" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" role="img" aria-label="Ce qui sépare encore les deux bases KuCoin, minute par minute">
+<rect width="920" height="470" fill="#0d1117"/>
+<text x="76" y="34" font-size="19" fill="#ffffff" text-anchor="start" font-weight="600">L’écart résiduel, minute par minute</text>
+<text x="76" y="56" font-size="12.5" fill="#c3c2b7" text-anchor="start">Minutes (sur 1 440 par jour) dont la chandelle 1 m diffère entre les deux voies — clôtures corrélées à r = 1 − 4×10⁻⁸ partout</text>
+<text x="68" y="370.0" font-size="11" fill="#898781" text-anchor="end">0</text>
+<line x1="76" y1="298.5" x2="896" y2="298.5" stroke="#21262d"/>
+<text x="68" y="302.5" font-size="11" fill="#898781" text-anchor="end">60</text>
+<line x1="76" y1="231.0" x2="896" y2="231.0" stroke="#21262d"/>
+<text x="68" y="235.0" font-size="11" fill="#898781" text-anchor="end">120</text>
+<line x1="76" y1="163.5" x2="896" y2="163.5" stroke="#21262d"/>
+<text x="68" y="167.5" font-size="11" fill="#898781" text-anchor="end">180</text>
+<line x1="76" y1="96.0" x2="896" y2="96.0" stroke="#21262d"/>
+<text x="68" y="100.0" font-size="11" fill="#898781" text-anchor="end">240</text>
+<path d="M78.8 366.0 v-71.2 q0 -3 3 -3 h8.4 q3 0 3 3 v71.2 z" fill="#898781"/>
+<text x="86.00" y="388" font-size="11" fill="#898781" text-anchor="middle">1er juin</text>
+<path d="M98.8 366.0 v-69.0 q0 -3 3 -3 h8.4 q3 0 3 3 v69.0 z" fill="#898781"/>
+<path d="M118.8 366.0 v-96.0 q0 -3 3 -3 h8.4 q3 0 3 3 v96.0 z" fill="#898781"/>
+<path d="M138.8 366.0 v-89.2 q0 -3 3 -3 h8.4 q3 0 3 3 v89.2 z" fill="#898781"/>
+<path d="M158.8 366.0 v-120.8 q0 -3 3 -3 h8.4 q3 0 3 3 v120.8 z" fill="#898781"/>
+<path d="M178.8 366.0 v-228.8 q0 -3 3 -3 h8.4 q3 0 3 3 v228.8 z" fill="#898781"/>
+<path d="M198.8 366.0 v-168.0 q0 -3 3 -3 h8.4 q3 0 3 3 v168.0 z" fill="#898781"/>
+<path d="M218.8 366.0 v-206.2 q0 -3 3 -3 h8.4 q3 0 3 3 v206.2 z" fill="#898781"/>
+<text x="226.00" y="388" font-size="11" fill="#898781" text-anchor="middle">8 juin</text>
+<path d="M238.8 366.0 v-152.2 q0 -3 3 -3 h8.4 q3 0 3 3 v152.2 z" fill="#898781"/>
+<path d="M258.8 366.0 v-101.6 q0 -3 3 -3 h8.4 q3 0 3 3 v101.6 z" fill="#898781"/>
+<path d="M278.8 366.0 v-175.9 q0 -3 3 -3 h8.4 q3 0 3 3 v175.9 z" fill="#898781"/>
+<path d="M298.8 366.0 v-165.8 q0 -3 3 -3 h8.4 q3 0 3 3 v165.8 z" fill="#898781"/>
+<path d="M318.8 366.0 v-157.9 q0 -3 3 -3 h8.4 q3 0 3 3 v157.9 z" fill="#898781"/>
+<path d="M338.8 366.0 v-151.1 q0 -3 3 -3 h8.4 q3 0 3 3 v151.1 z" fill="#898781"/>
+<path d="M358.8 366.0 v-101.6 q0 -3 3 -3 h8.4 q3 0 3 3 v101.6 z" fill="#898781"/>
+<text x="366.00" y="388" font-size="11" fill="#898781" text-anchor="middle">15 juin</text>
+<path d="M378.8 366.0 v-101.6 q0 -3 3 -3 h8.4 q3 0 3 3 v101.6 z" fill="#898781"/>
+<path d="M398.8 366.0 v-142.1 q0 -3 3 -3 h8.4 q3 0 3 3 v142.1 z" fill="#898781"/>
+<path d="M418.8 366.0 v-151.1 q0 -3 3 -3 h8.4 q3 0 3 3 v151.1 z" fill="#898781"/>
+<path d="M438.8 366.0 v-114.0 q0 -3 3 -3 h8.4 q3 0 3 3 v114.0 z" fill="#898781"/>
+<path d="M458.8 366.0 v-126.4 q0 -3 3 -3 h8.4 q3 0 3 3 v126.4 z" fill="#898781"/>
+<path d="M478.8 366.0 v-135.4 q0 -3 3 -3 h8.4 q3 0 3 3 v135.4 z" fill="#898781"/>
+<path d="M498.8 366.0 v-130.9 q0 -3 3 -3 h8.4 q3 0 3 3 v130.9 z" fill="#898781"/>
+<text x="506.00" y="388" font-size="11" fill="#898781" text-anchor="middle">22 juin</text>
+<path d="M518.8 366.0 v-153.4 q0 -3 3 -3 h8.4 q3 0 3 3 v153.4 z" fill="#898781"/>
+<path d="M538.8 366.0 v-179.2 q0 -3 3 -3 h8.4 q3 0 3 3 v179.2 z" fill="#898781"/>
+<path d="M558.8 366.0 v-173.6 q0 -3 3 -3 h8.4 q3 0 3 3 v173.6 z" fill="#898781"/>
+<path d="M578.8 366.0 v-179.2 q0 -3 3 -3 h8.4 q3 0 3 3 v179.2 z" fill="#898781"/>
+<path d="M598.8 366.0 v-168.0 q0 -3 3 -3 h8.4 q3 0 3 3 v168.0 z" fill="#898781"/>
+<path d="M618.8 366.0 v-161.2 q0 -3 3 -3 h8.4 q3 0 3 3 v161.2 z" fill="#898781"/>
+<path d="M638.8 366.0 v-143.2 q0 -3 3 -3 h8.4 q3 0 3 3 v143.2 z" fill="#898781"/>
+<text x="646.00" y="388" font-size="11" fill="#898781" text-anchor="middle">29 juin</text>
+<path d="M658.8 366.0 v-145.5 q0 -3 3 -3 h8.4 q3 0 3 3 v145.5 z" fill="#898781"/>
+<path d="M678.8 366.0 v-163.5 q0 -3 3 -3 h8.4 q3 0 3 3 v163.5 z" fill="#898781"/>
+<path d="M698.8 366.0 v-181.5 q0 -3 3 -3 h8.4 q3 0 3 3 v181.5 z" fill="#898781"/>
+<path d="M718.8 366.0 v-180.4 q0 -3 3 -3 h8.4 q3 0 3 3 v180.4 z" fill="#898781"/>
+<path d="M738.8 366.0 v-171.4 q0 -3 3 -3 h8.4 q3 0 3 3 v171.4 z" fill="#898781"/>
+<path d="M758.8 366.0 v-136.5 q0 -3 3 -3 h8.4 q3 0 3 3 v136.5 z" fill="#898781"/>
+<path d="M778.8 366.0 v-145.5 q0 -3 3 -3 h8.4 q3 0 3 3 v145.5 z" fill="#898781"/>
+<text x="786.00" y="388" font-size="11" fill="#898781" text-anchor="middle">6 juil.</text>
+<path d="M798.8 366.0 v-120.8 q0 -3 3 -3 h8.4 q3 0 3 3 v120.8 z" fill="#898781"/>
+<path d="M818.8 366.0 v-138.8 q0 -3 3 -3 h8.4 q3 0 3 3 v138.8 z" fill="#898781"/>
+<path d="M838.8 366.0 v-119.6 q0 -3 3 -3 h8.4 q3 0 3 3 v119.6 z" fill="#898781"/>
+<path d="M858.8 366.0 v-142.1 q0 -3 3 -3 h8.4 q3 0 3 3 v142.1 z" fill="#898781"/>
+<path d="M878.8 366.0 v-129.8 q0 -3 3 -3 h8.4 q3 0 3 3 v129.8 z" fill="#898781"/>
+<text x="886.00" y="388" font-size="11" fill="#898781" text-anchor="middle">11 juil.</text>
+<rect x="76" y="70" width="10" height="10" rx="2" fill="#898781"/>
+<text x="92" y="79" font-size="12" fill="#ffffff" text-anchor="start">chandelle 1 m différente entre trades agrégés (A) et chandelle servie (B)</text>
+</svg>
