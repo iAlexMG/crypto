@@ -48,6 +48,7 @@ import datetime as dt
 import math
 import os
 import sqlite3
+import time
 
 FETCH = 500_000  # lignes par fetchmany (streaming, ~5 min par base de 100 M)
 
@@ -102,11 +103,19 @@ class Voie:
             "SELECT ts, price, size, side FROM trades WHERE ts>=? AND ts<? ORDER BY trade_id",
             (t0, t1))
         days, minutes = self.days, self.minutes
+        t_scan = t_aff = time.monotonic()
         while True:
             chunk = cur.fetchmany(FETCH)
             if not chunk:
                 break
             self.rows += len(chunk)
+            now = time.monotonic()
+            if now - t_aff >= 15:       # signe de vie : les gros scans durent des minutes
+                t_aff = now
+                el = now - t_scan
+                print(f"    voie {self.name} : {self.rows / 1e6:.0f} M lignes lues "
+                      f"({self.rows / el / 1000:.0f} k/s, {el:.0f}s) — "
+                      f"rendu au {iso(chunk[-1][0])[:16]}", flush=True)
             for ts, price, size, side in chunk:
                 size *= self.mult
                 d = dt.datetime.fromtimestamp(ts / 1000, dt.timezone.utc).date().isoformat()

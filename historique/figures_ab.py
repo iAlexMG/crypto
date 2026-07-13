@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
 r"""Figures A/B des pages hist-* — gabarit VERSIONNE (stdlib seule).
 
-Genere les trois figures du gabarit hist-bybit pour une venue dont la voie B est
-en CHANDELLES 1 m (CryptoBarsExtractorStrategy — cas KuCoin, OKX en barres) :
+Genere les trois figures du gabarit hist-bybit pour chaque venue (voie B en
+ticks — Binance/Bybit — ou en chandelles 1 m — OKX/KuCoin/Bitget) :
 
   1. historiques-jumeaux-<venue>.svg  — une journee temoin, voie A (trades agreges
-     en 1 m) en haut, voie B (chandelles servies) en bas : bande high-low + cloture ;
+     en 1 m) en haut, voie B en bas : bande high-low + cloture ;
   2. correlation-1m-<venue>.svg       — nuage clotures A (x) contre B (y), 1 point
      sur 12, r=1.9, opacite 0.42 (memes conventions que la figure Bybit) ;
   3. ecart-residuel-<venue>.svg       — par jour, minutes dont la chandelle differe.
+
+PLAGE COMMUNE (decision utilisateur 2026-07-12) : pour que le visiteur compare
+les venues entre elles, TOUTES les figures partagent la meme fenetre —
+2026-06-01 00:00 -> 2026-07-10 24:00 UTC (40 jours) — et la meme journee temoin,
+le 2026-06-05 (jour le plus actif de la fenetre : ~64 k$ -> ~59 k$, volumes ~2x
+la moyenne partout). Ces valeurs sont les DEFAUTS ; un garde-fou refuse de
+generer si une base ne couvre pas toute la fenetre (--force pour outrepasser).
+Meme instrument (BTCUSDT perp) + meme fenetre + memes regles d'arrondi des axes
+=> echelles identiques d'une venue a l'autre.
+
+Le registre VENUES porte la config par venue (bases, multiplier de la voie B,
+libelles) : `--venue kucoin` suffit, `--tous` regenere les 5 venues d'un coup.
+Les drapeaux explicites (--a/--b/--mult-b/...) restent prioritaires.
 
 Reutilise compare_ab.Voie (detection auto trades/bars, --mult-b, lecture seule).
 Les chiffres affiches (r, chandelles identiques, rendements) sont RECALCULES ici —
@@ -18,10 +31,10 @@ Pourquoi versionne : les figures Bybit avaient ete faites par scripts ephemeres
 (seuls les SVG restent) — meme lecon que compare_ab.py, le gabarit merite d'etre
 conserve. Palette du pilier : bleu #3987e5 = voie A, aqua #199e70 = voie B.
 
-EXEMPLE (KuCoin) :
-  python figures_ab.py --a data\BTCUSDT-kucoin-perp-api.db --b data\BTCUSDT-kucoin-perp-qt1m.db ^
-      --start 2026-06-01 --end 2026-07-12 --mult-b 0.001 --venue kucoin --venue-nom KuCoin ^
-      --b-nature "chandelles 1 m Quantower" --jumeaux-day 2026-06-05
+EXEMPLES :
+  python figures_ab.py --venue kucoin           # une venue, tout par defaut
+  python figures_ab.py --tous                   # les 5 venues, fenetre commune
+  python figures_ab.py --venue bitget --out C:\tmp\figs   # sortie ailleurs
 """
 from __future__ import annotations
 
@@ -34,6 +47,27 @@ from compare_ab import Voie, day_ms, pearson
 BG, GRID, DIAG = "#0d1117", "#21262d", "#383835"
 BLEU, AQUA, GRIS, BLANC, SOUS = "#3987e5", "#199e70", "#898781", "#ffffff", "#c3c2b7"
 MOIS_FR = {6: "juin", 7: "juil.", 8: "août", 9: "sept.", 5: "mai"}
+
+# Fenetre commune a toutes les venues (voir docstring) — --start/--end EXCLUS.
+FENETRE_START = "2026-06-01"
+FENETRE_END = "2026-07-11"        # exclus -> dernier jour plein : 2026-07-10
+JUMEAUX_DAY = "2026-06-05"
+
+DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+# Registre des venues : la voie A est toujours data\BTCUSDT-<slug>-perp-api.db.
+VENUES = {
+    "binance": dict(nom="Binance", b="BTCUSDT-binance-perp-qt.db", mult_b=1.0,
+                    b_nature="ticks Quantower"),
+    "bybit":   dict(nom="Bybit",   b="BTCUSDT-bybit-perp-qt.db",   mult_b=1.0,
+                    b_nature="ticks Quantower"),
+    "okx":     dict(nom="OKX",     b="BTCUSDT-okx-perp-qt1m.db",   mult_b=0.01,
+                    b_nature="chandelles 1 m Quantower"),
+    "kucoin":  dict(nom="KuCoin",  b="BTCUSDT-kucoin-perp-qt1m.db", mult_b=0.001,
+                    b_nature="chandelles 1 m Quantower"),
+    "bitget":  dict(nom="Bitget",  b="BTCUSDT-bitget-perp-rest1m.db", mult_b=1.0,
+                    b_nature="chandelles 1 m de l’API de marché"),
+}
 
 
 def fr_int(n: int) -> str:
@@ -54,22 +88,64 @@ def jour_fr(d: dt.date) -> str:
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Figures A/B du gabarit hist-*.")
-    p.add_argument("--a", required=True)
-    p.add_argument("--b", required=True)
-    p.add_argument("--start", required=True)
-    p.add_argument("--end", required=True, help="fin fenetre UTC (YYYY-MM-DD, EXCLUS)")
-    p.add_argument("--mult-b", type=float, default=1.0)
-    p.add_argument("--venue", required=True, help="slug pour les noms de fichiers (kucoin)")
-    p.add_argument("--venue-nom", required=True, help="nom affiche (KuCoin)")
-    p.add_argument("--b-nature", default="Quantower",
-                   help="nature de la voie B pour les legendes (ex. « chandelles 1 m Quantower »)")
-    p.add_argument("--jumeaux-day", required=True, help="journee temoin de la figure 1 (YYYY-MM-DD)")
+    p.add_argument("--venue", choices=sorted(VENUES),
+                   help="venue du registre (config auto ; drapeaux explicites prioritaires)")
+    p.add_argument("--tous", action="store_true", help="toutes les venues du registre")
+    p.add_argument("--a", default=None, help="base voie A (defaut : registre)")
+    p.add_argument("--b", default=None, help="base voie B (defaut : registre)")
+    p.add_argument("--start", default=FENETRE_START)
+    p.add_argument("--end", default=FENETRE_END, help="fin fenetre UTC (YYYY-MM-DD, EXCLUS)")
+    p.add_argument("--mult-b", type=float, default=None, help="defaut : registre")
+    p.add_argument("--venue-nom", default=None, help="nom affiche (defaut : registre)")
+    p.add_argument("--b-nature", default=None,
+                   help="nature de la voie B pour les legendes (defaut : registre)")
+    p.add_argument("--jumeaux-day", default=JUMEAUX_DAY,
+                   help="journee temoin de la figure 1 (YYYY-MM-DD)")
     p.add_argument("--out", default=os.path.join("site-content", "assets", "figures"))
+    p.add_argument("--force", action="store_true",
+                   help="generer meme si une base ne couvre pas toute la fenetre")
     args = p.parse_args()
 
+    if not args.tous and not args.venue:
+        p.error("--venue <slug> ou --tous requis")
+    rc = 0
+    for slug in (sorted(VENUES) if args.tous else [args.venue]):
+        cfg = VENUES[slug]
+        ns = argparse.Namespace(
+            venue=slug,
+            venue_nom=args.venue_nom or cfg["nom"],
+            a=args.a or os.path.join(DATA, f"BTCUSDT-{slug}-perp-api.db"),
+            b=args.b or os.path.join(DATA, cfg["b"]),
+            mult_b=args.mult_b if args.mult_b is not None else cfg["mult_b"],
+            b_nature=args.b_nature or cfg["b_nature"],
+            start=args.start, end=args.end, jumeaux_day=args.jumeaux_day,
+            out=args.out, force=args.force)
+        print(f"\n== {ns.venue_nom} ==")
+        rc = max(rc, generer(ns))
+    return rc
+
+
+def generer(args: argparse.Namespace) -> int:
     t0, t1 = day_ms(args.start), day_ms(args.end)
     A = Voie("A", args.a, 1.0)
     B = Voie("B", args.b, args.mult_b)
+
+    # Garde-fou plage commune : chaque voie doit couvrir TOUTE la fenetre, sinon
+    # les figures de cette venue ne seraient pas comparables aux autres.
+    for v in (A, B):
+        cov = v.coverage()
+        manque = (cov is None or cov[0] > t0 + 60_000 or cov[1] < t1 - 60_000)
+        if manque:
+            def iso(ms): return dt.datetime.fromtimestamp(
+                ms / 1000, dt.timezone.utc).isoformat()
+            etendue = "base vide" if cov is None else f"{iso(cov[0])} -> {iso(cov[1])}"
+            msg = (f"couverture voie {v.name} incomplete ({etendue}) pour la fenetre "
+                   f"{args.start} -> {args.end} (exclus)")
+            if not args.force:
+                print(f"REFUS : {msg}. Completer la base ou --force.")
+                return 1
+            print(f"ATTENTION (--force) : {msg}.")
+
     for v in (A, B):
         v.scan(t0, t1)
         print(f"Voie {v.name} ({v.kind}) : {fr_int(v.rows)} lignes, {len(v.minutes)} minutes")
@@ -104,7 +180,7 @@ def main() -> int:
 
     os.makedirs(args.out, exist_ok=True)
     fig_correlation(args, common, ca, cb, r_clot, ident, r_rend)
-    fig_ecart(args, par_jour)
+    fig_ecart(args, par_jour, r_clot, B)
     fig_jumeaux(args, A, B)
     return 0
 
@@ -158,8 +234,10 @@ def fig_correlation(args, common, ca, cb, r_clot, ident, r_rend) -> None:
     _write(args, f"correlation-1m-{args.venue}.svg", "\n".join(s))
 
 
-def fig_ecart(args, par_jour: dict[str, int]) -> None:
+def fig_ecart(args, par_jour: dict[str, int], r_clot: float, B: Voie) -> None:
     """Barres par jour des minutes differentes — gabarit ecart-residuel-bybit.svg."""
+    b_legende = ("chandelle reconstruite des ticks (B)" if B.kind == "trades"
+                 else "chandelle servie (B)")
     d0 = dt.date.fromisoformat(args.start)
     d1 = dt.date.fromisoformat(args.end)  # exclus
     jours = []
@@ -186,7 +264,7 @@ def fig_ecart(args, par_jour: dict[str, int]) -> None:
          f'font-weight="600">L’écart résiduel, minute par minute</text>',
          f'<text x="76" y="56" font-size="12.5" fill="{SOUS}" text-anchor="start">'
          f'Minutes (sur 1 440 par jour) dont la chandelle 1 m diffère entre les deux voies'
-         f' — clôtures corrélées à r = 1 − 4×10⁻⁸ partout</text>',
+         f' — clôtures corrélées à r = {fr_r(r_clot, 8)}</text>',
          f'<text x="68" y="370.0" font-size="11" fill="{GRIS}" text-anchor="end">0</text>']
     v = pas
     while v <= top:
@@ -208,7 +286,7 @@ def fig_ecart(args, par_jour: dict[str, int]) -> None:
                      f'text-anchor="middle">{jour_fr(d)}</text>')
     s += [f'<rect x="76" y="70" width="10" height="10" rx="2" fill="{GRIS}"/>',
           f'<text x="92" y="79" font-size="12" fill="{BLANC}" text-anchor="start">'
-          f'chandelle 1 m différente entre trades agrégés (A) et chandelle servie (B)</text>']
+          f'chandelle 1 m différente entre trades agrégés (A) et {b_legende}</text>']
     if total == 0:
         # cas OKX : aucune chandelle ne differe — le dire en toutes lettres plutot
         # que de laisser un graphique vide qui semble casse
@@ -269,7 +347,8 @@ def fig_jumeaux(args, A: Voie, B: Voie) -> None:
          f'voie A — {fr_int(sum(1 for _ in sa))} chandelles agrégées des trades d’archives</text>',
          f'<rect x="440" y="70" width="10" height="10" rx="2" fill="{AQUA}"/>',
          f'<text x="456" y="79" font-size="12" fill="{BLANC}" text-anchor="start">'
-         f'voie B — {fr_int(sum(1 for _ in sb))} chandelles servies ({args.b_nature})</text>']
+         f'voie B — {fr_int(sum(1 for _ in sb))} chandelles '
+         f'{"reconstruites" if B.kind == "trades" else "servies"} ({args.b_nature})</text>']
     s += panel(sa, 106.0, 306.0, BLEU, "voie A")
     s += panel(sb, 336.0, 536.0, AQUA, "voie B")
     for hh in (0, 4, 8, 12, 16, 20, 24):
