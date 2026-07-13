@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 580" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" role="img" aria-label="La même journée KuCoin par les deux voies, A en haut, B en bas">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 580" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" role="img" aria-label="La journée témoin KuCoin par les deux voies, A en haut, B en bas">
 <rect width="920" height="580" fill="#0d1117"/>
-<text x="76" y="34" font-size="19" fill="#ffffff" text-anchor="start" font-weight="600">La même journée, reconstruite par les deux voies</text>
+<text x="76" y="34" font-size="19" fill="#ffffff" text-anchor="start" font-weight="600">La journée témoin, reconstruite par les deux voies</text>
 <text x="76" y="56" font-size="12.5" fill="#c3c2b7" text-anchor="start">BTCUSDT perpétuel KuCoin, 5 juin 2026 (UTC) — bande high-low et clôture de chaque minute</text>
 <rect x="76" y="70" width="10" height="10" rx="2" fill="#3987e5"/>
 <text x="92" y="79" font-size="12" fill="#ffffff" text-anchor="start">voie A — 1 440 chandelles agrégées des trades d’archives</text>

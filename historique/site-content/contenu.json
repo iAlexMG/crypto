@@ -20,42 +20,81 @@
       },
       "items": [
         {
-          "id": "jumeaux",
+          "id": "historique-binance",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/historiques-jumeaux-binance.svg",
+          "url": "assets/crypto/historique/figures/binance-historique-complet.svg",
           "titre": {
-            "fr": "La même journée, reconstruite par les deux voies",
-            "en": "The same day, rebuilt by both routes"
+            "fr": "Quarante jours, deux historiques superposés",
+            "en": "Forty days, two histories overlaid"
           },
           "description": {
-            "fr": "Le 5 juin 2026 — le jour le plus agité de la fenêtre (~64 k$ → ~59 k$, volumes doublés) — reconstruit des deux côtés : en haut, 1 440 chandelles agrégées des 5 536 159 trades d'archives (voie A) ; en bas, les 1 440 chandelles reconstruites des ticks Quantower (voie B). Bande high-low et clôture de chaque minute se superposent panneau contre panneau.",
-            "en": "June 5, 2026 — the wildest day of the window (~$64k → ~$59k, twice the volume) — rebuilt on both sides: on top, 1,440 candles aggregated from the 5,536,159 archive trades (route A); below, the 1,440 candles rebuilt from the Quantower ticks (route B). High-low band and each minute's close overlap panel for panel."
+            "fr": "Toute la fenêtre commune (1er juin → 10 juillet 2026), reconstruite par les deux voies et tracée l'une par-dessus l'autre : bande high-low et clôture de chaque minute. Une seule courbe reste visible — la voie B recouvre la voie A point pour point.",
+            "en": "The whole common window (June 1 → July 10, 2026), rebuilt by both routes and drawn one on top of the other: high-low band and each minute's close. Only one curve remains visible — route B covers route A point for point."
           }
         },
         {
-          "id": "correlation",
+          "id": "correlation-historique-binance",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/correlation-1m-binance.svg",
+          "url": "assets/crypto/historique/figures/binance-correlation-historique.svg",
           "titre": {
-            "fr": "57 600 minutes, une seule diagonale",
-            "en": "57,600 minutes, a single diagonal"
+            "fr": "Le test sur tout l'historique : un seul pic, au décalage zéro",
+            "en": "The full-history test: a single spike, at lag zero"
           },
           "description": {
-            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : tous les points tombent sur la diagonale y = x. Corrélation mesurée r = 0,999 999 99 ; 53 746 chandelles sur 57 600 sont strictement identiques.",
-            "en": "Each minute's close from route A against route B: every point falls on the y = x diagonal. Measured correlation r = 0.99999999; 53,746 of 57,600 candles are strictly identical."
+            "fr": "La corrélation croisée des rendements 1 minute, la voie B décalée de −30 à +30 minutes : r = 0,999 96 au décalage 0, plus rien ailleurs. Deux historiques ne se ressemblent à ce point que s'ils racontent exactement les mêmes minutes — toutes les 57 600.",
+            "en": "The cross-correlation of 1-minute returns, route B shifted from −30 to +30 minutes: r = 0.99996 at lag 0, nothing anywhere else. Two histories only match this closely if they tell exactly the same minutes — all 57,600 of them."
           }
         },
         {
-          "id": "ecart",
+          "id": "ecart-historique-binance",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/ecart-residuel-binance.svg",
+          "url": "assets/crypto/historique/figures/binance-ecart-historique.svg",
           "titre": {
-            "fr": "L'écart résiduel, expliqué",
-            "en": "The residual gap, explained"
+            "fr": "L'écart entre les deux historiques, minute par minute",
+            "en": "The gap between the two histories, minute by minute"
           },
           "description": {
-            "fr": "Les minutes dont la chandelle diffère, jour par jour. L'essentiel est un artefact d'ordre : à même milliseconde, la voie A garde l'ordre officiel des trade_id que la voie B n'a pas — open/close bougent, les prix restent identiques. La seule vraie divergence (9–10 juillet) pèse 0,0015 % du volume.",
-            "en": "Minutes whose candle differs, day by day. Most of it is an ordering artifact: within the same millisecond, route A keeps the official trade_id order that route B lacks — open/close move, prices stay identical. The only real divergence (July 9–10) weighs 0.0015% of the volume."
+            "fr": "Clôture voie B − clôture voie A sur chaque minute de la fenêtre : écart maximal 17 $, moyenne des écarts absolus 0,0 $ — sur un prix d'environ 60 000 $. 53 746 chandelles sur 57 600 sont strictement identiques (OHLC).",
+            "en": "Route B close − route A close on every minute of the window: maximum gap $17, average absolute gap $0.0 — on a price of roughly $60,000. 53,746 of 57,600 candles are strictly identical (OHLC)."
+          }
+        },
+        {
+          "id": "journee-binance",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/binance-journee-temoin.svg",
+          "titre": {
+            "fr": "La journée témoin, seconde par seconde — et au trade près",
+            "en": "The reference day, second by second — down to the trade"
+          },
+          "description": {
+            "fr": "Le 5 juin 2026 (5 536 159 trades côté archives), agrégé à la seconde sur les deux panneaux ; en bas, le zoom de vingt secondes au cœur du décrochage (16:12:10 → :30 UTC) où chaque point est un trade — 7 118 de chaque côté, superposés jusqu'au recouvrement.",
+            "en": "June 5, 2026 (5,536,159 trades on the archive side), aggregated to the second on both panels; below, the twenty-second zoom into the heart of the sell-off (16:12:10 → :30 UTC) where every dot is a trade — 7,118 on each side, overlapping to the point of covering each other."
+          }
+        },
+        {
+          "id": "correlation-journee-binance",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/binance-correlation-journee.svg",
+          "titre": {
+            "fr": "Le même test, sur la seule journée témoin",
+            "en": "The same test, on the reference day alone"
+          },
+          "description": {
+            "fr": "La corrélation croisée refaite à la résolution de la journée — la seconde : r = 0,998 42 au décalage 0 sur 86 147 secondes communes, plus rien dès ±1 s. La concordance tient jusqu'à l'échelle la plus fine que les deux voies partagent.",
+            "en": "The cross-correlation redone at the day's resolution — the second: r = 0.99842 at lag 0 over 86,147 common seconds, nothing from ±1 s on. The agreement holds down to the finest scale both routes share."
+          }
+        },
+        {
+          "id": "ecart-journee-binance",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/binance-ecart-journee.svg",
+          "titre": {
+            "fr": "L'écart sur la journée témoin",
+            "en": "The gap on the reference day"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A au fil de la journée, seconde par seconde : écart maximal 13 $, moyenne des écarts absolus 0,1 $.",
+            "en": "Route B close − route A close across the day, second by second: maximum gap $13, average absolute gap $0.1."
           }
         }
       ],
@@ -84,42 +123,81 @@
       },
       "items": [
         {
-          "id": "jumeaux-bybit",
+          "id": "historique-bybit",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/historiques-jumeaux-bybit.svg",
+          "url": "assets/crypto/historique/figures/bybit-historique-complet.svg",
           "titre": {
-            "fr": "La même journée, cette fois chez Bybit",
-            "en": "The same day, this time on Bybit"
+            "fr": "Quarante jours, deux historiques superposés",
+            "en": "Forty days, two histories overlaid"
           },
           "description": {
-            "fr": "Le 5 juin 2026 — la journée témoin du banc — vue par Bybit : en haut, 1 440 chandelles agrégées des 5 943 559 trades bruts d’archives (voie A) ; en bas, les 1 440 chandelles reconstruites des ticks Quantower (voie B). Bande high-low et clôture de chaque minute se superposent panneau contre panneau.",
-            "en": "June 5, 2026 — the bench’s reference day — as seen by Bybit: on top, 1,440 candles aggregated from the 5,943,559 raw archive trades (route A); below, the 1,440 candles rebuilt from the Quantower ticks (route B). High-low band and each minute’s close overlap panel for panel."
+            "fr": "Toute la fenêtre commune (1er juin → 10 juillet 2026), reconstruite par les deux voies et tracée l'une par-dessus l'autre : bande high-low et clôture de chaque minute. Une seule courbe reste visible — la voie B recouvre la voie A point pour point.",
+            "en": "The whole common window (June 1 → July 10, 2026), rebuilt by both routes and drawn one on top of the other: high-low band and each minute's close. Only one curve remains visible — route B covers route A point for point."
           }
         },
         {
-          "id": "correlation-bybit",
+          "id": "correlation-historique-bybit",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/correlation-1m-bybit.svg",
+          "url": "assets/crypto/historique/figures/bybit-correlation-historique.svg",
           "titre": {
-            "fr": "57 600 minutes, une seule diagonale",
-            "en": "57,600 minutes, a single diagonal"
+            "fr": "Le test sur tout l'historique : un seul pic, au décalage zéro",
+            "en": "The full-history test: a single spike, at lag zero"
           },
           "description": {
-            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : tous les points tombent sur la diagonale y = x. Corrélation mesurée r = 0,999 999 98 ; 49 154 chandelles sur 57 600 sont strictement identiques.",
-            "en": "Each minute’s close from route A against route B: every point falls on the y = x diagonal. Measured correlation r = 0.99999998; 49,154 of 57,600 candles are strictly identical."
+            "fr": "La corrélation croisée des rendements 1 minute, la voie B décalée de −30 à +30 minutes : r = 0,999 87 au décalage 0, plus rien ailleurs. Deux historiques ne se ressemblent à ce point que s'ils racontent exactement les mêmes minutes — toutes les 57 600.",
+            "en": "The cross-correlation of 1-minute returns, route B shifted from −30 to +30 minutes: r = 0.99987 at lag 0, nothing anywhere else. Two histories only match this closely if they tell exactly the same minutes — all 57,600 of them."
           }
         },
         {
-          "id": "ecart-bybit",
+          "id": "ecart-historique-bybit",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/ecart-residuel-bybit.svg",
+          "url": "assets/crypto/historique/figures/bybit-ecart-historique.svg",
           "titre": {
-            "fr": "L’écart résiduel : une convention de milliseconde",
-            "en": "The residual gap: a millisecond convention"
+            "fr": "L'écart entre les deux historiques, minute par minute",
+            "en": "The gap between the two histories, minute by minute"
           },
           "description": {
-            "fr": "Les minutes dont la chandelle diffère, jour par jour. Tout tient à l’horodatage : les archives arrondissent la fraction de milliseconde, Quantower la tronque — l’open/close bouge et, à la frontière, 495 trades sur 102,9 millions glissent dans la minute voisine. Le seul trade jamais perdu par la voie B — 0,001 BTC, le 11 juillet — tombe juste après la fenêtre commune.",
-            "en": "The minutes whose candle differs, day by day. It all comes down to timestamps: the archives round the sub-millisecond fraction, Quantower truncates it — the open/close moves and, at the boundary, 495 trades out of 102.9 million slide into the neighbouring minute. The only trade route B ever lost — 0.001 BTC, on July 11 — falls just past the common window."
+            "fr": "Clôture voie B − clôture voie A sur chaque minute de la fenêtre : écart maximal 15 $, moyenne des écarts absolus 0,1 $ — sur un prix d'environ 60 000 $. 49 154 chandelles sur 57 600 sont strictement identiques (OHLC).",
+            "en": "Route B close − route A close on every minute of the window: maximum gap $15, average absolute gap $0.1 — on a price of roughly $60,000. 49,154 of 57,600 candles are strictly identical (OHLC)."
+          }
+        },
+        {
+          "id": "journee-bybit",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bybit-journee-temoin.svg",
+          "titre": {
+            "fr": "La journée témoin, seconde par seconde — et au trade près",
+            "en": "The reference day, second by second — down to the trade"
+          },
+          "description": {
+            "fr": "Le 5 juin 2026 (5 943 559 trades côté archives), agrégé à la seconde sur les deux panneaux ; en bas, le zoom de vingt secondes au cœur du décrochage (16:12:10 → :30 UTC) où chaque point est un trade — 6 936 de chaque côté, superposés jusqu'au recouvrement.",
+            "en": "June 5, 2026 (5,943,559 trades on the archive side), aggregated to the second on both panels; below, the twenty-second zoom into the heart of the sell-off (16:12:10 → :30 UTC) where every dot is a trade — 6,936 on each side, overlapping to the point of covering each other."
+          }
+        },
+        {
+          "id": "correlation-journee-bybit",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bybit-correlation-journee.svg",
+          "titre": {
+            "fr": "Le même test, sur la seule journée témoin",
+            "en": "The same test, on the reference day alone"
+          },
+          "description": {
+            "fr": "La corrélation croisée refaite à la résolution de la journée — la seconde : r = 0,995 30 au décalage 0 sur 81 929 secondes communes, plus rien dès ±1 s. La concordance tient jusqu'à l'échelle la plus fine que les deux voies partagent.",
+            "en": "The cross-correlation redone at the day's resolution — the second: r = 0.99530 at lag 0 over 81,929 common seconds, nothing from ±1 s on. The agreement holds down to the finest scale both routes share."
+          }
+        },
+        {
+          "id": "ecart-journee-bybit",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bybit-ecart-journee.svg",
+          "titre": {
+            "fr": "L'écart sur la journée témoin",
+            "en": "The gap on the reference day"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A au fil de la journée, seconde par seconde : écart maximal 26 $, moyenne des écarts absolus 0,2 $.",
+            "en": "Route B close − route A close across the day, second by second: maximum gap $26, average absolute gap $0.2."
           }
         }
       ],
@@ -148,48 +226,87 @@
       },
       "items": [
         {
-          "id": "jumeaux-okx",
+          "id": "historique-okx",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/historiques-jumeaux-okx.svg",
+          "url": "assets/crypto/historique/figures/okx-historique-complet.svg",
           "titre": {
-            "fr": "La même journée, reconstruite par les deux voies",
-            "en": "The same day, rebuilt by both routes"
+            "fr": "Quarante jours, deux historiques superposés",
+            "en": "Forty days, two histories overlaid"
           },
           "description": {
-            "fr": "Le 5 juin 2026 — la journée du décrochage des pages Binance et Bybit — chez le plus gros exchange du banc : en haut, 1 440 chandelles agrégées des 10 613 320 trades d’archives (voie A) ; en bas, les 1 440 chandelles servies par la plateforme (voie B). Les deux panneaux sont indiscernables — et cette fois ce n’est pas une figure de style.",
-            "en": "June 5, 2026 — the sell-off day from the Binance and Bybit pages — on the bench’s biggest exchange: on top, 1,440 candles aggregated from the 10,613,320 archive trades (route A); below, the 1,440 candles served by the platform (route B). The two panels are indistinguishable — and this time that is not a figure of speech."
+            "fr": "Toute la fenêtre commune (1er juin → 10 juillet 2026), reconstruite par les deux voies et tracée l'une par-dessus l'autre : bande high-low et clôture de chaque minute. Une seule courbe reste visible — la voie B recouvre la voie A point pour point.",
+            "en": "The whole common window (June 1 → July 10, 2026), rebuilt by both routes and drawn one on top of the other: high-low band and each minute's close. Only one curve remains visible — route B covers route A point for point."
           }
         },
         {
-          "id": "correlation-okx",
+          "id": "correlation-historique-okx",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/correlation-1m-okx.svg",
+          "url": "assets/crypto/historique/figures/okx-correlation-historique.svg",
           "titre": {
-            "fr": "57 600 minutes, une seule diagonale — au sens strict",
-            "en": "57,600 minutes, a single diagonal — in the strict sense"
+            "fr": "Le test sur tout l'historique : un seul pic, au décalage zéro",
+            "en": "The full-history test: a single spike, at lag zero"
           },
           "description": {
-            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : r = 1,000 000 00 mesuré, sans arrondi de complaisance — les 57 600 chandelles OHLC sont strictement identiques, l’écart maximal des clôtures est 0,00 $.",
-            "en": "Each minute’s close from route A against route B: measured r = 1.00000000, no charitable rounding — all 57,600 OHLC candles are strictly identical, the maximum close gap is $0.00."
+            "fr": "La corrélation croisée des rendements 1 minute, la voie B décalée de −30 à +30 minutes : r = 1,000 00 au décalage 0, plus rien ailleurs. Deux historiques ne se ressemblent à ce point que s'ils racontent exactement les mêmes minutes — toutes les 57 600.",
+            "en": "The cross-correlation of 1-minute returns, route B shifted from −30 to +30 minutes: r = 1.00000 at lag 0, nothing anywhere else. Two histories only match this closely if they tell exactly the same minutes — all 57,600 of them."
           }
         },
         {
-          "id": "ecart-okx",
+          "id": "ecart-historique-okx",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/ecart-residuel-okx.svg",
+          "url": "assets/crypto/historique/figures/okx-ecart-historique.svg",
           "titre": {
-            "fr": "L’écart résiduel : zéro",
-            "en": "The residual gap: zero"
+            "fr": "L'écart entre les deux historiques, minute par minute",
+            "en": "The gap between the two histories, minute by minute"
           },
           "description": {
-            "fr": "La figure des autres exchanges, vidée de ses barres : aucune chandelle ne diffère sur les 40 jours. Les chandelles qu’OKX sert sont l’agrégation exacte du flux de ses archives — même les volumes tombent juste, une fois les contrats convertis (×0,01).",
-            "en": "The other exchanges’ figure, emptied of its bars: not a single candle differs over the 40 days. The candles OKX serves are the exact aggregation of its archive flow — even the volumes land exactly, once contracts are converted (×0.01)."
+            "fr": "Clôture voie B − clôture voie A sur chaque minute de la fenêtre : zéro, du premier au dernier point. Les 57 600 chandelles sont identiques au centime près — la copie est exacte.",
+            "en": "Route B close − route A close on every minute of the window: zero, from the first point to the last. All 57,600 candles are identical to the cent — the copy is exact."
+          }
+        },
+        {
+          "id": "journee-okx",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/okx-journee-temoin.svg",
+          "titre": {
+            "fr": "La journée témoin, reconstruite par les deux voies",
+            "en": "The reference day, rebuilt by both routes"
+          },
+          "description": {
+            "fr": "Le 5 juin 2026 : en haut, 1 440 chandelles agrégées des 10 613 320 trades d'archives (voie A) ; en bas, les 1 440 chandelles servies par la plateforme (voie B). Bande high-low et clôture, minute par minute.",
+            "en": "June 5, 2026: on top, 1,440 candles aggregated from the 10,613,320 archive trades (route A); below, the 1,440 candles served by the platform (route B). High-low band and close, minute by minute."
+          }
+        },
+        {
+          "id": "correlation-journee-okx",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/okx-correlation-journee.svg",
+          "titre": {
+            "fr": "Le même test, sur la seule journée témoin",
+            "en": "The same test, on the reference day alone"
+          },
+          "description": {
+            "fr": "La corrélation croisée refaite sur les 1 440 minutes de la seule journée témoin : r = 1,000 00 au décalage 0, plus rien ailleurs.",
+            "en": "The cross-correlation redone on the reference day's 1,440 minutes alone: r = 1.00000 at lag 0, nothing anywhere else."
+          }
+        },
+        {
+          "id": "ecart-journee-okx",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/okx-ecart-journee.svg",
+          "titre": {
+            "fr": "L'écart sur la journée témoin",
+            "en": "The gap on the reference day"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A au fil de la journée : zéro d'un bout à l'autre, à la minute près.",
+            "en": "Route B close − route A close across the day: zero from end to end, minute by minute."
           }
         }
       ],
       "texte": {
-        "fr": "## Ce que OKX offre\n\nDes archives officielles tick par tick depuis septembre 2021, en fichiers quotidiens — avec un piège de fuseau : chaque fichier « du jour JJ » couvre en réalité de la veille 16:00 UTC au jour même 16:00 UTC (minuit à Hong Kong) ; recoudre un jour UTC exige donc deux fichiers. En complément, un REST paginable sur environ trois mois (100 trades par page), qui rend 403 sans User-Agent de navigateur — deux pièges déjà rencontrés dans l’affichage, résolus dans le script.\n\nEt une donnée d’une discipline rare : le trade_id est un entier strictement contigu — chaque trade suit le précédent de +1. La complétude cesse d’être une confiance pour devenir une preuve arithmétique : max − min + 1 = nombre de lignes, zéro trou sur 142,4 millions de trades. Les tailles sont en contrats de 0,01 BTC (le ctVal), et l'exchange est le plus gros du banc : 79 642 BTC échangés le 10 juillet 2026, contre 59 391 chez Bybit et 3 574 chez KuCoin.\n\n## Les voies d’extraction\n\n**Voie A — archives + REST.** Les archives pour la profondeur, recousues du fuseau UTC+8 vers des jours UTC ; le REST pour la queue récente : un positionnement par horodatage, puis la descente par trade_id, avec un plancher de reprise persisté en base — une interruption reprend exactement où elle s’est arrêtée. Résultat : 142,4 millions de trades sur la fenêtre, ids contigus vérifiés, zéro trou.\n\n**Voie B — Quantower, en deux natures.** En ticks, OKX ne sert que le jour courant : zéro tick pour tout jour passé — mesuré trois fois, la réponse est instantanée, ce n’est pas une lenteur. Le jour en cours, lui, arrive vite et bien : 818 838 ticks en trois minutes, côté agresseur complet, mais des trades agrégés (environ 2,6 fois moins de lignes que d’archives). En chandelles, tout : la même stratégie que KuCoin ramène 60 537 barres 1 m couvrant la fenêtre entière — en une seconde, quote_volume compris, qui confirme à lui seul le multiplier 0,01.\n\nLes bases produites : `BTCUSDT-okx-perp-api.db` (trades) et `BTCUSDT-okx-perp-qt1m.db` (chandelles) — plus une base de ticks du jour courant, gardée comme témoin de ce que la voie tick permet.\n\n## Ce qu’on a obtenu\n\nSur la fenêtre commune — 40 jours du 1er juin au 10 juillet 2026, 57 600 minutes — le résultat le plus net du banc :\n\n- corrélation des clôtures 1 minute : **r = 1,000 000 00** — pas un arrondi : les **57 600 chandelles OHLC sont strictement identiques**, du premier open à la dernière close ;\n- volumes quotidiens exactement égaux les 40 jours (ratio 1,0000) une fois les contrats convertis (×0,01) ; highs et lows identiques partout ;\n- écart maximal des clôtures : 0,00 $ — la figure de l’écart résiduel, rituelle sur les autres pages, est vide ;\n- la lecture : les chandelles qu’OKX sert à la plateforme sont l’agrégation exacte du même flux que ses archives — entre les deux produits de l'exchange, rien ne se perd.\n\n## Constatations, limites, alternatives\n\n**Le passé n’existe qu’en chandelles côté plateforme.** Quantower n’obtient les trades OKX que pour le jour courant — les jours passés rendent zéro tick, instantanément. Le premier diagnostic « historique tick lent » venait du graphique, pas de l’API. Pour le passé, la contre-épreuve se fait donc en chandelles ; pour le jour courant, le tick reste disponible — et rapide.\n\n**Le bornage UTC+8 des archives.** Le fichier « du 5 juin » ne contient pas le 5 juin UTC : il court du 4 juin 16:00 au 5 juin 16:00. L’oublier fabrique des jours faussement complets — le script recoud systématiquement chaque jour UTC à partir des deux fichiers concernés.\n\n**L’identifiant contigu est un luxe à souligner.** Sur les six exchanges du banc, OKX est la seule dont l’identifiant prouve la complétude à lui seul. Chez Bybit c’est un UUID, chez KuCoin un entier qui n’ordonne rien : ici, un compteur parfait — le socle du seul « zéro trou » démontrable de la série.",
-        "en": "## What OKX offers\n\nOfficial tick-by-tick archives since September 2021, as daily files — with a timezone trap: each “day JJ” file actually runs from the previous day 16:00 UTC to the same day 16:00 UTC (midnight in Hong Kong); stitching a UTC day therefore takes two files. In addition, a paginable REST over roughly three months (100 trades per page), which returns 403 without a browser User-Agent — two traps already met in the display, solved in the script.\n\nAnd unusually disciplined data: the trade_id is a strictly contiguous integer — each trade follows the previous one by +1. Completeness stops being trust and becomes an arithmetic proof: max − min + 1 = row count, zero gaps over 142.4 million trades. Sizes are in 0.01 BTC contracts (the ctVal), and the exchange is the biggest on the bench: 79,642 BTC traded on July 10, 2026, versus 59,391 on Bybit and 3,574 on KuCoin.\n\n## The extraction routes\n\n**Route A — archives + REST.** The archives for depth, re-stitched from the UTC+8 boundary into UTC days; the REST for the recent tail: a seek by timestamp, then a descent by trade_id, with a resume floor persisted in the database — an interruption resumes exactly where it stopped. Result: 142.4 million trades over the window, contiguous ids verified, zero gaps.\n\n**Route B — Quantower, in two kinds.** As ticks, OKX only serves the current day: zero ticks for any past day — measured three times, the answer is instantaneous, it is not slowness. The current day, though, arrives fast and clean: 818,838 ticks in three minutes, full aggressor side, but aggregated trades (about 2.6 times fewer rows than the archives). As candles, everything: the same strategy as KuCoin brings back 60,537 1-minute bars covering the entire window — in one second, quote_volume included, which alone confirms the 0.01 multiplier.\n\nThe resulting databases: `BTCUSDT-okx-perp-api.db` (trades) and `BTCUSDT-okx-perp-qt1m.db` (candles) — plus a current-day tick database, kept as a witness of what the tick route allows.\n\n## What we got\n\nOver the common window — 40 days from June 1 to July 10, 2026, 57,600 minutes — the cleanest result on the bench:\n\n- correlation of 1-minute closes: **r = 1.00000000** — not a rounding: all **57,600 OHLC candles are strictly identical**, from the first open to the last close;\n- daily volumes exactly equal on all 40 days (ratio 1.0000) once contracts are converted (×0.01); highs and lows identical everywhere;\n- maximum close gap: $0.00 — the residual-gap figure, a ritual on the other pages, is empty;\n- the reading: the candles OKX serves to the platform are the exact aggregation of the same flow as its archives — between the exchange’s two products, nothing is lost.\n\n## Findings, limits, alternatives\n\n**The past only exists as candles on the platform side.** Quantower only gets OKX trades for the current day — past days return zero ticks, instantly. The first “slow tick history” diagnosis came from the chart, not the API. For the past, the cross-check is therefore done in candles; for the current day, ticks remain available — and fast.\n\n**The UTC+8 boundary of the archives.** The “June 5” file does not contain June 5 UTC: it runs from June 4 16:00 to June 5 16:00. Forgetting it manufactures falsely complete days — the script systematically re-stitches each UTC day from the two files involved.\n\n**The contiguous identifier is a luxury worth underlining.** Of the six exchanges on the bench, OKX is the only one whose identifier proves completeness on its own. On Bybit it is a UUID, on KuCoin an integer that orders nothing: here, a perfect counter — the foundation of the series’ only provable “zero gaps”."
+        "fr": "## Ce que OKX offre\n\nDes archives officielles tick par tick depuis septembre 2021, en fichiers quotidiens — avec un piège de fuseau : chaque fichier « du jour JJ » couvre en réalité de la veille 16:00 UTC au jour même 16:00 UTC (minuit à Hong Kong) ; recoudre un jour UTC exige donc deux fichiers. En complément, un REST paginable sur environ trois mois (100 trades par page), qui rend 403 sans User-Agent de navigateur — deux pièges déjà rencontrés dans l’affichage, résolus dans le script.\n\nEt une donnée d’une discipline rare : le trade_id est un entier strictement contigu — chaque trade suit le précédent de +1. La complétude cesse d’être une confiance pour devenir une preuve arithmétique : max − min + 1 = nombre de lignes, zéro trou sur 142,4 millions de trades. Les tailles sont en contrats de 0,01 BTC (le ctVal), et l'exchange est le plus gros du banc : 79 642 BTC échangés le 10 juillet 2026, contre 59 391 chez Bybit et 3 574 chez KuCoin.\n\n## Les voies d’extraction\n\n**Voie A — archives + REST.** Les archives pour la profondeur, recousues du fuseau UTC+8 vers des jours UTC ; le REST pour la queue récente : un positionnement par horodatage, puis la descente par trade_id, avec un plancher de reprise persisté en base — une interruption reprend exactement où elle s’est arrêtée. Résultat : 142,4 millions de trades sur la fenêtre, ids contigus vérifiés, zéro trou.\n\n**Voie B — Quantower, en deux natures.** En ticks, OKX ne sert que le jour courant : zéro tick pour tout jour passé — mesuré trois fois, la réponse est instantanée, ce n’est pas une lenteur. Le jour en cours, lui, arrive vite et bien : 818 838 ticks en trois minutes, côté agresseur complet, mais des trades agrégés (environ 2,6 fois moins de lignes que d’archives). En chandelles, tout : la même stratégie que KuCoin ramène 60 537 barres 1 m couvrant la fenêtre entière — en une seconde, quote_volume compris, qui confirme à lui seul le multiplier 0,01.\n\nLes bases produites : `BTCUSDT-okx-perp-api.db` (trades) et `BTCUSDT-okx-perp-qt1m.db` (chandelles) — plus une base de ticks du jour courant, gardée comme témoin de ce que la voie tick permet.\n\n## Ce qu’on a obtenu\n\nSur la fenêtre commune — 40 jours du 1er juin au 10 juillet 2026, 57 600 minutes — le résultat le plus net du banc :\n\n- corrélation des clôtures 1 minute : **r = 1,000 000 00** — pas un arrondi : les **57 600 chandelles OHLC sont strictement identiques**, du premier open à la dernière close ;\n- volumes quotidiens exactement égaux les 40 jours (ratio 1,0000) une fois les contrats convertis (×0,01) ; highs et lows identiques partout ;\n- écart maximal des clôtures : 0,00 $ — la figure de l’écart, rituelle sur les autres pages, reste collée à zéro ;\n- la lecture : les chandelles qu’OKX sert à la plateforme sont l’agrégation exacte du même flux que ses archives — entre les deux produits de l'exchange, rien ne se perd.\n\n## Constatations, limites, alternatives\n\n**Le passé n’existe qu’en chandelles côté plateforme.** Quantower n’obtient les trades OKX que pour le jour courant — les jours passés rendent zéro tick, instantanément. Le premier diagnostic « historique tick lent » venait du graphique, pas de l’API. Pour le passé, la contre-épreuve se fait donc en chandelles ; pour le jour courant, le tick reste disponible — et rapide.\n\n**Le bornage UTC+8 des archives.** Le fichier « du 5 juin » ne contient pas le 5 juin UTC : il court du 4 juin 16:00 au 5 juin 16:00. L’oublier fabrique des jours faussement complets — le script recoud systématiquement chaque jour UTC à partir des deux fichiers concernés.\n\n**L’identifiant contigu est un luxe à souligner.** Sur les six exchanges du banc, OKX est la seule dont l’identifiant prouve la complétude à lui seul. Chez Bybit c’est un UUID, chez KuCoin un entier qui n’ordonne rien : ici, un compteur parfait — le socle du seul « zéro trou » démontrable de la série.",
+        "en": "## What OKX offers\n\nOfficial tick-by-tick archives since September 2021, as daily files — with a timezone trap: each “day JJ” file actually runs from the previous day 16:00 UTC to the same day 16:00 UTC (midnight in Hong Kong); stitching a UTC day therefore takes two files. In addition, a paginable REST over roughly three months (100 trades per page), which returns 403 without a browser User-Agent — two traps already met in the display, solved in the script.\n\nAnd unusually disciplined data: the trade_id is a strictly contiguous integer — each trade follows the previous one by +1. Completeness stops being trust and becomes an arithmetic proof: max − min + 1 = row count, zero gaps over 142.4 million trades. Sizes are in 0.01 BTC contracts (the ctVal), and the exchange is the biggest on the bench: 79,642 BTC traded on July 10, 2026, versus 59,391 on Bybit and 3,574 on KuCoin.\n\n## The extraction routes\n\n**Route A — archives + REST.** The archives for depth, re-stitched from the UTC+8 boundary into UTC days; the REST for the recent tail: a seek by timestamp, then a descent by trade_id, with a resume floor persisted in the database — an interruption resumes exactly where it stopped. Result: 142.4 million trades over the window, contiguous ids verified, zero gaps.\n\n**Route B — Quantower, in two kinds.** As ticks, OKX only serves the current day: zero ticks for any past day — measured three times, the answer is instantaneous, it is not slowness. The current day, though, arrives fast and clean: 818,838 ticks in three minutes, full aggressor side, but aggregated trades (about 2.6 times fewer rows than the archives). As candles, everything: the same strategy as KuCoin brings back 60,537 1-minute bars covering the entire window — in one second, quote_volume included, which alone confirms the 0.01 multiplier.\n\nThe resulting databases: `BTCUSDT-okx-perp-api.db` (trades) and `BTCUSDT-okx-perp-qt1m.db` (candles) — plus a current-day tick database, kept as a witness of what the tick route allows.\n\n## What we got\n\nOver the common window — 40 days from June 1 to July 10, 2026, 57,600 minutes — the cleanest result on the bench:\n\n- correlation of 1-minute closes: **r = 1.00000000** — not a rounding: all **57,600 OHLC candles are strictly identical**, from the first open to the last close;\n- daily volumes exactly equal on all 40 days (ratio 1.0000) once contracts are converted (×0.01); highs and lows identical everywhere;\n- maximum close gap: $0.00 — the gap figure, a ritual on the other pages, stays glued to zero;\n- the reading: the candles OKX serves to the platform are the exact aggregation of the same flow as its archives — between the exchange’s two products, nothing is lost.\n\n## Findings, limits, alternatives\n\n**The past only exists as candles on the platform side.** Quantower only gets OKX trades for the current day — past days return zero ticks, instantly. The first “slow tick history” diagnosis came from the chart, not the API. For the past, the cross-check is therefore done in candles; for the current day, ticks remain available — and fast.\n\n**The UTC+8 boundary of the archives.** The “June 5” file does not contain June 5 UTC: it runs from June 4 16:00 to June 5 16:00. Forgetting it manufactures falsely complete days — the script systematically re-stitches each UTC day from the two files involved.\n\n**The contiguous identifier is a luxury worth underlining.** Of the six exchanges on the bench, OKX is the only one whose identifier proves completeness on its own. On Bybit it is a UUID, on KuCoin an integer that orders nothing: here, a perfect counter — the foundation of the series’ only provable “zero gaps”."
       }
     },
     {
@@ -260,48 +377,87 @@
       },
       "items": [
         {
-          "id": "jumeaux-kucoin",
+          "id": "historique-kucoin",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/historiques-jumeaux-kucoin.svg",
+          "url": "assets/crypto/historique/figures/kucoin-historique-complet.svg",
           "titre": {
-            "fr": "La même journée, reconstruite par les deux voies",
-            "en": "The same day, rebuilt by both routes"
+            "fr": "Quarante jours, deux historiques superposés",
+            "en": "Forty days, two histories overlaid"
           },
           "description": {
-            "fr": "Le 5 juin 2026 — la journée du décrochage des pages Binance et Bybit — vue par le plus petit exchange du banc : en haut, 1 440 chandelles agrégées des 389 396 trades d’archives (voie A) ; en bas, les 1 440 chandelles servies par la plateforme (voie B). Bande high-low et clôtures se superposent minute par minute.",
-            "en": "June 5, 2026 — the sell-off day from the Binance and Bybit pages — seen by the smallest exchange on the bench: on top, 1,440 candles aggregated from the 389,396 archive trades (route A); below, the 1,440 candles served by the platform (route B). High-low band and closes overlap minute by minute."
+            "fr": "Toute la fenêtre commune (1er juin → 10 juillet 2026), reconstruite par les deux voies et tracée l'une par-dessus l'autre : bande high-low et clôture de chaque minute. Une seule courbe reste visible — la voie B recouvre la voie A point pour point.",
+            "en": "The whole common window (June 1 → July 10, 2026), rebuilt by both routes and drawn one on top of the other: high-low band and each minute's close. Only one curve remains visible — route B covers route A point for point."
           }
         },
         {
-          "id": "correlation-kucoin",
+          "id": "correlation-historique-kucoin",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/correlation-1m-kucoin.svg",
+          "url": "assets/crypto/historique/figures/kucoin-correlation-historique.svg",
           "titre": {
-            "fr": "57 499 minutes, une seule diagonale",
-            "en": "57,499 minutes, a single diagonal"
+            "fr": "Le test sur tout l'historique : un seul pic, au décalage zéro",
+            "en": "The full-history test: a single spike, at lag zero"
           },
           "description": {
-            "fr": "La clôture de chaque minute de la voie A contre celle de la voie B : tous les points tombent sur la diagonale y = x. Corrélation mesurée r = 0,999 999 96 ; 52 272 chandelles sur 57 499 sont strictement identiques.",
-            "en": "Each minute’s close from route A against route B: every point falls on the y = x diagonal. Measured correlation r = 0.99999996; 52,272 of 57,499 candles are strictly identical."
+            "fr": "La corrélation croisée des rendements 1 minute, la voie B décalée de −30 à +30 minutes : r = 0,999 71 au décalage 0, plus rien ailleurs. Deux historiques ne se ressemblent à ce point que s'ils racontent exactement les mêmes minutes — toutes les 57 499.",
+            "en": "The cross-correlation of 1-minute returns, route B shifted from −30 to +30 minutes: r = 0.99971 at lag 0, nothing anywhere else. Two histories only match this closely if they tell exactly the same minutes — all 57,499 of them."
           }
         },
         {
-          "id": "ecart-kucoin",
+          "id": "ecart-historique-kucoin",
           "type": "figure",
-          "url": "assets/crypto/historique/figures/ecart-residuel-kucoin.svg",
+          "url": "assets/crypto/historique/figures/kucoin-ecart-historique.svg",
           "titre": {
-            "fr": "L’écart résiduel : la frontière de minute, pas les prix",
-            "en": "The residual gap: the minute boundary, not prices"
+            "fr": "L'écart entre les deux historiques, minute par minute",
+            "en": "The gap between the two histories, minute by minute"
           },
           "description": {
-            "fr": "Les minutes dont la chandelle diffère, jour par jour — 130 par jour en moyenne. La signature est nette : presque tout se joue sur l’open (1 883) et la close (3 474), presque rien sur les extrêmes (10 et 11 sur 57 499 minutes) — un trade affecté à la minute voisine déplace l’open ou la close, mais les prix eux-mêmes concordent.",
-            "en": "Minutes whose candle differs, day by day — 130 per day on average. The signature is clear: nearly everything happens on the open (1,883) and the close (3,474), almost nothing on the extremes (10 and 11 out of 57,499 minutes) — a trade assigned to the neighbouring minute moves the open or close, but the prices themselves agree."
+            "fr": "Clôture voie B − clôture voie A sur chaque minute de la fenêtre : écart maximal 33 $, moyenne des écarts absolus 0,1 $ — sur un prix d'environ 60 000 $. 52 272 chandelles sur 57 499 sont strictement identiques (OHLC).",
+            "en": "Route B close − route A close on every minute of the window: maximum gap $33, average absolute gap $0.1 — on a price of roughly $60,000. 52,272 of 57,499 candles are strictly identical (OHLC)."
+          }
+        },
+        {
+          "id": "journee-kucoin",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/kucoin-journee-temoin.svg",
+          "titre": {
+            "fr": "La journée témoin, reconstruite par les deux voies",
+            "en": "The reference day, rebuilt by both routes"
+          },
+          "description": {
+            "fr": "Le 5 juin 2026 : en haut, 1 440 chandelles agrégées des 389 396 trades d'archives (voie A) ; en bas, les 1 440 chandelles servies par la plateforme (voie B). Bande high-low et clôture, minute par minute.",
+            "en": "June 5, 2026: on top, 1,440 candles aggregated from the 389,396 archive trades (route A); below, the 1,440 candles served by the platform (route B). High-low band and close, minute by minute."
+          }
+        },
+        {
+          "id": "correlation-journee-kucoin",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/kucoin-correlation-journee.svg",
+          "titre": {
+            "fr": "Le même test, sur la seule journée témoin",
+            "en": "The same test, on the reference day alone"
+          },
+          "description": {
+            "fr": "La corrélation croisée refaite sur les 1 440 minutes de la seule journée témoin : r = 0,999 93 au décalage 0, plus rien ailleurs.",
+            "en": "The cross-correlation redone on the reference day's 1,440 minutes alone: r = 0.99993 at lag 0, nothing anywhere else."
+          }
+        },
+        {
+          "id": "ecart-journee-kucoin",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/kucoin-ecart-journee.svg",
+          "titre": {
+            "fr": "L'écart sur la journée témoin",
+            "en": "The gap on the reference day"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A au fil de la journée, minute par minute : écart maximal 11 $, moyenne des écarts absolus 0,1 $.",
+            "en": "Route B close − route A close across the day, minute by minute: maximum gap $11, average absolute gap $0.1."
           }
         }
       ],
       "texte": {
-        "fr": "## Ce que KuCoin offre\n\nCôté API, l'exchange le plus fermé du banc d’essai : le REST public rend les cent derniers trades — sans pagination, sans paramètre de temps (Bybit en donne mille). Côté archives, l’inverse : un portail officiel publie un fichier zip par jour et par symbole, avec somme de contrôle MD5, borné proprement en UTC, depuis le 1er janvier 2023.\n\nLa donnée a ses chausse-trappes : trois noms pour le même contrat — BTCUSDT dans l’usage courant, BTCUSDTM dans les archives, XBTUSDTM côté API (seul BTC a gardé son ancien code XBT) ; un trade_id entier qui n’ordonne rien (deux régimes de valeurs et ~36 000 inversions id↔temps par jour) ; un côté agresseur écrit en quatre casses ; des tailles en contrats de 0,001 BTC. Et un exchange nettement plus petit : 3 574 BTC échangés le 10 juillet 2026, contre 59 391 chez Bybit et 79 642 chez OKX — un ordre de grandeur en dessous.\n\n## Les voies d’extraction\n\n**Voie A — les archives officielles.** Le gabarit Bybit réutilisé : plan de fichiers depuis le listing S3 réel, MD5 vérifié, ingestion transactionnelle par fichier, retour en arrière refusé (le trade_id ne fait pas foi pour l’ordre, l’ordre des fichiers si). 6,8 millions de trades sur la fenêtre, ingérés en 82 secondes.\n\n**Voie B — Quantower, et une découverte.** La même extension multi-exchange que Bybit et OKX — mais KuCoin ne sert aucun historique de trades à la plateforme : zéro tick pour tout jour passé, et pour le jour courant exactement cent trades couvrant vingt-quatre secondes. Le plafond du REST public, retrouvé tel quel dans Quantower. Le graphique 1 minute affiche pourtant des mois d’historique : il vient d’une autre API, celle des chandelles. La voie B a donc changé de nature : une seconde stratégie télécharge ces chandelles 1 m telles que la plateforme les sert — 60 375 barres couvrant toute la fenêtre, obtenues en une seconde.\n\nLes bases produites : `BTCUSDT-kucoin-perp-api.db` (trades) et `BTCUSDT-kucoin-perp-qt1m.db` (chandelles) — deux natures de données, confrontées là où elles se rejoignent : la minute.\n\n## Ce qu’on a obtenu\n\nSur la fenêtre commune — 40 jours du 1er juin au 10 juillet 2026, 57 499 minutes :\n\n- corrélation des clôtures 1 minute : **r = 0,999 999 96** ; 52 272 chandelles sur 57 499 strictement identiques (90,9 %) ; rendements corrélés à r = 0,999 71 ;\n- volumes quotidiens égaux à ±0,25 % une fois les contrats convertis (×0,001) — le multiplier annoncé par l’API, confirmé par la mesure ; highs et lows quotidiens identiques presque partout ;\n- l’écart résiduel a une signature claire : sur les 5 345 chandelles différentes, presque toutes diffèrent par l’open (1 883) ou la close (3 474), presque jamais par les extrêmes (10 et 11) — l’affectation des trades en frontière de minute, pas les prix ;\n- écart des clôtures : 0,12 $ en moyenne (0,0002 %), 33 $ au maximum.\n\n## Constatations, limites, alternatives\n\n**L’historique de trades n’existe qu’en archives.** C’est la constatation de l'exchange : sans le portail officiel, impossible de reconstruire le passé — le REST et Quantower plafonnent aux cent derniers trades. La collecte en continu reste la seule alternative au portail.\n\n**La voie B a perdu le niveau tick.** Des chandelles servies en guise de contre-épreuve : pas de côté agresseur, pas de milliseconde — la validation porte sur l’OHLC et le volume de chaque minute, pas sur le trade individuel. C’est une contre-épreuve plus faible que Bybit (mêmes trades bruts des deux côtés), mais sur la fenêtre entière — et elle recoupe.\n\n**Les pièges de nommage sont neutralisés.** Le premier run a collecté le spot (BTC/USDT) au lieu du perpétuel — le piège Bybit rejoué, attrapé cette fois immédiatement par le marché inscrit dans le nom de base (-spot-). Et XBTUSDTM devient BTCUSDT dans les noms de fichiers : l’alias XBT est traduit pour que la paire A/B se lise d’un coup d’œil.",
-        "en": "## What KuCoin offers\n\nOn the API side, the most closed exchange on the bench: the public REST returns the last hundred trades — no pagination, no time parameter (Bybit gives a thousand). On the archive side, the opposite: an official portal publishes one zip file per day per symbol, with an MD5 checksum, cleanly UTC-bounded, since January 1, 2023.\n\nThe data has its traps: three names for the same contract — BTCUSDT in common usage, BTCUSDTM in the archives, XBTUSDTM on the API (only BTC kept its old XBT code); an integer trade_id that orders nothing (two value regimes and ~36,000 id↔time inversions per day); an aggressor side written in four different cases; sizes in 0.001 BTC contracts. And a markedly smaller exchange: 3,574 BTC traded on July 10, 2026, versus 59,391 on Bybit and 79,642 on OKX — an order of magnitude below.\n\n## The extraction routes\n\n**Route A — the official archives.** The Bybit template reused: file plan from the real S3 listing, MD5 verified, transactional ingestion per file, backfill refused (trade_id cannot be trusted for order, file order can). 6.8 million trades over the window, ingested in 82 seconds.\n\n**Route B — Quantower, and a discovery.** The same multi-exchange extension as Bybit and OKX — but KuCoin serves no trade history to the platform: zero ticks for any past day, and for the current day exactly one hundred trades covering twenty-four seconds. The public REST’s ceiling, found as-is in Quantower. Yet the 1-minute chart displays months of history: it comes from another API, the candle one. Route B therefore changed nature: a second strategy downloads those 1-minute candles as the platform serves them — 60,375 bars covering the whole window, fetched in one second.\n\nThe resulting databases: `BTCUSDT-kucoin-perp-api.db` (trades) and `BTCUSDT-kucoin-perp-qt1m.db` (candles) — two kinds of data, confronted where they meet: the minute.\n\n## What we got\n\nOver the common window — 40 days from June 1 to July 10, 2026, 57,499 minutes:\n\n- correlation of 1-minute closes: **r = 0.99999996**; 52,272 of 57,499 candles strictly identical (90.9%); returns correlated at r = 0.99971;\n- daily volumes equal to ±0.25% once contracts are converted (×0.001) — the multiplier announced by the API, confirmed by measurement; daily highs and lows identical almost everywhere;\n- the residual gap has a clear signature: of the 5,345 differing candles, nearly all differ by the open (1,883) or the close (3,474), almost never by the extremes (10 and 11) — trade assignment at the minute boundary, not prices;\n- close gaps: $0.12 on average (0.0002%), $33 at most.\n\n## Findings, limits, alternatives\n\n**Trade history only exists as archives.** That is the exchange’s finding: without the official portal, the past cannot be rebuilt — REST and Quantower cap at the last hundred trades. Continuous collection remains the only alternative to the portal.\n\n**Route B lost the tick level.** Served candles as the cross-check: no aggressor side, no millisecond — the validation covers each minute’s OHLC and volume, not the individual trade. A weaker cross-check than Bybit (same raw trades on both sides), but over the entire window — and it corroborates.\n\n**The naming traps are neutralized.** The first run collected spot (BTC/USDT) instead of the perpetual — the Bybit trap replayed, caught immediately this time by the market written into the database name (-spot-). And XBTUSDTM becomes BTCUSDT in file names: the XBT alias is translated so the A/B pair reads at a glance."
+        "fr": "## Ce que KuCoin offre\n\nCôté API, l'exchange le plus fermé du banc d’essai : le REST public rend les cent derniers trades — sans pagination, sans paramètre de temps (Bybit en donne mille). Côté archives, l’inverse : un portail officiel publie un fichier zip par jour et par symbole, avec somme de contrôle MD5, borné proprement en UTC, depuis le 1er janvier 2023.\n\nLa donnée a ses chausse-trappes : trois noms pour le même contrat — BTCUSDT dans l’usage courant, BTCUSDTM dans les archives, XBTUSDTM côté API (seul BTC a gardé son ancien code XBT) ; un trade_id entier qui n’ordonne rien (deux régimes de valeurs et ~36 000 inversions id↔temps par jour) ; un côté agresseur écrit en quatre casses ; des tailles en contrats de 0,001 BTC. Et un exchange nettement plus petit : 3 574 BTC échangés le 10 juillet 2026, contre 59 391 chez Bybit et 79 642 chez OKX — un ordre de grandeur en dessous.\n\n## Les voies d’extraction\n\n**Voie A — les archives officielles.** Le gabarit Bybit réutilisé : plan de fichiers depuis le listing S3 réel, MD5 vérifié, ingestion transactionnelle par fichier, retour en arrière refusé (le trade_id ne fait pas foi pour l’ordre, l’ordre des fichiers si). 6,8 millions de trades sur la fenêtre, ingérés en 82 secondes.\n\n**Voie B — Quantower, et une découverte.** La même extension multi-exchange que Bybit et OKX — mais KuCoin ne sert aucun historique de trades à la plateforme : zéro tick pour tout jour passé, et pour le jour courant exactement cent trades couvrant vingt-quatre secondes. Le plafond du REST public, retrouvé tel quel dans Quantower. Le graphique 1 minute affiche pourtant des mois d’historique : il vient d’une autre API, celle des chandelles. La voie B a donc changé de nature : une seconde stratégie télécharge ces chandelles 1 m telles que la plateforme les sert — 60 375 barres couvrant toute la fenêtre, obtenues en une seconde.\n\nLes bases produites : `BTCUSDT-kucoin-perp-api.db` (trades) et `BTCUSDT-kucoin-perp-qt1m.db` (chandelles) — deux natures de données, confrontées là où elles se rejoignent : la minute.\n\n## Ce qu’on a obtenu\n\nSur la fenêtre commune — 40 jours du 1er juin au 10 juillet 2026, 57 499 minutes :\n\n- corrélation des clôtures 1 minute : **r = 0,999 999 96** ; 52 272 chandelles sur 57 499 strictement identiques (90,9 %) ; rendements corrélés à r = 0,999 71 ;\n- volumes quotidiens égaux à ±0,25 % une fois les contrats convertis (×0,001) — le multiplier annoncé par l’API, confirmé par la mesure ; highs et lows quotidiens identiques presque partout ;\n- l’écart résiduel a une signature claire : sur les 5 227 chandelles différentes, presque toutes diffèrent par l’open (1 883) ou la close (3 474), presque jamais par les extrêmes (10 et 11) — l’affectation des trades en frontière de minute, pas les prix ;\n- écart des clôtures : 0,12 $ en moyenne (0,0002 %), 33 $ au maximum.\n\n## Constatations, limites, alternatives\n\n**L’historique de trades n’existe qu’en archives.** C’est la constatation de l'exchange : sans le portail officiel, impossible de reconstruire le passé — le REST et Quantower plafonnent aux cent derniers trades. La collecte en continu reste la seule alternative au portail.\n\n**La voie B a perdu le niveau tick.** Des chandelles servies en guise de contre-épreuve : pas de côté agresseur, pas de milliseconde — la validation porte sur l’OHLC et le volume de chaque minute, pas sur le trade individuel. C’est une contre-épreuve plus faible que Bybit (mêmes trades bruts des deux côtés), mais sur la fenêtre entière — et elle recoupe.\n\n**Les pièges de nommage sont neutralisés.** Le premier run a collecté le spot (BTC/USDT) au lieu du perpétuel — le piège Bybit rejoué, attrapé cette fois immédiatement par le marché inscrit dans le nom de base (-spot-). Et XBTUSDTM devient BTCUSDT dans les noms de fichiers : l’alias XBT est traduit pour que la paire A/B se lise d’un coup d’œil.",
+        "en": "## What KuCoin offers\n\nOn the API side, the most closed exchange on the bench: the public REST returns the last hundred trades — no pagination, no time parameter (Bybit gives a thousand). On the archive side, the opposite: an official portal publishes one zip file per day per symbol, with an MD5 checksum, cleanly UTC-bounded, since January 1, 2023.\n\nThe data has its traps: three names for the same contract — BTCUSDT in common usage, BTCUSDTM in the archives, XBTUSDTM on the API (only BTC kept its old XBT code); an integer trade_id that orders nothing (two value regimes and ~36,000 id↔time inversions per day); an aggressor side written in four different cases; sizes in 0.001 BTC contracts. And a markedly smaller exchange: 3,574 BTC traded on July 10, 2026, versus 59,391 on Bybit and 79,642 on OKX — an order of magnitude below.\n\n## The extraction routes\n\n**Route A — the official archives.** The Bybit template reused: file plan from the real S3 listing, MD5 verified, transactional ingestion per file, backfill refused (trade_id cannot be trusted for order, file order can). 6.8 million trades over the window, ingested in 82 seconds.\n\n**Route B — Quantower, and a discovery.** The same multi-exchange extension as Bybit and OKX — but KuCoin serves no trade history to the platform: zero ticks for any past day, and for the current day exactly one hundred trades covering twenty-four seconds. The public REST’s ceiling, found as-is in Quantower. Yet the 1-minute chart displays months of history: it comes from another API, the candle one. Route B therefore changed nature: a second strategy downloads those 1-minute candles as the platform serves them — 60,375 bars covering the whole window, fetched in one second.\n\nThe resulting databases: `BTCUSDT-kucoin-perp-api.db` (trades) and `BTCUSDT-kucoin-perp-qt1m.db` (candles) — two kinds of data, confronted where they meet: the minute.\n\n## What we got\n\nOver the common window — 40 days from June 1 to July 10, 2026, 57,499 minutes:\n\n- correlation of 1-minute closes: **r = 0.99999996**; 52,272 of 57,499 candles strictly identical (90.9%); returns correlated at r = 0.99971;\n- daily volumes equal to ±0.25% once contracts are converted (×0.001) — the multiplier announced by the API, confirmed by measurement; daily highs and lows identical almost everywhere;\n- the residual gap has a clear signature: of the 5,227 differing candles, nearly all differ by the open (1,883) or the close (3,474), almost never by the extremes (10 and 11) — trade assignment at the minute boundary, not prices;\n- close gaps: $0.12 on average (0.0002%), $33 at most.\n\n## Findings, limits, alternatives\n\n**Trade history only exists as archives.** That is the exchange’s finding: without the official portal, the past cannot be rebuilt — REST and Quantower cap at the last hundred trades. Continuous collection remains the only alternative to the portal.\n\n**Route B lost the tick level.** Served candles as the cross-check: no aggressor side, no millisecond — the validation covers each minute’s OHLC and volume, not the individual trade. A weaker cross-check than Bybit (same raw trades on both sides), but over the entire window — and it corroborates.\n\n**The naming traps are neutralized.** The first run collected spot (BTC/USDT) instead of the perpetual — the Bybit trap replayed, caught immediately this time by the market written into the database name (-spot-). And XBTUSDTM becomes BTCUSDT in file names: the XBT alias is translated so the A/B pair reads at a glance."
       }
     },
     {
