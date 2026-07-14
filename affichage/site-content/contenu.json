@@ -1,7 +1,8 @@
 {
   "sections": [
     {
-      "id": "bitget",
+      "id": "tr-bitget",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Bitget",
         "en": "Bitget"
@@ -11,43 +12,18 @@
         "en": "The reference exchange: the standard everything is normalized to."
       },
       "intro": {
-        "fr": "Bitget est la plateforme centrale du projet : la première source branchée et la référence vers laquelle tout est normalisé (symbole, prix, horodatage, agresseur). Carnet maintenu 100 % en WebSocket avec contrôle d'intégrité CRC32.",
-        "en": "Bitget is the project's central platform: the first source plugged in and the reference everything is normalized to (symbol, price, timestamp, aggressor). Order book kept fully over WebSocket with CRC32 integrity checks."
+        "fr": "La plateforme centrale du projet : le premier exchange branché, capté en continu sur Spot et USDT-Futures, carnet maintenu 100 % en WebSocket avec contrôle d'intégrité CRC32. Au Québec, Bitget est un des rares exchanges encore disponibles — c'est aussi sur lui que l'automatisation exécutera ses ordres. Son format sert de schéma cible au projet : tous les autres flux y sont ramenés.",
+        "en": "The project's central platform: the first exchange plugged in, captured continuously on Spot and USDT-Futures, with an order book kept fully over WebSocket and CRC32 integrity checks. In Québec, Bitget is one of the few exchanges still available — it is also where the automation will execute its orders. Its format serves as the project's target schema: every other feed is mapped onto it."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bitget.PNG",
-          "titre": {
-            "fr": "Vue orderflow — Bitget",
-            "en": "Orderflow view — Bitget"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux Bitget (BTC/USDT).",
-            "en": "Live capture of the terminal on the Bitget feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/bitget-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nBitget est l'exchange de référence : son format (symbole BTCUSDT, prix et taille en actif de base, horodatage en millisecondes UTC, side = agresseur) est le schéma cible du projet. C'est aussi le plancher commun du collecteur d'historique : les autres exchanges ne descendent jamais sous le trade Bitget le plus ancien.\n\n## Initialisation du carnet\n\nSnapshot complet poussé en WebSocket (action=snapshot), puis mises à jour incrémentales (action=update ; une taille de 0 vaut suppression d'un niveau). Intégrité vérifiée par un checksum CRC32 sur les 25 meilleurs niveaux de chaque côté ; en cas d'écart, resynchronisation.\n\n## Résultats\n\nCarnet maintenu plein à 300 niveaux (150 + 150) en permanence sur les deux marchés (Spot et USDT-Futures).\n\nHistorique des trades sur ~90 jours via REST (Fills-History, pagination par idLessThan).\n\nHeartbeat applicatif ping/pong et watchdog : reconnexion si les trades se figent plus de 120 s.\n\n## Embûche : casse du « side » différente entre WebSocket et REST\n\nSymptôme — buy/sell en minuscules en WebSocket, Buy/Sell avec majuscule en REST.\n\nCause — conventions distinctes des deux API Bitget pour un même champ.\n\nSolution — normalisation systématique en minuscules avant d'envoyer la donnée au hub.\n\n## Embûche : snapshot du canal trade à ignorer\n\nSymptôme — le premier push du canal trade contient des trades antérieurs au lancement.\n\nCause — Bitget envoie un snapshot d'amorçage sur le canal trade.\n\nSolution — on ignore action=snapshot sur ce canal ; l'historique vient du REST.\n\n## Embûche : pas d'orderbook historique en REST\n\nSymptôme — impossible de reconstituer une heatmap de liquidité passée.\n\nCause — limite dure de l'API : aucun endpoint d'orderbook historique.\n\nSolution — persistance en direct des snapshots de carnet à 1 Hz ; la heatmap historique ne grandit alors que vers l'avant."
+        "fr": "## La connexion\n\nUn seul endpoint WebSocket public (API v2, `wss://ws.bitget.com/v2/ws/public`) pour les deux marchés : c'est l'`instType` de la souscription qui porte le marché (USDT-FUTURES ou SPOT). On souscrit les canaux `books` et `trade` pour chaque symbole. Spot et Futures sont captés en continu et en même temps, sous deux clés de flux distinctes dans le hub — changer de marché à l'écran ne fait que changer la clé lue, aucun connecteur n'est arrêté.\n\nLe heartbeat est applicatif et en trames texte brutes : Bitget coupe la connexion après 30 s sans `ping`, on envoie donc le texte `\"ping\"` toutes les 20 s (et on répond `\"pong\"` si le serveur pingue). Reconnexion à backoff exponentiel (1 s, ×2, plafond 30 s) ; un watchdog force la reconnexion si aucun message depuis 30 s, si les trades se figent plus de 120 s alors que le carnet vit (cas réel observé après plusieurs heures), ou après 30 min de session (reconnexion préventive).\n\nDocs officielles :\n\n- [WebSocket — introduction](https://www.bitget.com/api-doc/common/websocket-intro)\n- [Canal trades — Futures](https://www.bitget.com/api-doc/contract/websocket/public/New-Trades-Channel)\n- [Canal trades — Spot](https://www.bitget.com/api-doc/spot/websocket/public/Trades-Channel)\n- [Canal books (carnet) — Futures](https://www.bitget.com/api-doc/contract/websocket/public/Order-Book-Channel)\n- [Canal books (carnet) — Spot](https://www.bitget.com/api-doc/spot/websocket/public/Depth-Channel)\n\n## DOM\n\nCanal `books` — tous les niveaux, pas les variantes tronquées `books1`/`books5`/`books15`. Fréquences de push documentées : 150 ms en Futures, 200 ms en Spot. Amorçage 100 % WebSocket : un message `action=snapshot` vide et remplit le carnet local, puis les `action=update` appliquent les deltas (une taille de 0 supprime le niveau). Le carnet local est gardé en chaînes de caractères, pas en floats : indispensable pour recalculer un checksum fidèle. L'intégrité est vérifiée par un CRC32 sur les 25 meilleurs niveaux de chaque côté (format `bid1p:bid1s:ask1p:ask1s:…`, entier signé 32 bits) ; au moindre écart, exception → reconnexion → snapshot frais. Tous les horodatages viennent de l'horloge de l'exchange, jamais de l'heure locale (sinon carnet, trades et heatmap se désalignent). 150 niveaux par côté sont poussés au hub ; le carnet reste plein à 300 niveaux en permanence sur les deux marchés.\n\n## Trades\n\nCanal `trade` : `price`, `size` (en actif de base), `side` (le côté agresseur), `ts` en ms UTC, `tradeId`. C'est le flux le plus direct du périmètre — aucune conversion à l'ingestion. Fréquences mesurées : ~5,8 trades/s en Futures BTC contre ~1,5 en Spot — le Spot est intrinsèquement clairsemé (des trous de plus de 30 s y sont normaux) et son carnet ~4× plus étalé.\n\n## Embûche : casse du « side » différente entre WebSocket et REST\n\nSymptôme — buy/sell en minuscules en WebSocket, Buy/Sell avec majuscule en REST.\n\nCause — conventions distinctes des deux API Bitget pour un même champ.\n\nSolution — normalisation systématique en minuscules avant d'envoyer la donnée au hub.\n\n## Embûche : snapshot du canal trade à ignorer\n\nSymptôme — le premier push du canal trade contient des trades antérieurs au lancement.\n\nCause — Bitget envoie un snapshot d'amorçage sur le canal trade.\n\nSolution — on ignore action=snapshot sur ce canal ; l'historique vient du REST (aucun doublon ni ambiguïté).\n\n## Embûche : pas d'orderbook historique en REST\n\nSymptôme — impossible de reconstituer une heatmap de liquidité passée.\n\nCause — limite dure de l'API : aucun endpoint d'orderbook historique.\n\nSolution — persistance en direct des snapshots de carnet à 1 Hz ; la heatmap historique ne grandit alors que vers l'avant.",
+        "en": "## The connection\n\nA single public WebSocket endpoint (API v2, `wss://ws.bitget.com/v2/ws/public`) for both markets: the subscription's `instType` carries the market (USDT-FUTURES or SPOT). The `books` and `trade` channels are subscribed for each symbol. Spot and Futures are captured continuously and at the same time, under two distinct feed keys in the hub — switching markets on screen only changes the key being read, no connector is ever stopped.\n\nThe heartbeat is application-level, in raw text frames: Bitget drops the connection after 30 s without a `ping`, so the text `\"ping\"` is sent every 20 s (and `\"pong\"` is sent back if the server pings). Reconnection uses exponential backoff (1 s, ×2, capped at 30 s); a watchdog forces a reconnect if no message arrives for 30 s, if trades freeze for more than 120 s while the book stays alive (a real case observed after several hours), or after 30 min of session (preventive reconnect).\n\nOfficial docs:\n\n- [WebSocket — introduction](https://www.bitget.com/api-doc/common/websocket-intro)\n- [Trades channel — Futures](https://www.bitget.com/api-doc/contract/websocket/public/New-Trades-Channel)\n- [Trades channel — Spot](https://www.bitget.com/api-doc/spot/websocket/public/Trades-Channel)\n- [Books (order book) channel — Futures](https://www.bitget.com/api-doc/contract/websocket/public/Order-Book-Channel)\n- [Books (order book) channel — Spot](https://www.bitget.com/api-doc/spot/websocket/public/Depth-Channel)\n\n## DOM\n\n`books` channel — all levels, not the truncated `books1`/`books5`/`books15` variants. Documented push frequencies: 150 ms on Futures, 200 ms on Spot. Bootstrapped 100% over WebSocket: an `action=snapshot` message empties and refills the local book, then the `action=update` messages apply the deltas (a size of 0 removes the level). The local book is kept as strings, not floats: essential to recompute a faithful checksum. Integrity is verified with a CRC32 over the 25 best levels on each side (format `bid1p:bid1s:ask1p:ask1s:…`, signed 32-bit integer); the slightest mismatch raises an exception → reconnect → fresh snapshot. All timestamps come from the exchange clock, never from local time (otherwise book, trades and heatmap drift apart). 150 levels per side are pushed to the hub; the book itself stays full at 300 levels at all times on both markets.\n\n## Trades\n\n`trade` channel: `price`, `size` (in base asset), `side` (the aggressor side), `ts` in UTC ms, `tradeId`. The most direct feed in scope — no conversion at ingestion. Measured rates: ~5.8 trades/s on BTC Futures versus ~1.5 on Spot — Spot is inherently sparse (gaps of more than 30 s are normal there) and its book is ~4× more spread out.\n\n## Pitfall: \"side\" cased differently between WebSocket and REST\n\nSymptom — buy/sell in lowercase over WebSocket, Buy/Sell capitalized over REST.\n\nCause — the two Bitget APIs use different conventions for the same field.\n\nSolution — systematic lowercase normalization before sending the data to the hub.\n\n## Pitfall: trade-channel snapshot to ignore\n\nSymptom — the trade channel's first push contains trades from before startup.\n\nCause — Bitget sends a seeding snapshot on the trade channel.\n\nSolution — action=snapshot is ignored on this channel; history comes from REST (no duplicates, no ambiguity).\n\n## Pitfall: no historical order book over REST\n\nSymptom — impossible to reconstruct a past liquidity heatmap.\n\nCause — hard API limit: no historical order-book endpoint.\n\nSolution — live persistence of book snapshots at 1 Hz; the historical heatmap then only grows forward."
       }
     },
     {
-      "id": "binance",
+      "id": "tr-binance",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Binance",
         "en": "Binance"
@@ -60,40 +36,15 @@
         "fr": "Le flux le plus tradé du périmètre. Il sert d'ancre pour estimer le basis du recalage hybride, Bitget étant trop peu tradé pour un appariement fiable (~17 trades/30 s contre ~222 pour Binance).",
         "en": "The most traded feed in scope. It serves as the anchor for estimating the hybrid re-pricing basis, since Bitget is too thinly traded for reliable matching (~17 trades/30 s vs ~222 for Binance)."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/Binance.PNG",
-          "titre": {
-            "fr": "Vue orderflow — Binance",
-            "en": "Orderflow view — Binance"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux Binance (BTC/USDT).",
-            "en": "Live capture of the terminal on the Binance feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/binance-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nLe flux le plus tradé du périmètre. Il sert d'ancre pour estimer le basis du recalage hybride : Bitget est trop peu tradé pour un appariement fiable (~17 trades/30 s contre ~222 pour Binance).\n\n## Initialisation du carnet\n\nSnapshot via REST /depth (limit=1000, lastUpdateId), puis diffs WebSocket (<sym>@depth@100ms) raccordées par numéro de séquence. Intégrité = continuité de séquence (Spot U/u ; Futures pu == last_u) ; resynchronisation sur tout trou.\n\n## Résultats\n\nSynchronisation snapshot REST + buffer de diffs WebSocket, robuste aux snapshots décalés (attente et refetch sans boucle).\n\nHistorique profond via aggTrades, paginé par fromId (sans contrainte de fenêtre d'une heure).\n\nSeek direct par temps (startTime) : un trou se comble sans repaginer depuis le présent.\n\n## Embûche : @aggTrade muet sur les futures\n\nSymptôme — sur fstream, le flux @aggTrade ne pousse aucun événement alors que @depth fonctionne.\n\nCause — comportement non documenté de l'endpoint futures.\n\nSolution — futures → @trade (trades individuels, id t) ; le Spot conserve @aggTrade (id a).\n\n## Embûche : trades parasites à prix 0\n\nSymptôme — le canal @trade futures émet des trades X=\"NA\" à prix 0 → mèches infinies et faux trous dans le footprint.\n\nCause — fonds d'assurance et ADL injectés dans le flux de trades.\n\nSolution — filtre strict X==\"MARKET\" et prix > 0 dans le handler de trade.\n\n## Embûche : carnet figé non détecté par le watchdog\n\nSymptôme — le carnet gelait (resync bloquée) alors que les trades continuaient : watchdog aveugle.\n\nCause — le watchdog ne surveillait que l'âge du dernier message, pas l'âge du carnet.\n\nSolution — ajout d'un suivi de l'âge du carnet (gel > 45 s = reconnexion) et ancrage du bord droit sur le dernier trade.\n\n## Embûche : déduplication live/REST impossible par id\n\nSymptôme — le volume futures doublait quand le REST recouvrait une plage déjà couverte par le direct.\n\nCause — les ids @trade (t) diffèrent des ids REST aggTrades (a) : la dédup par trade_id ne les croise pas.\n\nSolution — partition par intervalles de couverture en direct : le REST comble les coupures sans recouvrir les plages déjà captées."
+        "fr": "## La connexion\n\nDeux endpoints WebSocket séparés — `wss://stream.binance.com:9443/ws` pour le Spot, `wss://fstream.binance.com/ws` pour les Futures USDT-M — et deux hôtes REST (`api.binance.com`, `fapi.binance.com`). La souscription se fait par message SUBSCRIBE explicite (plus fiable que l'URL combinée), avec les symboles en minuscule dans les noms de stream (`btcusdt@depth@100ms`, `btcusdt@aggTrade`). Le heartbeat est protocolaire : le serveur envoie des pings WebSocket, la bibliothèque répond automatiquement — aucun ping applicatif, contrairement à Bitget. Backoff et watchdog standards (aucun message 30 s / trades figés 120 s / session > 30 min) ; à la reconnexion, chaque symbole repart non synchronisé et exige un nouveau snapshot.\n\nDocs officielles :\n\n- [Streams WebSocket — Spot](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams)\n- [Streams WebSocket — Futures USDT-M](https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams)\n\n## DOM\n\nLe seul carnet du périmètre amorcé par REST. Algorithme : ouvrir le flux de diffs `<sym>@depth@100ms` (une diff toutes les 100 ms) et bufferiser ; récupérer le snapshot REST `/depth` (limit=1000, `lastUpdateId`) ; jeter les diffs déjà couvertes (`u < lastUpdateId`) ; appliquer la première diff qui chevauche le snapshot ; puis exiger la continuité de séquence — Spot : `U == last_u + 1` ; Futures : `pu == last_u`. Tout trou de séquence force une resynchronisation. Pas de checksum : l'intégrité repose entièrement sur les numéros. La synchronisation est robuste aux snapshots décalés — trop ancien ou trop récent, on attend et on refait le fetch au lieu de boucler. 150 niveaux par côté poussés au hub.\n\n## Trades\n\nSpot : `@aggTrade` (trades agrégés — fusion des fills consécutifs d'un même ordre taker au même prix, volume préservé, id `a`). Futures : `@trade` (trades individuels, id `t`). Le côté agresseur se déduit du champ `m` (isBuyerMaker) : `m = true` signifie que l'acheteur était maker, donc l'agresseur est le vendeur — une inversion contre-intuitive. Horodatage `T` en ms.\n\n## Embûche : @aggTrade muet sur les futures\n\nSymptôme — sur fstream, le flux @aggTrade ne pousse aucun événement alors que @depth fonctionne.\n\nCause — comportement non documenté de l'endpoint futures.\n\nSolution — futures → @trade (trades individuels, id t) ; le Spot conserve @aggTrade (id a).\n\n## Embûche : trades parasites à prix 0\n\nSymptôme — le canal @trade futures émet des trades X=\"NA\" à prix 0 → mèches infinies et faux trous dans le footprint.\n\nCause — fonds d'assurance et ADL injectés dans le flux de trades.\n\nSolution — filtre strict X==\"MARKET\" et prix > 0 dans le handler de trade.\n\n## Embûche : carnet figé non détecté par le watchdog\n\nSymptôme — le carnet gelait (resync bloquée) alors que les trades continuaient : watchdog aveugle.\n\nCause — le watchdog ne surveillait que l'âge du dernier message, pas l'âge du carnet.\n\nSolution — ajout d'un suivi de l'âge du carnet (gel > 45 s = reconnexion) et ancrage du bord droit sur le dernier trade.\n\n## Embûche : déduplication live/REST impossible par id\n\nSymptôme — le volume futures doublait quand le REST recouvrait une plage déjà couverte par le direct.\n\nCause — les ids @trade (t) diffèrent des ids REST aggTrades (a) : la dédup par trade_id ne les croise pas.\n\nSolution — partition par intervalles de couverture en direct : le REST ne réinsère rien dans les plages déjà captées, mais comble les creux entre intervalles (coupures live > 3 s). Un simple seuil « avant le lancement » laisserait ces coupures en trous permanents.",
+        "en": "## The connection\n\nTwo separate WebSocket endpoints — `wss://stream.binance.com:9443/ws` for Spot, `wss://fstream.binance.com/ws` for USDT-M Futures — and two REST hosts (`api.binance.com`, `fapi.binance.com`). Subscription goes through an explicit SUBSCRIBE message (more reliable than the combined URL), with lowercase symbols in the stream names (`btcusdt@depth@100ms`, `btcusdt@aggTrade`). The heartbeat is protocol-level: the server sends WebSocket pings and the library answers automatically — no application-level ping, unlike Bitget. Standard backoff and watchdog (no message for 30 s / trades frozen 120 s / session > 30 min); on reconnect, every symbol restarts unsynchronized and requires a new snapshot.\n\nOfficial docs:\n\n- [WebSocket streams — Spot](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams)\n- [WebSocket streams — USDT-M Futures](https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams)\n\n## DOM\n\nThe only book in scope bootstrapped over REST. Algorithm: open the `<sym>@depth@100ms` diff stream (one diff every 100 ms) and buffer; fetch the REST `/depth` snapshot (limit=1000, `lastUpdateId`); drop the diffs already covered (`u < lastUpdateId`); apply the first diff that overlaps the snapshot; then require sequence continuity — Spot: `U == last_u + 1`; Futures: `pu == last_u`. Any sequence gap forces a resync. No checksum: integrity rests entirely on the numbers. The sync is robust to misaligned snapshots — too old or too recent, it waits and fetches again instead of looping. 150 levels per side pushed to the hub.\n\n## Trades\n\nSpot: `@aggTrade` (aggregated trades — consecutive fills of the same taker order at the same price merged, volume preserved, id `a`). Futures: `@trade` (individual trades, id `t`). The aggressor side is derived from the `m` field (isBuyerMaker): `m = true` means the buyer was the maker, so the aggressor is the seller — a counterintuitive inversion. `T` timestamp in ms.\n\n## Pitfall: @aggTrade silent on futures\n\nSymptom — on fstream, the @aggTrade stream pushes no events while @depth works.\n\nCause — undocumented behavior of the futures endpoint.\n\nSolution — futures → @trade (individual trades, id t); Spot keeps @aggTrade (id a).\n\n## Pitfall: junk trades at price 0\n\nSymptom — the futures @trade channel emits X=\"NA\" trades at price 0 → infinite wicks and false gaps in the footprint.\n\nCause — insurance-fund and ADL events injected into the trade stream.\n\nSolution — strict X==\"MARKET\" and price > 0 filter in the trade handler.\n\n## Pitfall: frozen book not caught by the watchdog\n\nSymptom — the book would freeze (resync stuck) while trades kept flowing: the watchdog was blind.\n\nCause — the watchdog only tracked the age of the last message, not the age of the book.\n\nSolution — added book-age tracking (frozen > 45 s = reconnect) and anchored the right edge on the last trade.\n\n## Pitfall: live/REST deduplication impossible by id\n\nSymptom — futures volume doubled whenever REST re-covered a range already captured live.\n\nCause — @trade ids (t) differ from REST aggTrades ids (a): trade_id deduplication can't match them.\n\nSolution — partition by live coverage intervals: REST re-inserts nothing inside the ranges already captured, but fills the dips between intervals (live outages > 3 s). A simple \"before startup\" threshold would leave those outages as permanent gaps."
       }
     },
     {
-      "id": "bybit",
+      "id": "tr-bybit",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Bybit",
         "en": "Bybit"
@@ -103,43 +54,18 @@
         "en": "Fully WebSocket order book — but no deep history."
       },
       "intro": {
-        "fr": "Intégré de bout en bout (carnet + trades en direct). Sa limite d'API en fait un cas intéressant : l'historique des trades n'existe que vers l'avant.",
-        "en": "Integrated end to end (order book + live trades). Its API limit makes it an interesting case: trade history only exists going forward."
+        "fr": "Intégré de bout en bout, carnet et trades en direct, sur Spot et perps USDT. Le carnet est amorcé 100 % en WebSocket et son intégrité tient au numéro de séquence — sans checksum.",
+        "en": "Integrated end to end, order book and live trades, on Spot and USDT perps. The book is bootstrapped fully over WebSocket and its integrity rests on the sequence number — no checksum."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/Bybit.PNG",
-          "titre": {
-            "fr": "Vue orderflow — Bybit",
-            "en": "Orderflow view — Bybit"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux Bybit (BTC/USDT).",
-            "en": "Live capture of the terminal on the Bybit feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/bybit-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nIntégré de bout en bout, carnet et trades en direct. Sa limite d'API en fait un cas intéressant : l'historique des trades n'existe que vers l'avant.\n\n## Initialisation du carnet\n\nSnapshot WebSocket (type=snapshot, orderbook.200) qui réinitialise le carnet local, puis deltas (type=delta ; taille 0 = suppression). Intégrité par numéro de séquence u (un trou lève une exception → reconnexion et snapshot frais).\n\n## Résultats\n\nCarnet profondeur 200 (@100 ms), 150 meilleurs niveaux poussés au hub (aligné sur Bitget et Binance).\n\nPing applicatif et réinitialisation systématique sur snapshot spontané.\n\nLe champ side (S) est déjà celui du taker (agresseur) : pas d'inversion.\n\n## Embûche : aucun historique REST profond\n\nSymptôme — recent-trade ≤ 1000 (spot ≤ 60), sans startTime ni idLessThan : un trou profond ne se comble jamais.\n\nCause — l'API publique n'expose pas de trades paginables.\n\nSolution — historique vers l'avant uniquement (sessions où l'app tourne) ; un trou profond est marqué « réglé » plutôt que retenté sans fin.\n\n## Embûche : trade_id de format différent selon le marché\n\nSymptôme — Linear utilise un UUID, Spot un identifiant numérique : risque de collision de clé d'archive.\n\nCause — conventions distinctes des deux marchés Bybit.\n\nSolution — trade_id stocké en chaîne, clé primaire (marché, symbole, trade_id) valable dans les deux cas."
+        "fr": "## La connexion\n\nDeux endpoints WebSocket v5 — `wss://stream.bybit.com/v5/public/spot` et `/v5/public/linear` (perps USDT). Souscription par `{\"op\":\"subscribe\"}` aux topics `orderbook.200.BTCUSDT` et `publicTrade.BTCUSDT`. Le heartbeat est applicatif mais en JSON : `{\"op\":\"ping\"}` toutes les ~20 s, réponse `{\"op\":\"pong\"}`. Backoff et watchdog standards (aucun message 30 s / trades figés 120 s / session > 30 min).\n\nDocs officielles :\n\n- [Connexion WebSocket](https://bybit-exchange.github.io/docs/v5/ws/connect)\n- [Canal orderbook](https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook)\n- [Canal publicTrade](https://bybit-exchange.github.io/docs/v5/websocket/public/trade)\n\n## DOM\n\nAmorçage 100 % WebSocket, comme Bitget : `type=snapshot` réinitialise le carnet local — y compris les snapshots spontanés que Bybit renvoie parfois en cours de flux (redémarrage de service côté exchange) — puis `type=delta` applique les incréments (taille « 0 » = suppression). Profondeur souscrite : 200, le bon compromis parmi les paliers fixes (1/50/200/1000 niveaux, poussés respectivement toutes les 10/20/100/200 ms) ; 150 meilleurs niveaux poussés au hub, alignés sur Bitget et Binance. Intégrité par numéro de séquence `u` : un message avec `u` inférieur ou égal au dernier est ignoré (doublon), un `u` qui n'est pas `dernier + 1` est un trou → exception → reconnexion, et le WebSocket renvoie un snapshot frais. Pas de checksum.\n\n## Trades\n\nTopic `publicTrade` : `p` (prix), `v` (taille en actif de base), `S` (`Buy`/`Sell`), `T` (ms), `i` (trade id). Le champ `S` est déjà le côté du taker — l'agresseur — donc mapping direct, sans l'inversion du `isBuyerMaker` de Binance. Le format du trade_id change selon le marché : UUID en Linear, numérique en Spot — stocké en chaîne, la clé d'archive (marché, symbole, trade_id) vaut dans les deux cas.\n\n## Embûche : aucun historique REST profond\n\nSymptôme — recent-trade ≤ 1000 (spot ≤ 60), sans startTime ni idLessThan : un trou profond ne se comble jamais.\n\nCause — l'API publique n'expose pas de trades paginables.\n\nSolution — historique vers l'avant uniquement (sessions où l'app tourne) ; un trou vide confirmé est marqué « réglé » plutôt que retenté sans fin.\n\n## Embûche : trade_id de format différent selon le marché\n\nSymptôme — Linear utilise un UUID, Spot un identifiant numérique : risque de collision de clé d'archive.\n\nCause — conventions distinctes des deux marchés Bybit.\n\nSolution — trade_id stocké en chaîne, clé primaire (marché, symbole, trade_id) valable dans les deux cas.",
+        "en": "## The connection\n\nTwo WebSocket v5 endpoints — `wss://stream.bybit.com/v5/public/spot` and `/v5/public/linear` (USDT perps). Subscription via `{\"op\":\"subscribe\"}` to the `orderbook.200.BTCUSDT` and `publicTrade.BTCUSDT` topics. The heartbeat is application-level but in JSON: `{\"op\":\"ping\"}` every ~20 s, answered by `{\"op\":\"pong\"}`. Standard backoff and watchdog (no message 30 s / trades frozen 120 s / session > 30 min).\n\nOfficial docs:\n\n- [WebSocket connect](https://bybit-exchange.github.io/docs/v5/ws/connect)\n- [Orderbook channel](https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook)\n- [publicTrade channel](https://bybit-exchange.github.io/docs/v5/websocket/public/trade)\n\n## DOM\n\nBootstrapped 100% over WebSocket, like Bitget: `type=snapshot` resets the local book — including the spontaneous snapshots Bybit sometimes resends mid-stream (service restart on the exchange side) — then `type=delta` applies the increments (size \"0\" = deletion). Subscribed depth: 200, the right compromise among the fixed tiers (1/50/200/1000 levels, pushed every 10/20/100/200 ms respectively); the 150 best levels are pushed to the hub, aligned with Bitget and Binance. Integrity via the `u` sequence number: a message whose `u` is less than or equal to the last one is ignored (duplicate), a `u` that isn't `last + 1` is a gap → exception → reconnect, and the WebSocket resends a fresh snapshot. No checksum.\n\n## Trades\n\n`publicTrade` topic: `p` (price), `v` (size in base asset), `S` (`Buy`/`Sell`), `T` (ms), `i` (trade id). The `S` field is already the taker's side — the aggressor — so it maps directly, without Binance's `isBuyerMaker` inversion. The trade_id format changes with the market: UUID on Linear, numeric on Spot — stored as a string, so the (market, symbol, trade_id) archive key holds in both cases.\n\n## Pitfall: no deep REST history\n\nSymptom — recent-trade ≤ 1000 (spot ≤ 60), without startTime or idLessThan: a deep gap never gets filled.\n\nCause — the public API exposes no paginable trades.\n\nSolution — forward-only history (sessions where the app runs); a confirmed-empty gap is marked \"settled\" rather than retried forever.\n\n## Pitfall: trade_id format differs by market\n\nSymptom — Linear uses a UUID, Spot a numeric identifier: archive-key collision risk.\n\nCause — different conventions between Bybit's two markets.\n\nSolution — trade_id stored as a string, primary key (market, symbol, trade_id) valid in both cases."
       }
     },
     {
-      "id": "okx",
+      "id": "tr-okx",
+      "parent": "temps-reel",
       "titre": {
         "fr": "OKX",
         "en": "OKX"
@@ -149,43 +75,18 @@
         "en": "Clean sequence chaining — two costly pitfalls."
       },
       "intro": {
-        "fr": "Intégré de bout en bout, avec un collecteur d'historique complet (REST paginable). Deux pièges sérieux résolus : le 403 REST et la taille exprimée en contrats.",
-        "en": "Integrated end to end, with a full history collector (paginable REST). Two serious pitfalls solved: the REST 403 and sizes expressed in contracts."
+        "fr": "Intégré de bout en bout, Spot et SWAP sur un seul endpoint. Le carnet le plus profond du périmètre (400 niveaux), chaîné par numéros de séquence. Deux pièges sérieux résolus : le 403 REST et la taille exprimée en contrats.",
+        "en": "Integrated end to end, Spot and SWAP on a single endpoint. The deepest book in scope (400 levels), chained by sequence numbers. Two serious pitfalls solved: the REST 403 and sizes expressed in contracts."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/OKX.PNG",
-          "titre": {
-            "fr": "Vue orderflow — OKX",
-            "en": "Orderflow view — OKX"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux OKX (BTC/USDT).",
-            "en": "Live capture of the terminal on the OKX feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/okx-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nIntégré de bout en bout, support complet du collecteur (REST paginable). Deux pièges sérieux ont été résolus : le 403 REST et la taille exprimée en contrats.\n\n## Initialisation du carnet\n\nSnapshot WebSocket (action=snapshot, canal books, 400 niveaux) qui réinitialise le carnet, puis mises à jour (action=update ; taille 0 = suppression). Intégrité par chaînage seqId/prevSeqId (prevSeqId == dernier seqId), sinon resynchronisation.\n\n## Résultats\n\nSymboles instId (BTC-USDT-SWAP / BTC-USDT) renormalisés vers BTCUSDT pour le hub.\n\nHistorique paginable (after=tradeId) : support complet du collecteur, contrairement à Bybit.\n\nComblage de trou amorcé au bord (id WebSocket == id REST chez OKX, donc sûr).\n\n## Embûche : REST 403 (et ce n'était PAS une géo-restriction)\n\nSymptôme — toutes les requêtes REST renvoyaient 403 ; on a d'abord cru à un blocage géographique.\n\nCause — OKX bloque le User-Agent par défaut d'urllib.\n\nSolution — User-Agent navigateur explicite (Mozilla/5.0) dans le client REST → réponse 200.\n\n## Embûche : taille en contrats → volume ×100\n\nSymptôme — le volume OKX était 100× (BTC) ou 10× (ETH) trop gros : footprint hybride dominé par OKX et points scatter géants.\n\nCause — la taille (sz) d'un SWAP est un nombre de contrats, pas l'actif de base.\n\nSolution — multiplication par ctVal (BTC-USDT-SWAP 0,01 ; ETH-USDT-SWAP 0,1), appliquée aux trades comme au carnet."
+        "fr": "## La connexion\n\nUn seul endpoint WebSocket (`wss://ws.okx.com:8443/ws/v5/public`) pour Spot et SWAP : c'est l'`instId` qui porte le marché. OKX n'utilise pas `BTCUSDT` mais `BTC-USDT` (Spot) et `BTC-USDT-SWAP` (perp) : le connecteur mappe dans les deux sens et re-normalise vers `BTCUSDT` avant de pousser au hub et à l'archive. Souscription aux canaux `books` et `trades` par instId. Heartbeat texte `\"ping\"`/`\"pong\"` toutes les ~20 s, comme Bitget. Backoff et watchdog standards.\n\nDocs officielles :\n\n- [Connexion WebSocket](https://www.okx.com/docs-v5/en/#overview-websocket-connect)\n- [Canal order book](https://www.okx.com/docs-v5/en/#order-book-trading-market-data-ws-order-book-channel)\n- [Canal trades](https://www.okx.com/docs-v5/en/#order-book-trading-market-data-ws-trades-channel)\n\n## DOM\n\nCanal `books`, 400 niveaux — le plus profond du périmètre ; les incréments sont poussés toutes les 100 ms quand le carnet change. `action=snapshot` réinitialise, `action=update` applique l'incrément (taille « 0 » = suppression) ; les entrées ont 4 champs (`px`, `sz`, champ déprécié, nombre d'ordres), on lit prix et taille. Intégrité par chaînage de séquence : chaque message porte `seqId` et `prevSeqId`, un update n'est accepté que si `prevSeqId` égale le dernier `seqId` vu ; égal = inchangé, inférieur = ancien (ignorés), sinon trou → reconnexion et snapshot frais. OKX fournit aussi un checksum CRC32, volontairement non utilisé : le chaînage suffit, et un environnement géo-restreint le renvoie à zéro. Les tailles du carnet subissent la même conversion ctVal que les trades ; 150 niveaux poussés au hub.\n\n## Trades\n\nCanal `trades` : `px`, `sz`, `side` (déjà l'agresseur), `ts` en ms, `tradeId` numérique. La conversion critique : sur les SWAP, `sz` est un nombre de contrats, pas de l'actif de base — multiplication par le `ctVal` de l'instrument (BTC-USDT-SWAP : 0,01 BTC ; ETH-USDT-SWAP : 0,1 ETH, confirmés via `GET /api/v5/public/instruments`) ; le Spot est déjà en actif de base.\n\n## Embûche : REST 403 (et ce n'était PAS une géo-restriction)\n\nSymptôme — toutes les requêtes REST renvoyaient 403 ; on a d'abord cru à un blocage géographique.\n\nCause — OKX bloque le User-Agent par défaut d'urllib.\n\nSolution — User-Agent navigateur explicite (Mozilla/5.0) dans le client REST → réponse 200.\n\n## Embûche : taille en contrats → volume ×100\n\nSymptôme — le volume OKX était 100× (BTC) ou 10× (ETH) trop gros : footprint hybride dominé par OKX et points scatter géants.\n\nCause — la taille (sz) d'un SWAP est un nombre de contrats, pas l'actif de base.\n\nSolution — multiplication par ctVal (BTC-USDT-SWAP 0,01 ; ETH-USDT-SWAP 0,1), appliquée aux trades comme au carnet.",
+        "en": "## The connection\n\nA single WebSocket endpoint (`wss://ws.okx.com:8443/ws/v5/public`) for Spot and SWAP: the `instId` carries the market. OKX doesn't use `BTCUSDT` but `BTC-USDT` (Spot) and `BTC-USDT-SWAP` (perp): the connector maps both ways and re-normalizes to `BTCUSDT` before pushing to the hub and the archive. Subscription to the `books` and `trades` channels by instId. Text heartbeat `\"ping\"`/`\"pong\"` every ~20 s, like Bitget. Standard backoff and watchdog.\n\nOfficial docs:\n\n- [WebSocket connect](https://www.okx.com/docs-v5/en/#overview-websocket-connect)\n- [Order book channel](https://www.okx.com/docs-v5/en/#order-book-trading-market-data-ws-order-book-channel)\n- [Trades channel](https://www.okx.com/docs-v5/en/#order-book-trading-market-data-ws-trades-channel)\n\n## DOM\n\n`books` channel, 400 levels — the deepest in scope; increments are pushed every 100 ms when the book changes. `action=snapshot` resets, `action=update` applies the increment (size \"0\" = deletion); entries carry 4 fields (`px`, `sz`, a deprecated field, order count), price and size are read. Integrity via sequence chaining: each message carries `seqId` and `prevSeqId`, and an update is only accepted if `prevSeqId` equals the last `seqId` seen; equal = unchanged, lower = stale (ignored), anything else is a gap → reconnect and fresh snapshot. OKX also provides a CRC32 checksum, deliberately unused: the chaining is enough, and a geo-restricted environment returns it as zero. Book sizes get the same ctVal conversion as the trades; 150 levels pushed to the hub.\n\n## Trades\n\n`trades` channel: `px`, `sz`, `side` (already the aggressor), `ts` in ms, numeric `tradeId`. The critical conversion: on SWAPs, `sz` is a number of contracts, not base asset — multiply by the instrument's `ctVal` (BTC-USDT-SWAP: 0.01 BTC; ETH-USDT-SWAP: 0.1 ETH, confirmed via `GET /api/v5/public/instruments`); Spot is already in base asset.\n\n## Pitfall: REST 403 (and it was NOT a geo-restriction)\n\nSymptom — every REST request returned 403; a geographic block was the first suspect.\n\nCause — OKX blocks urllib's default User-Agent.\n\nSolution — explicit browser User-Agent (Mozilla/5.0) in the REST client → 200 response.\n\n## Pitfall: sizes in contracts → volume ×100\n\nSymptom — OKX volume was 100× (BTC) or 10× (ETH) too big: hybrid footprint dominated by OKX and giant scatter points.\n\nCause — a SWAP's size (sz) is a number of contracts, not base asset.\n\nSolution — multiply by ctVal (BTC-USDT-SWAP 0.01; ETH-USDT-SWAP 0.1), applied to trades and book alike."
       }
     },
     {
-      "id": "kucoin",
+      "id": "tr-kucoin",
+      "parent": "temps-reel",
       "titre": {
         "fr": "KuCoin",
         "en": "KuCoin"
@@ -198,40 +99,15 @@
         "fr": "Sixième exchange, Spot et Futures. Plusieurs particularités de format à apprivoiser : token WebSocket à bootstrapper, horodatages en nanosecondes, tailles futures en contrats.",
         "en": "Sixth exchange, Spot and Futures. Several format quirks to tame: a WebSocket token to bootstrap, nanosecond timestamps, futures sizes in contracts."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/Kucoin.PNG",
-          "titre": {
-            "fr": "Vue orderflow — KuCoin",
-            "en": "Orderflow view — KuCoin"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux KuCoin (BTC/USDT).",
-            "en": "Live capture of the terminal on the KuCoin feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/kucoin-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nSixième exchange, Spot et Futures. Les futures sont des perps USDT, donc éligibles à l'hybride-Futures. Plusieurs particularités de format à apprivoiser.\n\n## Initialisation du carnet\n\nCarnet par remplacement total : chaque push level2Depth50 est le top 50 complet (~100 ms), sans incrémental. Aucune séquence nécessaire : un push perdu est corrigé au suivant.\n\n## Résultats\n\nToken WebSocket bootstrappé via POST /bullet-public, puis connexion avec token et connectId.\n\nPing applicatif avant l'échéance du pingInterval (~18 s).\n\nLe champ side est déjà celui du taker (agresseur) : pas d'inversion, contrairement à Coinbase.\n\n## Embûche : pas d'URL WebSocket fixe\n\nSymptôme — impossible de se connecter à une URL WebSocket connue d'avance.\n\nCause — KuCoin distribue un token et un endpoint par POST /bullet-public.\n\nSolution — bootstrap du token (dans un exécuteur pour ne pas bloquer la boucle asyncio partagée).\n\n## Embûche : tailles futures en contrats\n\nSymptôme — les tailles futures étaient ~1000× trop grandes.\n\nCause — WebSocket et REST futures donnent la taille en nombre de contrats.\n\nSolution — multiplication par le multiplier (XBTUSDTM 0,001 ; ETHUSDTM 0,01) ; Spot = 1. Même piège qu'OKX.\n\n## Embûche : horodatages en nanosecondes\n\nSymptôme — les horodatages étaient un million de fois trop grands : trades hors écran.\n\nCause — KuCoin émet les timestamps en nanosecondes (WebSocket et REST).\n\nSolution — conversion en millisecondes (division par 1e6) systématique.\n\n## Embûche : Bitcoin s'appelle XBT en futures\n\nSymptôme — le symbole BTCUSDT ne correspondait pas aux futures KuCoin.\n\nCause — KuCoin Futures utilise XBTUSDTM (BTC → XBT, suffixe M).\n\nSolution — mapping BTCUSDT ↔ XBTUSDTM dans la résolution de symbole."
+        "fr": "## La connexion\n\nPas d'URL WebSocket fixe : il faut d'abord bootstrapper un token par `POST /api/v1/bullet-public` (public, sans auth), qui renvoie le token, l'endpoint et le `pingInterval` ; on se connecte ensuite à `wss://<endpoint>?token=<token>&connectId=<uuid>`. Le bootstrap est fait dans un exécuteur pour ne pas bloquer la boucle asyncio partagée. Spot et Futures ont des hôtes séparés (`api.kucoin.com` / `api-futures.kucoin.com`) mais le même protocole. Heartbeat applicatif JSON `{\"type\":\"ping\"}` avant l'échéance du `pingInterval` (~18 s ; on pingue à ~0,6× l'intervalle). Watchdog standard, plus la détection de carnet figé à 45 s.\n\nDocs officielles :\n\n- [WebSocket — introduction](https://www.kucoin.com/docs-new/websocket-api/base-info/introduction)\n- [Token public — Spot](https://www.kucoin.com/docs-new/websocket-api/base-info/get-public-token-spot-margin)\n- [Token public — Futures](https://www.kucoin.com/docs-new/websocket-api/base-info/get-public-token-futures)\n\n## DOM\n\nPar remplacement total : le canal `level2Depth50` pousse le top 50 complet toutes les ~100 ms — pas de snapshot REST, pas de séquence, pas de resynchronisation : un push perdu est corrigé au suivant. C'est un choix délibéré de robustesse : le canal incrémental `level2` donnerait plus de profondeur, mais ses formats diffèrent entre Spot et Futures et son snapshot sans authentification est partiel — fragile. Les tailles futures subissent la conversion multiplier au carnet aussi ; 50 niveaux par côté stockés et poussés.\n\n## Trades\n\nTopics `/market/match` (Spot) et `/contractMarket/execution` (Futures) : `price`, `size`, `side` (déjà l'agresseur, contrairement à Coinbase), `tradeId`. Trois conversions systématiques : les horodatages arrivent en nanosecondes (WebSocket et REST) → division par 1e6 vers les ms ; les tailles futures sont en contrats → multiplication par le multiplier (XBTUSDTM : 0,001 BTC ; ETHUSDTM : 0,01 ETH), Spot = 1 ; et les symboles — Spot `BTC-USDT`, Futures `XBTUSDTM` (Bitcoin s'appelle XBT, suffixe M) — sont ramenés à `BTCUSDT`.\n\n## Embûche : pas d'URL WebSocket fixe\n\nSymptôme — impossible de se connecter à une URL WebSocket connue d'avance.\n\nCause — KuCoin distribue un token et un endpoint par POST /bullet-public.\n\nSolution — bootstrap du token (dans un exécuteur pour ne pas bloquer la boucle asyncio partagée), puis connexion avec token et connectId.\n\n## Embûche : tailles futures en contrats\n\nSymptôme — les tailles futures étaient ~1000× trop grandes.\n\nCause — WebSocket et REST futures donnent la taille en nombre de contrats.\n\nSolution — multiplication par le multiplier (XBTUSDTM 0,001 ; ETHUSDTM 0,01) ; Spot = 1. Même piège qu'OKX.\n\n## Embûche : horodatages en nanosecondes\n\nSymptôme — les horodatages étaient un million de fois trop grands : trades hors écran.\n\nCause — KuCoin émet les timestamps en nanosecondes (WebSocket et REST).\n\nSolution — conversion en millisecondes (division par 1e6) systématique.\n\n## Embûche : Bitcoin s'appelle XBT en futures\n\nSymptôme — le symbole BTCUSDT ne correspondait pas aux futures KuCoin.\n\nCause — KuCoin Futures utilise XBTUSDTM (BTC → XBT, suffixe M).\n\nSolution — mapping BTCUSDT ↔ XBTUSDTM dans la résolution de symbole.",
+        "en": "## The connection\n\nNo fixed WebSocket URL: a token must first be bootstrapped via `POST /api/v1/bullet-public` (public, no auth), which returns the token, the endpoint and the `pingInterval`; the connection then goes to `wss://<endpoint>?token=<token>&connectId=<uuid>`. The bootstrap runs in an executor so it never blocks the shared asyncio loop. Spot and Futures have separate hosts (`api.kucoin.com` / `api-futures.kucoin.com`) but the same protocol. Application-level JSON heartbeat `{\"type\":\"ping\"}` before the `pingInterval` deadline (~18 s; pinging at ~0.6× the interval). Standard watchdog, plus frozen-book detection at 45 s.\n\nOfficial docs:\n\n- [WebSocket — introduction](https://www.kucoin.com/docs-new/websocket-api/base-info/introduction)\n- [Public token — Spot](https://www.kucoin.com/docs-new/websocket-api/base-info/get-public-token-spot-margin)\n- [Public token — Futures](https://www.kucoin.com/docs-new/websocket-api/base-info/get-public-token-futures)\n\n## DOM\n\nBy full replacement: the `level2Depth50` channel pushes the complete top 50 every ~100 ms — no REST snapshot, no sequence, no resync: a lost push is corrected by the next one. A deliberate robustness choice: the incremental `level2` channel would give more depth, but its formats differ between Spot and Futures and its unauthenticated snapshot is partial — fragile. Futures sizes get the multiplier conversion on the book too; 50 levels per side stored and pushed.\n\n## Trades\n\n`/market/match` (Spot) and `/contractMarket/execution` (Futures) topics: `price`, `size`, `side` (already the aggressor, unlike Coinbase), `tradeId`. Three systematic conversions: timestamps arrive in nanoseconds (WebSocket and REST) → divided by 1e6 down to ms; futures sizes are in contracts → multiplied by the multiplier (XBTUSDTM: 0.001 BTC; ETHUSDTM: 0.01 ETH), Spot = 1; and the symbols — Spot `BTC-USDT`, Futures `XBTUSDTM` (Bitcoin is called XBT, M suffix) — are mapped back to `BTCUSDT`.\n\n## Pitfall: no fixed WebSocket URL\n\nSymptom — impossible to connect to a WebSocket URL known in advance.\n\nCause — KuCoin hands out a token and an endpoint via POST /bullet-public.\n\nSolution — token bootstrap (in an executor so the shared asyncio loop never blocks), then connection with token and connectId.\n\n## Pitfall: futures sizes in contracts\n\nSymptom — futures sizes were ~1000× too big.\n\nCause — futures WebSocket and REST give the size as a number of contracts.\n\nSolution — multiply by the multiplier (XBTUSDTM 0.001; ETHUSDTM 0.01); Spot = 1. Same trap as OKX.\n\n## Pitfall: timestamps in nanoseconds\n\nSymptom — timestamps were a million times too big: trades off screen.\n\nCause — KuCoin emits timestamps in nanoseconds (WebSocket and REST).\n\nSolution — systematic conversion to milliseconds (division by 1e6).\n\n## Pitfall: Bitcoin is called XBT on futures\n\nSymptom — the BTCUSDT symbol didn't match KuCoin futures.\n\nCause — KuCoin Futures uses XBTUSDTM (BTC → XBT, M suffix).\n\nSolution — BTCUSDT ↔ XBTUSDTM mapping in symbol resolution."
       }
     },
     {
-      "id": "coinbase",
+      "id": "tr-coinbase",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Coinbase",
         "en": "Coinbase"
@@ -244,40 +120,15 @@
         "fr": "Cinquième exchange (Spot seul). Intégré et capté en continu, mais exclu de la vue hybride : pas de futures et des paires USDT peu liquides.",
         "en": "Fifth exchange (Spot only). Integrated and captured continuously, but excluded from the hybrid view: no futures and thin USDT pairs."
       },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/Coinbase.PNG",
-          "titre": {
-            "fr": "Vue orderflow — Coinbase",
-            "en": "Orderflow view — Coinbase"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux Coinbase (BTC/USDT).",
-            "en": "Live capture of the terminal on the Coinbase feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "carnet",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/coinbase-carnet.svg",
-          "titre": {
-            "fr": "Initialisation du carnet",
-            "en": "Order book initialization"
-          },
-          "description": {
-            "fr": "Schéma : snapshot initial, mises à jour incrémentales et contrôle d'intégrité du carnet.",
-            "en": "Schema: initial snapshot, incremental updates and order book integrity check."
-          }
-        }
-      ],
+      "items": [],
       "texte": {
-        "fr": "## Rôle\n\nCinquième exchange (Spot seul). Intégré et capté en continu, mais exclu de la vue hybride : pas de futures et des paires USDT peu liquides.\n\n## Initialisation du carnet\n\nSnapshot WebSocket (level2_batch, type=snapshot, 50 niveaux), puis l2update (changements [side, price, size] ; 0 = suppression). Aucune séquence ni checksum : best-effort, avec watchdog de carnet figé (45 s = reconnexion).\n\n## Résultats\n\nSymboles BTC-USDT ↔ BTCUSDT renormalisés ; la GUI bascule automatiquement le menu Marché sur Spot.\n\nHistorique paginable (after=tradeId) : support complet du collecteur.\n\nDétection de carnet figé (resync level2 bloquée alors que les trades passent).\n\n## Embûche : side = côté du MAKER (piège classique)\n\nSymptôme — un match side=\"sell\" signifie en réalité qu'un acheteur a agressé.\n\nCause — Coinbase renvoie le côté du maker, pas celui de l'agresseur.\n\nSolution — inversion systématique (sell ↔ buy), en WebSocket comme en REST.\n\n## Embûche : liquidité USDT faible → exclu de l'hybride\n\nSymptôme — footprint et heatmap très clairsemés ; beaucoup de « trous » de 30 s sont de vrais creux.\n\nCause — les paires USDT de Coinbase sont peu actives (face à leurs paires USD).\n\nSolution — règle « ne pas s'acharner » (trou vide confirmé, plus retenté) et exclusion de la vue hybride."
+        "fr": "## La connexion\n\nEndpoint unique `wss://ws-feed.exchange.coinbase.com`, souscription par un message `{\"type\":\"subscribe\"}` aux canaux `matches` et `level2_batch` pour les product_ids `BTC-USDT`/`ETH-USDT` (symboles BASE-QUOTE, ramenés à `BTCUSDT`). Heartbeat protocolaire de la bibliothèque WebSocket (ping toutes les 20 s) — Coinbase n'exige pas de ping applicatif. Watchdog standard, plus la détection de carnet figé à 45 s (la resync `level2` peut bloquer pendant que les trades passent). La GUI bascule automatiquement le menu Marché sur Spot.\n\nDocs officielles :\n\n- [WebSocket — vue d'ensemble](https://docs.cdp.coinbase.com/exchange/websocket-feed/overview)\n- [Canaux WebSocket (matches, level2_batch)](https://docs.cdp.coinbase.com/exchange/websocket-feed/channels)\n\n## DOM\n\nLe canal `level2_batch` pousse ses lots de mises à jour toutes les 50 ms. `type=snapshot` réinitialise (50 niveaux), puis `type=l2update` applique les `changes` — des triplets [side, prix, taille], taille « 0 » = suppression. Aucune séquence ni checksum sur `level2_batch` : intégrité best-effort, assumée et documentée — le canal `level2` complet, avec garanties, exige une authentification, et le projet reste sans clé. La resynchronisation passe par le snapshot frais de la reconnexion, forcée par le watchdog en cas de gel.\n\n## Trades\n\nCanal `matches` : `price`, `size`, `time` (ISO 8601 → ms), `trade_id` entier. Le `side` est celui du MAKER — le piège classique Coinbase : un match `side=\"sell\"` signifie qu'un acheteur a agressé. Inversion systématique (sell ↔ buy), appliquée en WebSocket comme en REST (même convention des deux côtés). Le `last_match` envoyé à la souscription est ignoré, pour ne pas dupliquer le dernier trade.\n\n## Embûche : side = côté du MAKER (piège classique)\n\nSymptôme — un match side=\"sell\" signifie en réalité qu'un acheteur a agressé.\n\nCause — Coinbase renvoie le côté du maker, pas celui de l'agresseur.\n\nSolution — inversion systématique (sell ↔ buy), en WebSocket comme en REST.\n\n## Embûche : liquidité USDT faible → exclu de l'hybride\n\nSymptôme — footprint et heatmap très clairsemés ; beaucoup de « trous » de 30 s sont de vrais creux.\n\nCause — les paires USDT de Coinbase sont peu actives (face à leurs paires USD).\n\nSolution — règle « ne pas s'acharner » (trou vide confirmé, plus retenté) et exclusion de la vue hybride.",
+        "en": "## The connection\n\nSingle endpoint `wss://ws-feed.exchange.coinbase.com`, subscription via a `{\"type\":\"subscribe\"}` message to the `matches` and `level2_batch` channels for the `BTC-USDT`/`ETH-USDT` product_ids (BASE-QUOTE symbols, mapped back to `BTCUSDT`). Protocol-level heartbeat from the WebSocket library (ping every 20 s) — Coinbase requires no application-level ping. Standard watchdog, plus frozen-book detection at 45 s (the `level2` resync can stall while trades keep flowing). The GUI automatically switches the Market menu to Spot.\n\nOfficial docs:\n\n- [WebSocket — overview](https://docs.cdp.coinbase.com/exchange/websocket-feed/overview)\n- [WebSocket channels (matches, level2_batch)](https://docs.cdp.coinbase.com/exchange/websocket-feed/channels)\n\n## DOM\n\nThe `level2_batch` channel pushes its update batches every 50 ms. `type=snapshot` resets (50 levels), then `type=l2update` applies the `changes` — [side, price, size] triplets, size \"0\" = deletion. No sequence and no checksum on `level2_batch`: best-effort integrity, assumed and documented — the full `level2` channel, with guarantees, requires authentication, and the project stays keyless. Resynchronization goes through the fresh snapshot of a reconnect, forced by the watchdog on a freeze.\n\n## Trades\n\n`matches` channel: `price`, `size`, `time` (ISO 8601 → ms), integer `trade_id`. The `side` is the MAKER's — the classic Coinbase trap: a `side=\"sell\"` match means a buyer aggressed. Systematic inversion (sell ↔ buy), applied over WebSocket and REST alike (same convention on both sides). The `last_match` sent at subscription is ignored, to avoid duplicating the last trade.\n\n## Pitfall: side = the MAKER's side (classic trap)\n\nSymptom — a side=\"sell\" match actually means a buyer aggressed.\n\nCause — Coinbase returns the maker's side, not the aggressor's.\n\nSolution — systematic inversion (sell ↔ buy), over WebSocket and REST alike.\n\n## Pitfall: thin USDT liquidity → excluded from the hybrid\n\nSymptom — very sparse footprint and heatmap; many 30 s \"gaps\" are real lulls.\n\nCause — Coinbase's USDT pairs are quiet (compared to their USD pairs).\n\nSolution — \"don't insist\" rule (gap confirmed empty, never retried) and exclusion from the hybrid view."
       }
     },
     {
-      "id": "kraken",
+      "id": "tr-kraken",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Kraken",
         "en": "Kraken"
@@ -292,76 +143,13 @@
       },
       "items": [],
       "texte": {
-        "fr": "## Rôle\n\nKraken a été évalué comme septième exchange, puis écarté. Le présenter honnêtement montre qu'intégrer n'est pas toujours la bonne décision.\n\n## Résultats\n\nDécision documentée dans le dossier de conception (§7).\n\nLe pipeline reste prêt à accueillir tout exchange au même format (un BaseConnector et sa fiche de documentation).\n\n## Embûche : Spot et Futures, deux API séparées\n\nSymptôme — aucune cohérence d'endpoints ni de conventions entre les deux marchés Kraken.\n\nCause — architecture historique de Kraken (Kraken Pro face à Kraken Futures).\n\nSolution — double effort d'intégration pour un apport marginal → rejet.\n\n## Embûche : futures non-USDT\n\nSymptôme — les perps Kraken ne s'alignent pas sur le périmètre USDT du projet.\n\nCause — libellés et quotités différents.\n\nSolution — hors du périmètre hybride-Futures USDT → écarté."
+        "fr": "## Résultats\n\nKraken a été évalué comme septième exchange, puis écarté — décision documentée dans le dossier de conception (§7).\n\nLe pipeline reste prêt à accueillir tout exchange au même format (un BaseConnector et sa fiche de documentation).\n\n## Embûche : Spot et Futures, deux API séparées\n\nSymptôme — aucune cohérence d'endpoints ni de conventions entre les deux marchés Kraken.\n\nCause — architecture historique de Kraken (Kraken Pro face à Kraken Futures).\n\nSolution — double effort d'intégration pour un apport marginal → rejet.\n\n## Embûche : futures non-USDT\n\nSymptôme — les perps Kraken ne s'alignent pas sur le périmètre USDT du projet.\n\nCause — libellés et quotités différents.\n\nSolution — hors du périmètre hybride-Futures USDT → écarté.",
+        "en": "## Results\n\nKraken was evaluated as a seventh exchange, then set aside — a decision documented in the design document (§7).\n\nThe pipeline remains ready to take in any exchange in the same format (a BaseConnector and its documentation sheet).\n\n## Pitfall: Spot and Futures, two separate APIs\n\nSymptom — no consistency of endpoints or conventions between Kraken's two markets.\n\nCause — Kraken's legacy architecture (Kraken Pro versus Kraken Futures).\n\nSolution — double the integration effort for a marginal gain → rejected.\n\n## Pitfall: non-USDT futures\n\nSymptom — Kraken perps don't line up with the project's USDT scope.\n\nCause — different tickers and contract sizes.\n\nSolution — outside the USDT Futures-hybrid scope → set aside."
       }
     },
     {
-      "id": "hybride",
-      "titre": {
-        "fr": "Hybride",
-        "en": "Hybrid"
-      },
-      "accroche": {
-        "fr": "L'aboutissement : tous les flux recalés et fusionnés en un seul marché.",
-        "en": "The culmination: every feed re-priced and merged into one market."
-      },
-      "intro": {
-        "fr": "L'aboutissement du projet : chaque exchange est décalé sur l'axe de prix de Bitget, puis leur orderflow est sommé en un seul footprint, un DOM cumulé et une heatmap fusionnée.",
-        "en": "The project's culmination: each exchange is shifted onto Bitget's price axis, then their orderflow is summed into a single footprint, a cumulative DOM and a merged heatmap."
-      },
-      "items": [
-        {
-          "id": "vue",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/Hybride.PNG",
-          "titre": {
-            "fr": "Vue orderflow — Hybride",
-            "en": "Orderflow view — Hybride"
-          },
-          "description": {
-            "fr": "Capture en direct du terminal sur le flux Hybride (BTC/USDT).",
-            "en": "Live capture of the terminal on the Hybride feed (BTC/USDT)."
-          }
-        },
-        {
-          "id": "recalage",
-          "type": "figure",
-          "url": "assets/crypto/affichage/svg/recalage-hybride.svg",
-          "titre": {
-            "fr": "Recalage des prix sur Bitget (avant / après)",
-            "en": "Re-pricing onto Bitget (before / after)"
-          },
-          "description": {
-            "fr": "Schéma : le basis estimé sur les prix tradés décale chaque flux sur l'axe Bitget.",
-            "en": "Schema: the basis estimated on traded prices shifts each feed onto the Bitget axis."
-          }
-        }
-      ],
-      "texte": {
-        "fr": "## Le principe\n\nLes exchanges ne tradent pas au même prix absolu : quelques dollars d'écart selon le basis perp/spot, la liquidité et les frais. La vue hybride décale chaque exchange sur l'axe de prix de Bitget, puis additionne leur orderflow en un seul footprint, un seul DOM cumulé et une heatmap fusionnée. Périmètre : Bitget, Binance, Bybit, OKX et KuCoin (Coinbase exclu).\n\n## Le cœur : recaler les prix sur Bitget\n\nL'erreur évitée : le recalage ne se fait pas sur l'écart des milieux de carnet, biaisés par le décalage asynchrone entre carnets (l'un bouge avant l'autre pendant un mouvement). Le basis est estimé sur les prix réellement tradés, par appariement temporel des trades (≤ 500 ms) et médiane sur 60 s. L'appariement annule le timing et donne le vrai offset.\n\n## Trois protections cumulées\n\n1 — Basis figé par bucket de 60 s. Le basis n'est pas un scalaire global mais une carte « bucket de 60 s → offset ». Chaque bucket est calculé une seule fois puis gelé, ce qui évite que tout le footprint d'un exchange saute de position quand la médiane frémit.\n\n2 — Découplage ancre / référence. L'axe affiché reste Bitget, mais le basis est estimé contre le flux le plus liquide (Binance), Bitget étant trop peu tradé. Mesuré : appariement de 89 à 98 % contre Binance, contre 11 à 53 % contre Bitget.\n\n3 — Gel par trade. Le prix recalé de chaque trade est calculé une seule fois (à sa première apparition) puis mis en cache par trade_id : un trade déjà affiché ne rebouge jamais.\n\n## Basis observé par exchange (mesuré en direct)\n\nBybit ≈ +5,9 $ (~1 bps), stable. OKX ≈ −2,9 $ (~−0,5 bps), stable. KuCoin ≈ −21 $ (~−3,5 bps) : exchange moins liquide, écart réel.\n\n## Les phases\n\nPhase 1 — Footprint hybride (fait) : pour chaque flux, décaler ses rangs de prix du basis du bucket puis sommer les volumes bid/ask dans la grille unifiée. Bitget reste la référence d'axe (décochable : on masque alors son volume sans changer l'axe).\n\nPhase 2 — Heatmap et DOM hybride en direct (fait) : le DOM est un seul carnet cumulé (somme des flux recalés, anti-croisement au milieu Bitget) ; la heatmap est la somme recalée des carnets en mémoire. Limite : couvre le direct (~2 h) ; l'historique profond multi-flux reste à faire.\n\nPhase 3 — Arbitrage (fait) : voir la section dédiée."
-      }
-    },
-    {
-      "id": "arbitrage",
-      "titre": {
-        "fr": "Arbitrage",
-        "en": "Arbitrage"
-      },
-      "accroche": {
-        "fr": "Détection d'écarts réels entre exchanges, en bps nets de frais.",
-        "en": "Detecting real cross-exchange gaps, in fee-net basis points."
-      },
-      "intro": {
-        "fr": "Sur les carnets en direct, on teste toutes les paires d'exchanges pour détecter un écart de prix exploitable, mesuré en bps nets après frais taker.",
-        "en": "On the live order books, every exchange pair is tested for an exploitable price gap, measured in basis points net of taker fees."
-      },
-      "items": [],
-      "texte": {
-        "fr": "## Le principe\n\nSur les carnets en direct du périmètre, on teste toutes les paires ordonnées (vendre au meilleur bid de X, acheter au meilleur ask de Y) sur les prix bruts — un arbitrage est un écart réel, jamais recalé. Le seuil est exprimé en bps nets, après frais taker.\n\n## La formule\n\nnet_bps = edge / mid × 10⁴ − frais_taker(X) − frais_taker(Y).\n\n## Ce qui est livré\n\nUn moteur pur find_arbs(books, fees, threshold), testé en headless (sens, edge et net exacts).\n\nLa meilleure opportunité est affichée dans la barre d'état ; toutes sont journalisées dans arb.db (purge à 7 jours).\n\nDes marqueurs en étoile dorée au milieu de chaque opportunité (dernière heure et fenêtre visible).\n\nUne table de frais éditable (bouton « Arbitrage ⚙ ») : frais taker par exchange × marché, plus le seuil.\n\n## Frais taker par défaut (éditables)\n\nBitget 0,06 % en futures, 0,10 % en spot. Binance 0,05 % / 0,10 %. Bybit 0,055 % / 0,10 %. OKX 0,05 % / 0,10 %. KuCoin 0,06 % / 0,10 %. Valeurs au palier STANDARD VIP 0, sans réduction token (sources publiques 2026), toutes éditables. Seuil par défaut : 1 bps net."
-      }
-    },
-    {
-      "id": "architecture",
+      "id": "tr-architecture",
+      "parent": "temps-reel",
       "titre": {
         "fr": "Architecture & ingénierie",
         "en": "Architecture & engineering"
@@ -376,8 +164,517 @@
       },
       "items": [],
       "texte": {
-        "fr": "## Vue d'ensemble\n\nLes briques transversales qui n'appartiennent à aucun exchange en particulier, mais qui font tenir l'ensemble en temps réel sans gel.\n\n## Rollup pré-agrégé du footprint\n\nReconstruire le footprint depuis les trades bruts coûte O(trades), soit ~300 ms par frame en zoom arrière (gel, GIL saturé). Parade : un rollup base 60 s × tick × side, maintenu de façon incrémentale par un curseur sur le rowid (capte tout insert, même hors ordre, une seule fois). Coût de lecture borné par l'affichage : ~3 à 5 ms par frame côté Qt.\n\n## Concurrence SQLite (WAL)\n\nÉcriture = une connexion et un verrou ; lectures = une connexion en lecture seule par thread (query_only=1), hors verrou. Un agrégat lourd (~4 s) ne bloque plus l'archivage en direct ni le collecteur (insert à 0,2 ms médian, mesuré pendant deux agrégats concurrents).\n\n## Collecteur d'historique — un thread par exchange\n\nParallélisme réseau : un exchange lent ou rate-limité n'affame plus les autres. Ancrage sur Bitget (plancher commun). Phase A : combler tous les trous (> 30 s) du présent jusqu'au plancher ; Phase B : passé profond. Un trou vide confirmé n'est plus retenté ; une erreur ou un 429 déclenche un cooldown.\n\n## Tout le lourd hors thread Qt\n\nFootprint et heatmap historiques, lectures disque, rollup : threads de fond, cache et debounce. Le thread Qt ne fait que rendre — le GIL n'est jamais saturé, le collecteur n'est pas affamé, la navigation profonde ne gèle jamais.\n\n## Rétention bornée\n\nPurge horaire des trades bruts de plus de 7 jours et déjà agrégés (le footprint survit dans le rollup ; les scatters ne couvrent que la dernière heure), plus purge des vieux snapshots de carnet : les bases ne grossissent plus sans fin.\n\n## Lignes bid/ask reconstruites\n\nLe carnet historique n'existe que là où l'app a tourné. Ailleurs, on reconstruit la ligne depuis les trades (un acheteur agresseur a tapé l'ask, un vendeur le bid). Fusion du carnet réel (prioritaire) et de la reconstruction dans les trous, coupée sur les vrais trous de données."
+        "fr": "## Vue d'ensemble\n\nLes briques transversales qui n'appartiennent à aucun exchange en particulier, mais qui font tenir l'ensemble en temps réel sans gel.\n\n## Rollup pré-agrégé du footprint\n\nReconstruire le footprint depuis les trades bruts coûte O(trades), soit ~300 ms par frame en zoom arrière (gel, GIL saturé). Parade : un rollup base 60 s × tick × side, maintenu de façon incrémentale par un curseur sur le rowid (capte tout insert, même hors ordre, une seule fois). Coût de lecture borné par l'affichage : ~3 à 5 ms par frame côté Qt.\n\n## Concurrence SQLite (WAL)\n\nÉcriture = une connexion et un verrou ; lectures = une connexion en lecture seule par thread (query_only=1), hors verrou. Un agrégat lourd (~4 s) ne bloque plus l'archivage en direct ni le collecteur (insert à 0,2 ms médian, mesuré pendant deux agrégats concurrents).\n\n## Collecteur d'historique — un thread par exchange\n\nParallélisme réseau : un exchange lent ou rate-limité n'affame plus les autres. Ancrage sur Bitget (plancher commun). Phase A : combler tous les trous (> 30 s) du présent jusqu'au plancher ; Phase B : passé profond. Un trou vide confirmé n'est plus retenté ; une erreur ou un 429 déclenche un cooldown.\n\n## Tout le lourd hors thread Qt\n\nFootprint et heatmap historiques, lectures disque, rollup : threads de fond, cache et debounce. Le thread Qt ne fait que rendre — le GIL n'est jamais saturé, le collecteur n'est pas affamé, la navigation profonde ne gèle jamais.\n\n## Rétention bornée\n\nPurge horaire des trades bruts de plus de 7 jours et déjà agrégés (le footprint survit dans le rollup ; les scatters ne couvrent que la dernière heure), plus purge des vieux snapshots de carnet : les bases ne grossissent plus sans fin.\n\n## Snapshots de carnet à 1 Hz\n\nAucun exchange n'offre d'orderbook historique : les snapshots de carnet sont persistés à 1 Hz pendant que l'app tourne. C'est cette persistance qui donne à la heatmap son historique — il ne grandit que vers l'avant.",
+        "en": "## Overview\n\nThe cross-cutting building blocks that belong to no single exchange, but keep the whole thing running in real time without freezing.\n\n## Pre-aggregated footprint rollup\n\nRebuilding the footprint from raw trades costs O(trades), i.e. ~300 ms per frame when zoomed out (freeze, saturated GIL). The answer: a 60 s × tick × side base rollup, maintained incrementally by a cursor on the rowid (catches every insert, even out of order, exactly once). Read cost bounded by the display: ~3 to 5 ms per frame on the Qt side.\n\n## SQLite concurrency (WAL)\n\nWrites = one connection and one lock; reads = one read-only connection per thread (query_only=1), outside the lock. A heavy aggregate (~4 s) no longer blocks live archiving or the collector (0.2 ms median insert, measured during two concurrent aggregates).\n\n## History collector — one thread per exchange\n\nNetwork parallelism: a slow or rate-limited exchange no longer starves the others. Anchored on Bitget (the common floor). Phase A: fill every gap (> 30 s) from the present down to the floor; Phase B: deep past. A confirmed-empty gap is never retried; an error or a 429 triggers a cooldown.\n\n## Everything heavy off the Qt thread\n\nHistorical footprint and heatmap, disk reads, rollup: background threads, cache and debounce. The Qt thread does nothing but render — the GIL never saturates, the collector is never starved, deep navigation never freezes.\n\n## Bounded retention\n\nHourly purge of raw trades older than 7 days and already aggregated (the footprint survives in the rollup; the scatters only cover the last hour), plus purge of old book snapshots: the databases no longer grow without end.\n\n## Book snapshots at 1 Hz\n\nNo exchange offers a historical order book: book snapshots are persisted at 1 Hz while the app runs. That persistence is what gives the heatmap its history — it only grows forward."
       }
+    },
+    {
+      "id": "trades",
+      "titre": {
+        "fr": "Trades / orderflow",
+        "en": "Trades / orderflow"
+      },
+      "accroche": {
+        "fr": "La bande des transactions, normalisée et archivée en continu — le côté de l'agresseur en couleur.",
+        "en": "The trade tape, normalized and archived continuously — the aggressor's side in color."
+      },
+      "intro": {
+        "fr": "La bande des transactions en direct, point par point, colorée selon le côté de l'agresseur. Une même méthode pour les six exchanges — une capture par exchange ci-dessous.",
+        "en": "The live trade tape, point by point, colored by the aggressor's side. One method for all six exchanges — one capture per exchange below."
+      },
+      "statut": {
+        "fr": "6 exchanges",
+        "en": "6 exchanges"
+      },
+      "texte": {
+        "fr": "## Ce que montre la vue\n\nLes transactions en direct, point par point, colorées selon le côté de l'agresseur. Les points ne sont tracés que sur la dernière heure — au-delà, l'information vit dans le footprint.\n\n## La méthode\n\nUne seule mécanique pour les six exchanges : chaque connecteur pousse ses trades au hub dans le schéma commun (prix, taille en actif de base, côté agresseur, horodatage exchange en millisecondes), et la vue les trace tels quels — aucun retraitement à l'affichage. Ce qui varie à l'écran vient du flux lui-même : la densité (~222 trades/30 s chez Binance contre ~17 chez Bitget) et la profondeur d'historique affichable, de « jusqu'au plancher commun » (Binance, OKX) à « vers l'avant seulement » (Bybit, KuCoin). La connexion, les conversions et l'archivage qui alimentent la vue sont documentés au pilier Temps réel, exchange par exchange.",
+        "en": "## What the view shows\n\nLive transactions, point by point, colored by the aggressor's side. Points are only drawn over the last hour — beyond that, the information lives in the footprint.\n\n## The method\n\nA single mechanism for all six exchanges: each connector pushes its trades to the hub in the shared schema (price, size in base asset, aggressor side, exchange timestamp in milliseconds), and the view draws them as they are — no reprocessing at display time. What varies on screen comes from the feed itself: density (~222 trades/30 s on Binance versus ~17 on Bitget) and the displayable history depth, from \"down to the common floor\" (Binance, OKX) to \"forward only\" (Bybit, KuCoin). The connection, conversions and archiving that feed the view are documented in the Real time pillar, exchange by exchange."
+      },
+      "items": [
+        {
+          "id": "bitget",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bitget-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — Bitget",
+            "en": "Trades / orderflow — Bitget"
+          },
+          "description": {
+            "fr": "La bande des transactions en direct — l'historique remonte ~90 jours via REST.",
+            "en": "The live trade tape — history reaches back ~90 days via REST."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLa bande de référence — un flux peu dense (~17 trades/30 s) : chaque point se distingue. L'historique affichable remonte ~90 jours, la profondeur REST de Bitget, dont le trade le plus ancien sert de plancher commun aux autres exchanges. Les embûches d'ingestion (casse du side, snapshot d'amorçage du canal trade) sont documentées sur la page Bitget du Temps réel.",
+            "en": "## What you see\n\nThe reference tape — a sparse feed (~17 trades/30 s): every point stands out. Displayable history reaches back ~90 days, Bitget's REST depth, whose oldest trade serves as the common floor for the other exchanges. The ingestion pitfalls (side casing, trade-channel seeding snapshot) are documented on the Bitget page of the Real time pillar."
+          }
+        },
+        {
+          "id": "binance",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/binance-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — Binance",
+            "en": "Trades / orderflow — Binance"
+          },
+          "description": {
+            "fr": "Le flux le plus dense du périmètre (~222 trades/30 s).",
+            "en": "The densest feed in scope (~222 trades/30 s)."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLa bande la plus dense du périmètre (~222 trades/30 s contre ~17 pour Bitget) — c'est ce flux qui sert d'ancre au recalage hybride. L'historique affichable descend jusqu'au plancher Bitget. Sans le filtrage des trades parasites à prix 0, la vue montrait des mèches infinies et de faux trous : ce filtre et les autres embûches du flux (@aggTrade muet sur les futures, déduplication live/REST) sont documentés sur la page Binance du Temps réel.",
+            "en": "## What you see\n\nThe densest tape in scope (~222 trades/30 s versus ~17 for Bitget) — this is the feed that anchors the hybrid re-pricing. Displayable history goes down to the Bitget floor. Without the filter on junk trades at price 0, the view showed infinite wicks and false gaps: that filter and the feed's other pitfalls (@aggTrade silent on futures, live/REST deduplication) are documented on the Binance page of the Real time pillar."
+          }
+        },
+        {
+          "id": "bybit",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bybit-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — Bybit",
+            "en": "Trades / orderflow — Bybit"
+          },
+          "description": {
+            "fr": "La bande s'arrête au passé là où l'app n'a pas tourné : la limite d'API se voit à l'écran.",
+            "en": "The tape stops in the past where the app wasn't running: the API limit shows on screen."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUne bande complète en direct — mais l'orderflow historique s'arrête net là où l'app n'a pas tourné : la limite d'API de Bybit (aucun historique REST profond) se voit directement dans cette vue. Le détail de la limite et le séquencement du flux sont documentés sur la page Bybit du Temps réel.",
+            "en": "## What you see\n\nA complete tape live — but historical orderflow stops dead where the app wasn't running: Bybit's API limit (no deep REST history) shows directly in this view. The limit's details and the feed's sequencing are documented on the Bybit page of the Real time pillar."
+          }
+        },
+        {
+          "id": "okx",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/okx-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — OKX",
+            "en": "Trades / orderflow — OKX"
+          },
+          "description": {
+            "fr": "Tailles converties de contrats en BTC (ctVal 0,01) : des points comparables aux autres exchanges.",
+            "en": "Sizes converted from contracts to BTC (ctVal 0.01): points comparable to the other exchanges."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUn flux dense, aux tailles comparables aux autres exchanges — parce que chaque trade est converti de contrats en BTC (ctVal 0,01) à l'ingestion : sans cette conversion, les points étaient géants et le volume 100× trop gros (vécu). Historique profond affichable, borné au plancher Bitget. La conversion et le 403 REST sont documentés sur la page OKX du Temps réel.",
+            "en": "## What you see\n\nA dense feed, with sizes comparable to the other exchanges — because every trade is converted from contracts to BTC (ctVal 0.01) at ingestion: without that conversion, the points were giant and the volume 100× too big (lived through it). Deep displayable history, bounded by the Bitget floor. The conversion and the REST 403 are documented on the OKX page of the Real time pillar."
+          }
+        },
+        {
+          "id": "kucoin",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/kucoin-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — KuCoin",
+            "en": "Trades / orderflow — KuCoin"
+          },
+          "description": {
+            "fr": "Bande clairsemée d'un exchange ~20× plus petit que Binance, aux mêmes échelles que les autres.",
+            "en": "The sparse tape of an exchange ~20× smaller than Binance, at the same scales as the others."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUne bande clairsemée — l'exchange est ~20× plus petit que Binance — affichée aux mêmes échelles que les autres. L'historique n'existe que vers l'avant : le REST public s'arrête aux 100 derniers trades, comme chez Bybit. Les trois conversions du flux (nanosecondes, contrats, XBT) sont documentées sur la page KuCoin du Temps réel.",
+            "en": "## What you see\n\nA sparse tape — the exchange is ~20× smaller than Binance — displayed at the same scales as the others. History only exists going forward: the public REST stops at the last 100 trades, as with Bybit. The feed's three conversions (nanoseconds, contracts, XBT) are documented on the KuCoin page of the Real time pillar."
+          }
+        },
+        {
+          "id": "coinbase",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/coinbase-trades.png",
+          "titre": {
+            "fr": "Trades / orderflow — Coinbase",
+            "en": "Trades / orderflow — Coinbase"
+          },
+          "description": {
+            "fr": "Bande mince : les paires USDT de Coinbase sont peu actives. Spot seulement.",
+            "en": "A thin tape: Coinbase's USDT pairs are quiet. Spot only."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUne bande mince : beaucoup de silences de 30 s sont de vrais creux de marché — les paires USDT de Coinbase sont peu actives (l'exchange est d'ailleurs exclu de la vue hybride). Les couleurs d'agresseur ne sont justes que parce que le side du maker est inversé à l'ingestion : ce piège classique est documenté sur la page Coinbase du Temps réel.",
+            "en": "## What you see\n\nA thin tape: many 30 s silences are real market lulls — Coinbase's USDT pairs are quiet (the exchange is in fact excluded from the hybrid view). The aggressor colors are only right because the maker's side is inverted at ingestion: that classic trap is documented on the Coinbase page of the Real time pillar."
+          }
+        }
+      ]
+    },
+    {
+      "id": "dom",
+      "titre": {
+        "fr": "DOM",
+        "en": "DOM"
+      },
+      "accroche": {
+        "fr": "Le carnet en direct, du top 50 au top 1 000 selon l'exchange.",
+        "en": "The live book, from top 50 to top 1,000 depending on the exchange."
+      },
+      "intro": {
+        "fr": "Le carnet d'ordres en direct, sur le bord droit du graphe : les quantités en attente aux meilleurs prix, côté achat et côté vente. Une capture par exchange ci-dessous.",
+        "en": "The live order book, on the right edge of the chart: resting quantities at the best prices, bid side and ask side. One capture per exchange below."
+      },
+      "statut": {
+        "fr": "6 exchanges",
+        "en": "6 exchanges"
+      },
+      "texte": {
+        "fr": "## Ce que montre la vue\n\nLes quantités en attente aux meilleurs prix, côté achat et côté vente, mises à jour en continu sur le bord droit du graphe.\n\n## La méthode\n\nLe hub maintient pour chaque exchange un carnet local reconstruit — snapshot, mises à jour incrémentales, contrôle d'intégrité, resynchronisation au moindre écart ; la mécanique exacte, propre à chaque exchange, est documentée au pilier Temps réel. La vue lit ce carnet et le dessine en colonne. Ce qui change d'un exchange à l'autre : la profondeur affichable — de 50 niveaux par côté (KuCoin, Coinbase) à 1 000 (Binance) — et la densité de la colonne qui va avec.",
+        "en": "## What the view shows\n\nThe resting quantities at the best prices, bid side and ask side, updated continuously on the right edge of the chart.\n\n## The method\n\nFor each exchange the hub maintains a rebuilt local book — snapshot, incremental updates, integrity check, resync on any mismatch; the exact mechanics, specific to each exchange, are documented in the Real time pillar. The view reads that book and draws it as a column. What changes from one exchange to the next: the displayable depth — from 50 levels per side (KuCoin, Coinbase) to 1,000 (Binance) — and the density of the column that comes with it."
+      },
+      "items": [
+        {
+          "id": "bitget",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bitget-dom.png",
+          "titre": {
+            "fr": "DOM — Bitget",
+            "en": "DOM — Bitget"
+          },
+          "description": {
+            "fr": "Le carnet en direct : 300 niveaux (150 + 150), sur Spot comme sur USDT-Futures.",
+            "en": "The live book: 300 levels (150 + 150), on Spot and USDT-Futures alike."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUn carnet maintenu plein à 300 niveaux (150 + 150) en permanence, sur les deux marchés (Spot et USDT-Futures). L'initialisation et le contrôle d'intégrité (checksum CRC32) sont documentés sur la page Bitget du Temps réel.",
+            "en": "## What you see\n\nA book kept full at 300 levels (150 + 150) at all times, on both markets (Spot and USDT-Futures). Initialization and the integrity check (CRC32 checksum) are documented on the Bitget page of the Real time pillar."
+          }
+        },
+        {
+          "id": "binance",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/binance-dom.png",
+          "titre": {
+            "fr": "DOM — Binance",
+            "en": "DOM — Binance"
+          },
+          "description": {
+            "fr": "Carnet initialisé à 1 000 niveaux, rafraîchi toutes les 100 ms.",
+            "en": "A book initialized at 1,000 levels, refreshed every 100 ms."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe carnet le plus profond à l'initialisation (1 000 niveaux), rafraîchi toutes les 100 ms : la colonne du DOM est dense et réactive. Le raccord snapshot/diffs par numéro de séquence et le watchdog de carnet figé sont documentés sur la page Binance du Temps réel.",
+            "en": "## What you see\n\nThe deepest book at initialization (1,000 levels), refreshed every 100 ms: the DOM column is dense and responsive. The snapshot/diff join by sequence number and the frozen-book watchdog are documented on the Binance page of the Real time pillar."
+          }
+        },
+        {
+          "id": "bybit",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bybit-dom.png",
+          "titre": {
+            "fr": "DOM — Bybit",
+            "en": "DOM — Bybit"
+          },
+          "description": {
+            "fr": "Carnet de profondeur 200, rafraîchi toutes les 100 ms ; 150 meilleurs niveaux affichés.",
+            "en": "A book at depth 200, refreshed every 100 ms; the 150 best levels shown."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nUn carnet de profondeur 200, rafraîchi toutes les 100 ms ; les 150 meilleurs niveaux sont poussés au hub, alignés sur Bitget et Binance. Le séquencement et la resynchronisation sur snapshot frais sont documentés sur la page Bybit du Temps réel.",
+            "en": "## What you see\n\nA depth-200 book, refreshed every 100 ms; the 150 best levels are pushed to the hub, aligned with Bitget and Binance. The sequencing and the fresh-snapshot resynchronization are documented on the Bybit page of the Real time pillar."
+          }
+        },
+        {
+          "id": "okx",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/okx-dom.png",
+          "titre": {
+            "fr": "DOM — OKX",
+            "en": "DOM — OKX"
+          },
+          "description": {
+            "fr": "Le carnet le plus profond du périmètre : 400 niveaux.",
+            "en": "The deepest book in scope: 400 levels."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe carnet le plus profond du périmètre (400 niveaux) : la colonne du DOM reste bien remplie loin du prix. Les tailles sont affichées après conversion des contrats en BTC (ctVal), comme les trades. Le chaînage de séquence et la conversion sont documentés sur la page OKX du Temps réel.",
+            "en": "## What you see\n\nThe deepest book in scope (400 levels): the DOM column stays well filled away from the price. Sizes are displayed after converting contracts to BTC (ctVal), like the trades. The sequence chaining and the conversion are documented on the OKX page of the Real time pillar."
+          }
+        },
+        {
+          "id": "kucoin",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/kucoin-dom.png",
+          "titre": {
+            "fr": "DOM — KuCoin",
+            "en": "DOM — KuCoin"
+          },
+          "description": {
+            "fr": "Top 50 par côté, rafraîchi d'un bloc (~100 ms).",
+            "en": "Top 50 per side, refreshed as a block (~100 ms)."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe top 50 de chaque côté, rafraîchi d'un bloc toutes les ~100 ms : la colonne la plus courte du périmètre — au-delà des 50 meilleurs niveaux, le flux ne donne rien. Le bootstrap du token WebSocket est documenté sur la page KuCoin du Temps réel.",
+            "en": "## What you see\n\nThe top 50 on each side, refreshed as a block every ~100 ms: the shortest column in scope — beyond the 50 best levels, the feed gives nothing. The WebSocket token bootstrap is documented on the KuCoin page of the Real time pillar."
+          }
+        },
+        {
+          "id": "coinbase",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/coinbase-dom.png",
+          "titre": {
+            "fr": "DOM — Coinbase",
+            "en": "DOM — Coinbase"
+          },
+          "description": {
+            "fr": "50 niveaux par côté, souvent clairsemés. Spot seulement.",
+            "en": "50 levels per side, often sparse. Spot only."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\n50 niveaux par côté, souvent clairsemés : les paires USDT de Coinbase sont peu actives. Spot seulement — la GUI bascule automatiquement le menu Marché sur Spot. Le régime best-effort (ni séquence ni checksum, watchdog de carnet figé) est documenté sur la page Coinbase du Temps réel.",
+            "en": "## What you see\n\n50 levels per side, often sparse: Coinbase's USDT pairs are quiet. Spot only — the GUI automatically switches the Market menu to Spot. The best-effort regime (no sequence, no checksum, frozen-book watchdog) is documented on the Coinbase page of the Real time pillar."
+          }
+        }
+      ]
+    },
+    {
+      "id": "heatmap",
+      "titre": {
+        "fr": "Heatmap",
+        "en": "Heatmap"
+      },
+      "accroche": {
+        "fr": "La liquidité du carnet dans le temps — persistée à 1 Hz, reconstruite depuis les trades là où le carnet manque.",
+        "en": "Book liquidity over time — persisted at 1 Hz, rebuilt from trades where the book is missing."
+      },
+      "intro": {
+        "fr": "La liquidité du carnet dans le temps, façon Bookmap. Aucun exchange n'offre d'orderbook historique : tout se capte en direct — et là où le carnet manque, les lignes best bid/ask sont reconstruites depuis les trades. Une capture par exchange ci-dessous.",
+        "en": "Book liquidity over time, Bookmap-style. No exchange offers a historical order book: everything is captured live — and where the book is missing, the best bid/ask lines are rebuilt from trades. One capture per exchange below."
+      },
+      "statut": {
+        "fr": "6 exchanges",
+        "en": "6 exchanges"
+      },
+      "texte": {
+        "fr": "## Ce que montre la vue\n\nChaque colonne est un instant, chaque rangée un niveau de prix, l'intensité est la quantité en attente : on voit les murs de liquidité se poser, tenir ou disparaître.\n\n## La méthode\n\nAucun exchange n'offre d'orderbook historique : les snapshots de carnet sont persistés à 1 Hz pendant que l'app tourne, et l'historique de liquidité ne grandit que vers l'avant. Les ~2 dernières heures vivent en mémoire ; au-delà, la lecture disque est bornée (~1000 colonnes réparties sur la fenêtre, quel que soit le volume) et asynchrone — la navigation profonde ne gèle jamais.\n\n## Les lignes best bid/ask reconstruites sur l'historique\n\nLà où l'app n'a pas tourné, il n'y a pas de carnet — mais il y a des trades. Or chaque trade révèle un bord du carnet à son instant : un acheteur agresseur a nécessairement tapé le meilleur ask, un vendeur agresseur le meilleur bid. Les lignes du meilleur bid et du meilleur ask sont donc reconstruites depuis les trades archivés : le side donne le bord (ask ou bid), le prix donne le niveau. La ligne affichée fusionne le carnet réel — prioritaire partout où il existe — et cette reconstruction dans les trous ; elle se coupe sur les vrais trous de données, plutôt que d'inventer un carnet là où il n'y a ni snapshots ni trades.",
+        "en": "## What the view shows\n\nEach column is a moment, each row a price level, and the intensity is the resting quantity: you watch liquidity walls get placed, hold or vanish.\n\n## The method\n\nNo exchange offers a historical order book: book snapshots are persisted at 1 Hz while the app runs, and the liquidity history only grows forward. The last ~2 hours live in memory; beyond that, disk reads are bounded (~1,000 columns spread over the window, whatever the volume) and asynchronous — deep navigation never freezes.\n\n## The best bid/ask lines rebuilt over history\n\nWhere the app wasn't running there is no book — but there are trades. And every trade reveals one edge of the book at its instant: an aggressive buyer necessarily hit the best ask, an aggressive seller the best bid. The best-bid and best-ask lines are therefore rebuilt from the archived trades: the side gives the edge (ask or bid), the price gives the level. The displayed line merges the real book — which takes priority wherever it exists — with this reconstruction in the gaps; it breaks off on true data gaps, rather than inventing a book where there are neither snapshots nor trades."
+      },
+      "items": [
+        {
+          "id": "bitget",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bitget-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — Bitget",
+            "en": "Heatmap — Bitget"
+          },
+          "description": {
+            "fr": "La liquidité du carnet dans le temps — persistée à 1 Hz, elle ne grandit que vers l'avant.",
+            "en": "Book liquidity over time — persisted at 1 Hz, it only grows forward."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLa bande de référence (150 + 150 niveaux). C'est en branchant Bitget qu'on a découvert la limite commune : aucun endpoint d'orderbook historique — d'où la persistance à 1 Hz et l'historique qui ne grandit que vers l'avant.",
+            "en": "## What you see\n\nThe reference band (150 + 150 levels). Plugging in Bitget is how the shared limit was discovered: no historical order-book endpoint — hence the 1 Hz persistence and a history that only grows forward."
+          }
+        },
+        {
+          "id": "binance",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/binance-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — Binance",
+            "en": "Heatmap — Binance"
+          },
+          "description": {
+            "fr": "Densité maximale en direct ; l'historique du carnet reste borné aux sessions captées.",
+            "en": "Maximum density live; book history remains limited to captured sessions."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLa bande la plus dense du périmètre en direct (carnet initialisé à 1 000 niveaux). Le passé reste borné aux sessions captées, comme partout.",
+            "en": "## What you see\n\nThe densest band in scope live (book initialized at 1,000 levels). The past stays bounded by the captured sessions, as everywhere."
+          }
+        },
+        {
+          "id": "bybit",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bybit-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — Bybit",
+            "en": "Heatmap — Bybit"
+          },
+          "description": {
+            "fr": "Même régime : la liquidité ne se capte que vers l'avant.",
+            "en": "Same regime: liquidity is only captured going forward."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nBande de 200 niveaux (150 poussés au hub). Comme l'orderflow, la liquidité ne se capte que vers l'avant, pendant les sessions.",
+            "en": "## What you see\n\nA 200-level band (150 pushed to the hub). Like the orderflow, liquidity is only captured going forward, during sessions."
+          }
+        },
+        {
+          "id": "okx",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/okx-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — OKX",
+            "en": "Heatmap — OKX"
+          },
+          "description": {
+            "fr": "Carnet profond (400 niveaux) → bande de liquidité large.",
+            "en": "Deep book (400 levels) → a wide liquidity band."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe carnet à 400 niveaux donne la bande de liquidité la plus large du périmètre. Les tailles du carnet subissent la même conversion ctVal que les trades.",
+            "en": "## What you see\n\nThe 400-level book yields the widest liquidity band in scope. Book sizes get the same ctVal conversion as the trades."
+          }
+        },
+        {
+          "id": "kucoin",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/kucoin-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — KuCoin",
+            "en": "Heatmap — KuCoin"
+          },
+          "description": {
+            "fr": "Limitée aux 50 meilleurs niveaux par côté — la bande la plus étroite du périmètre.",
+            "en": "Limited to the 50 best levels per side — the narrowest band in scope."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLimitée aux 50 meilleurs niveaux de chaque côté (le flux level2Depth50 ne donne rien de plus) : la bande de liquidité la plus étroite du périmètre.",
+            "en": "## What you see\n\nLimited to the 50 best levels on each side (the level2Depth50 feed gives nothing more): the narrowest liquidity band in scope."
+          }
+        },
+        {
+          "id": "coinbase",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/coinbase-heatmap.png",
+          "titre": {
+            "fr": "Heatmap — Coinbase",
+            "en": "Heatmap — Coinbase"
+          },
+          "description": {
+            "fr": "Bande étroite et peu contrastée — la liquidité USDT de Coinbase est mince. Spot seulement.",
+            "en": "A narrow, low-contrast band — Coinbase's USDT liquidity is thin. Spot only."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nBande étroite (50 niveaux) et peu contrastée : les paires USDT de Coinbase sont peu actives. Spot seulement — l'exchange est d'ailleurs exclu de la vue hybride.",
+            "en": "## What you see\n\nA narrow band (50 levels) with little contrast: Coinbase's USDT pairs are quiet. Spot only — the exchange is in fact excluded from the hybrid view."
+          }
+        }
+      ]
+    },
+    {
+      "id": "footprint",
+      "titre": {
+        "fr": "Footprint",
+        "en": "Footprint"
+      },
+      "accroche": {
+        "fr": "Volumes d'achat et de vente par niveau de prix, reconstruits depuis les trades.",
+        "en": "Buy and sell volumes per price level, rebuilt from the trades."
+      },
+      "intro": {
+        "fr": "Les volumes d'achat et de vente par niveau de prix et par chandelle, reconstruits depuis les trades archivés. Le footprint hérite des trades : densité du flux, conversions d'unités et profondeur d'historique font toute la différence. Une capture par exchange ci-dessous.",
+        "en": "Buy and sell volumes per price level and per candle, rebuilt from the archived trades. The footprint inherits from the trades: feed density, unit conversions and history depth make all the difference. One capture per exchange below."
+      },
+      "statut": {
+        "fr": "6 exchanges",
+        "en": "6 exchanges"
+      },
+      "texte": {
+        "fr": "## Ce que montre la vue\n\nPour chaque chandelle, les volumes d'achat et de vente à chaque niveau de prix (tick stable par instrument), avec le delta. C'est la vue qui condense l'orderflow au-delà de la dernière heure.\n\n## La méthode\n\nReconstruite depuis les trades archivés. En zoom serré, sur les trades bruts (réactivité du direct) ; en zoom arrière, depuis un rollup pré-agrégé (base 60 s × tick × sens) maintenu en continu : le coût de lecture reste borné par l'affichage, quel que soit l'historique accumulé.",
+        "en": "## What the view shows\n\nFor each candle, the buy and sell volumes at every price level (a stable tick per instrument), with the delta. This is the view that condenses the orderflow beyond the last hour.\n\n## The method\n\nRebuilt from the archived trades. Zoomed in, from the raw trades (live responsiveness); zoomed out, from a pre-aggregated rollup (60 s × tick × side base) maintained continuously: read cost stays bounded by the display, however much history accumulates."
+      },
+      "items": [
+        {
+          "id": "bitget",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bitget-footprint.png",
+          "titre": {
+            "fr": "Footprint — Bitget",
+            "en": "Footprint — Bitget"
+          },
+          "description": {
+            "fr": "Volumes bid/ask par niveau de prix — le format Bitget est le schéma cible, sans conversion.",
+            "en": "Bid/ask volumes per price level — the Bitget format is the target schema, no conversion."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe footprint de référence : prix, tailles et horodatages sont déjà au format cible, aucun recalage ni conversion. Historique ~90 jours (la profondeur REST de Bitget).",
+            "en": "## What you see\n\nThe reference footprint: prices, sizes and timestamps are already in the target format, no re-pricing and no conversion. History ~90 days (Bitget's REST depth)."
+          }
+        },
+        {
+          "id": "binance",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/binance-footprint.png",
+          "titre": {
+            "fr": "Footprint — Binance",
+            "en": "Footprint — Binance"
+          },
+          "description": {
+            "fr": "Le footprint le plus fourni — c'est lui l'ancre du recalage hybride.",
+            "en": "The fullest footprint — it anchors the hybrid re-pricing."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nLe footprint le plus fourni du périmètre, à la mesure du flux (~222 trades/30 s) — c'est lui l'ancre du basis du recalage hybride. Son historique descend jusqu'au plancher Bitget grâce au seek par temps des aggTrades.",
+            "en": "## What you see\n\nThe fullest footprint in scope, in line with the feed (~222 trades/30 s) — it anchors the basis of the hybrid re-pricing. Its history goes down to the Bitget floor thanks to the aggTrades time seek."
+          }
+        },
+        {
+          "id": "bybit",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/bybit-footprint.png",
+          "titre": {
+            "fr": "Footprint — Bybit",
+            "en": "Footprint — Bybit"
+          },
+          "description": {
+            "fr": "Complet en direct ; au passé, limité aux sessions où l'app a tourné.",
+            "en": "Complete live; in the past, limited to sessions where the app ran."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nComplet en direct ; au passé, il s'arrête là où l'app n'a pas tourné : la limite d'API de Bybit (pas de REST profond) se voit directement dans cet affichage.",
+            "en": "## What you see\n\nComplete live; in the past, it stops where the app wasn't running: Bybit's API limit (no deep REST) shows directly in this display."
+          }
+        },
+        {
+          "id": "okx",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/okx-footprint.png",
+          "titre": {
+            "fr": "Footprint — OKX",
+            "en": "Footprint — OKX"
+          },
+          "description": {
+            "fr": "Volumes comparables aux autres exchanges une fois la conversion ctVal appliquée.",
+            "en": "Volumes comparable to other exchanges once the ctVal conversion is applied."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nSans la conversion ctVal, le volume était 100× trop gros et le footprint hybride était dominé par OKX (vécu). Après conversion, volumes comparables aux autres ; historique profond possible, borné au plancher Bitget.",
+            "en": "## What you see\n\nWithout the ctVal conversion, the volume was 100× too big and the hybrid footprint was dominated by OKX (lived through it). After conversion, volumes comparable to the others; deep history possible, bounded by the Bitget floor."
+          }
+        },
+        {
+          "id": "kucoin",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/kucoin-footprint.png",
+          "titre": {
+            "fr": "Footprint — KuCoin",
+            "en": "Footprint — KuCoin"
+          },
+          "description": {
+            "fr": "Exchange ~20× plus petit que Binance : footprint clairsemé mais aux mêmes échelles.",
+            "en": "An exchange ~20× smaller than Binance: a sparse footprint, at the same scales."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nExchange ~20× plus petit que Binance : footprint clairsemé, mais affiché aux mêmes échelles que les autres (× multiplier 0,001 appliqué aux tailles futures).",
+            "en": "## What you see\n\nAn exchange ~20× smaller than Binance: a sparse footprint, but displayed at the same scales as the others (× 0.001 multiplier applied to futures sizes)."
+          }
+        },
+        {
+          "id": "coinbase",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/coinbase-footprint.png",
+          "titre": {
+            "fr": "Footprint — Coinbase",
+            "en": "Footprint — Coinbase"
+          },
+          "description": {
+            "fr": "Clairsemé : beaucoup de minutes vides sont de vrais creux, pas des trous de données.",
+            "en": "Sparse: many empty minutes are real lulls, not data gaps."
+          },
+          "texte": {
+            "fr": "## Ce qu'on voit\n\nClairsemé : les minutes vides sont souvent de vrais creux de marché, pas des trous de données — la liquidité USDT de Coinbase est mince.",
+            "en": "## What you see\n\nSparse: the empty minutes are often real market lulls, not data gaps — Coinbase's USDT liquidity is thin."
+          }
+        }
+      ]
     }
   ]
 }

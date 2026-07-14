@@ -3,8 +3,8 @@
     {
       "id": "historique",
       "titre": {
-        "fr": "Historiques",
-        "en": "Histories"
+        "fr": "Historiques (REST)",
+        "en": "Histories (REST)"
       },
       "accroche": {
         "fr": "L'historique tick-par-tick, exchange par exchange : archives publiques, REST borné ou rien du tout — chaque page dit ce que l'exchange permet, preuve à l'appui.",
@@ -22,22 +22,42 @@
       "inclure": "historique"
     },
     {
-      "id": "affichage",
+      "id": "temps-reel",
       "titre": {
-        "fr": "Affichage",
-        "en": "Display"
+        "fr": "Temps réel (WebSocket)",
+        "en": "Real time (WebSocket)"
       },
       "accroche": {
-        "fr": "Six exchanges réconciliés en un marché « hybride », avec détection des dislocations de carnet en direct.",
-        "en": "Six exchanges reconciled into one \"hybrid\" market, with live order-book dislocation detection."
+        "fr": "La donnée vivante : connecteurs WebSocket, normalisation vers un schéma commun, intégrité des carnets, archivage continu.",
+        "en": "Live data: WebSocket connectors, normalization to a common schema, order book integrity, continuous archiving."
       },
       "intro": {
-        "fr": "Un terminal d'orderflow façon Bookmap qui réconcilie six exchanges crypto en une vue cohérente : footprint, heatmap de liquidité, carnet et trades, le tout normalisé puis fusionné en un marché « hybride » avec détection des dislocations de carnet en direct. Le vrai sujet n'est pas « j'ai branché six exchanges », mais que chacun s'est battu pour rentrer dans le moule : choisissez-en un pour voir ses embûches et leurs solutions, puis suivez l'hybride, les dislocations et l'architecture.",
-        "en": "A Bookmap-style orderflow terminal that reconciles six crypto exchanges into one coherent view: footprint, liquidity heatmap, order book and trades, all normalized then merged into a \"hybrid\" market with live order-book dislocation detection. The real story isn't \"I plugged in six exchanges\" but that each one had to fight its way into the mold: pick one to see its pitfalls and fixes, then follow the hybrid, the dislocations and the architecture."
+        "fr": "Entre l'historique et l'écran, il y a la donnée vivante. Six exchanges sont branchés en WebSocket, chacun avec son dialecte : tout est normalisé vers un schéma commun — symbole BTCUSDT, taille en actif de base, horodatage en millisecondes UTC, side = agresseur —, l'intégrité de chaque carnet est garantie (snapshot, mises à jour, resynchronisation au moindre écart) et tout est archivé en continu. Chaque page documente un exchange : sa connexion, l'initialisation de son carnet et ses embûches d'ingestion. Deux pages à part : le rejet de Kraken, et l'architecture qui fait tenir l'ensemble sans gel.",
+        "en": "Between history and the screen sits the live data. Six exchanges are connected over WebSocket, each with its own dialect: everything is normalized to a common schema — BTCUSDT symbol, size in base asset, millisecond UTC timestamps, side = aggressor —, every book's integrity is enforced (snapshot, updates, resync on any mismatch) and everything is archived continuously. Each page documents one exchange: its connection, its book initialization and its ingestion pitfalls. Two pages stand apart: the Kraken rejection, and the architecture that keeps it all running without freezing."
       },
       "statut": {
-        "fr": "6 exchanges + hybride",
-        "en": "6 exchanges + hybrid"
+        "fr": "6 exchanges branchés — Kraken écarté",
+        "en": "6 exchanges connected — Kraken set aside"
+      },
+      "sousHub": true
+    },
+    {
+      "id": "affichage",
+      "titre": {
+        "fr": "Visualisations",
+        "en": "Visualizations"
+      },
+      "accroche": {
+        "fr": "Quatre vues superposables sur un seul graphe — trades, DOM, heatmap, footprint — déclinées sur six exchanges.",
+        "en": "Four views stackable on a single chart — trades, DOM, heatmap, footprint — across six exchanges."
+      },
+      "intro": {
+        "fr": "Un terminal d'orderflow façon Bookmap : quatre vues superposables sur un seul graphe — la bande des trades (orderflow), le carnet en direct (DOM), la heatmap de liquidité et le footprint. Chaque page explique la méthode qui reconstruit la vue, puis montre sa capture sur chacun des six exchanges. Tout ce qui alimente ces pixels — connexion, normalisation, intégrité des carnets — vit dans le pilier Temps réel ; la fusion de tous les flux en un seul marché a sa propre page : L'hybride.",
+        "en": "A Bookmap-style orderflow terminal: four views stackable on a single chart — the trade tape (orderflow), the live book (DOM), the liquidity heatmap and the footprint. Each page explains the method that rebuilds the view, then shows its capture on each of the six exchanges. Everything feeding those pixels — connection, normalization, book integrity — lives in the Real time pillar; the fusion of all feeds into one market has its own page: The hybrid."
+      },
+      "statut": {
+        "fr": "4 vues × 6 exchanges",
+        "en": "4 views × 6 exchanges"
       },
       "sousHub": true,
       "inclure": "affichage"
@@ -74,12 +94,12 @@
         "en": "Signals computed on Binance data, automated execution on Bitget — joined by the hybrid's bridge."
       },
       "statut": {
-        "fr": "À venir",
-        "en": "Coming up"
+        "fr": "Détection de dislocation livrée — exécution à venir",
+        "en": "Dislocation detection shipped — execution coming up"
       },
       "texte": {
-        "fr": "## L'objectif\n\nExécuter automatiquement les stratégies validées par le backtesting. La décision et l'exécution ne vivent pas au même endroit : les signaux sont calculés sur les données Binance — le marché de référence, celui de l'historique et des backtests — et les ordres partent sur l'API de Bitget.\n\n## Le pont hybride\n\nUn signal né à un prix Binance doit devenir un ordre à un prix Bitget. Le recalage de l'hybride — le basis mesuré en continu sur les prix réellement tradés — fait la traduction ; la détection de dislocation sert de garde-fou : quand les exchanges divergent ou qu'un flux devient suspect, le bot réduit la voilure ou s'arrête.\n\n## La démarche\n\nDéveloppement et validation sur l'environnement de démonstration de Bitget (fonds virtuels, mêmes API que la production) : aucun risque tant que la stratégie n'a pas fait ses preuves. Le connecteur Bitget écrit pour l'affichage (WebSocket + REST) est réutilisé tel quel.\n\n## Le passage en réel\n\nSeulement une fois les stratégies validées en démo, avec des garde-fous d'exécution : taille de position limitée, arrêt d'urgence, journal des ordres.",
-        "en": "## The goal\n\nAutomatically executing the strategies validated by the backtesting. Decision and execution don't live in the same place: signals are computed on Binance data — the reference market, the one behind the history and the backtests — and orders go out on the Bitget API.\n\n## The hybrid bridge\n\nA signal born at a Binance price must become an order at a Bitget price. The hybrid's realignment — the basis continuously measured on actually-traded prices — does the translation; dislocation detection acts as a safeguard: when exchanges diverge or a feed turns suspicious, the bot scales down or stops.\n\n## The approach\n\nDevelopment and validation on Bitget's demo environment (virtual funds, same APIs as production): zero risk until a strategy has proven itself. The Bitget connector written for the display (WebSocket + REST) is reused as is.\n\n## Going live\n\nOnly once the strategies are validated on the demo, with execution safeguards: capped position size, emergency stop, order journal."
+        "fr": "## L'objectif\n\nExécuter automatiquement les stratégies validées par le backtesting. La décision et l'exécution ne vivent pas au même endroit : les signaux sont calculés sur les données Binance — le marché de référence, celui de l'historique et des backtests — et les ordres partent sur l'API de Bitget.\n\n## Le pont hybride\n\nUn signal né à un prix Binance doit devenir un ordre à un prix Bitget. Le recalage de l'hybride — le basis mesuré en continu sur les prix réellement tradés — fait la traduction ; la détection de dislocation sert de garde-fou : quand les exchanges divergent ou qu'un flux devient suspect, le bot réduit la voilure ou s'arrête.\n\n## Déjà livré : la détection de dislocation\n\nNée dans le terminal d'affichage, la détection tourne sur les carnets en direct : toutes les paires ordonnées d'exchanges sont testées (vendre au meilleur bid de X, acheter au meilleur ask de Y) sur les prix bruts — une dislocation est un écart réel, jamais recalé. Le seuil est exprimé en bps nets, après frais taker : net_bps = edge / mid × 10⁴ − frais_taker(X) − frais_taker(Y).\n\nCe qui est livré : un moteur pur find_arbs(books, fees, threshold), testé en headless (sens, edge et net exacts) ; la meilleure opportunité affichée dans la barre d'état ; toutes journalisées dans arb.db (purge à 7 jours) ; des marqueurs en étoile dorée au milieu de chaque opportunité ; une table de frais éditable (frais taker par exchange × marché, valeurs au palier standard VIP 0, sources publiques 2026 ; seuil par défaut 1 bps net).\n\n## La démarche\n\nDéveloppement et validation sur l'environnement de démonstration de Bitget (fonds virtuels, mêmes API que la production) : aucun risque tant que la stratégie n'a pas fait ses preuves. Le connecteur Bitget écrit pour l'affichage (WebSocket + REST) est réutilisé tel quel.\n\n## Le passage en réel\n\nSeulement une fois les stratégies validées en démo, avec des garde-fous d'exécution : taille de position limitée, arrêt d'urgence, journal des ordres.",
+        "en": "## The goal\n\nAutomatically executing the strategies validated by the backtesting. Decision and execution don't live in the same place: signals are computed on Binance data — the reference market, the one behind the history and the backtests — and orders go out on the Bitget API.\n\n## The hybrid bridge\n\nA signal born at a Binance price must become an order at a Bitget price. The hybrid's realignment — the basis continuously measured on actually-traded prices — does the translation; dislocation detection acts as a safeguard: when exchanges diverge or a feed turns suspicious, the bot scales down or stops.\n\n## Already shipped: dislocation detection\n\nBorn in the display terminal, the detection runs on the live order books: every ordered pair of exchanges is tested (sell at X's best bid, buy at Y's best ask) on raw prices — a dislocation is a real gap, never re-priced. The threshold is expressed in fee-net basis points: net_bps = edge / mid × 10⁴ − taker_fee(X) − taker_fee(Y).\n\nWhat's shipped: a pure find_arbs(books, fees, threshold) engine, tested headless (direction, edge and net exact); the best opportunity shown in the status bar; all of them journaled in arb.db (7-day purge); golden-star markers at the middle of each opportunity; an editable fee table (taker fees per exchange × market, standard VIP 0 tier values, public sources 2026; default threshold 1 net bps).\n\n## The approach\n\nDevelopment and validation on Bitget's demo environment (virtual funds, same APIs as production): zero risk until a strategy has proven itself. The Bitget connector written for the display (WebSocket + REST) is reused as is.\n\n## Going live\n\nOnly once the strategies are validated on the demo, with execution safeguards: capped position size, emergency stop, order journal."
       }
     },
     {
@@ -98,9 +118,41 @@
         "en": "Cross-cutting concept"
       },
       "texte": {
-        "fr": "## Le concept\n\nUn future sur indice naît sur un marché central : un seul carnet, un seul flux, une seule vérité des prix. Le même perpétuel crypto, lui, se négocie simultanément sur des dizaines d'exchanges qui ne se parlent pas. L'hybride reconstruit ce que la crypto n'a pas : six exchanges normalisés au même schéma, recalés entre eux par les prix réellement tradés (basis mesuré en continu), puis fusionnés en un carnet et un flux uniques.\n\n## Trois incarnations\n\n- **Dans l'affichage** : la vitrine — le marché recentralisé se regarde en direct, footprint et heatmap consolidés, dislocations mises en évidence quand un exchange décroche des autres.\n- **Dans le backtesting** : des études ciblées — vérifier qu'un edge validé sur Binance survit sur le flux consolidé, et tester les stratégies dont la dislocation est le signal.\n- **Dans l'automatisation** : le pont opérationnel — les signaux naissent à des prix Binance, les ordres s'exécutent à des prix Bitget ; le basis mesuré par l'hybride traduit l'un vers l'autre, et la détection de dislocation sert de garde-fou.\n\n## Pourquoi c'est spécifique à la crypto\n\nSur les indices, la centralisation est donnée d'avance par la structure du marché. En crypto, il faut la construire — et c'est précisément ce travail de reconstruction qui fait apparaître l'information invisible depuis un seul exchange : qui mène le prix, qui suit, et quand le consensus se déchire.",
-        "en": "## The concept\n\nAn index future is born on a central market: one book, one feed, one truth about prices. The same crypto perpetual trades simultaneously on dozens of exchanges that don't talk to each other. The hybrid rebuilds what crypto lacks: six exchanges normalized to the same schema, realigned with each other through actually-traded prices (a continuously measured basis), then merged into a single book and a single tape.\n\n## Three incarnations\n\n- **In the display**: the showcase — the recentralized market can be watched live, consolidated footprint and heatmap, dislocations highlighted whenever one exchange breaks away from the others.\n- **In the backtesting**: targeted studies — checking that an edge validated on Binance survives on the consolidated flow, and testing the strategies where dislocation itself is the signal.\n- **In the automation**: the operational bridge — signals are born at Binance prices, orders execute at Bitget prices; the basis measured by the hybrid translates one into the other, and dislocation detection acts as the safeguard.\n\n## Why this is crypto-specific\n\nOn indices, centralization comes for free from the market's structure. In crypto it has to be built — and that reconstruction work is precisely what surfaces the information invisible from any single exchange: who leads the price, who follows, and when the consensus tears apart."
-      }
+        "fr": "## Le concept\n\nUn future sur indice naît sur un marché central : un seul carnet, un seul flux, une seule vérité des prix. Le même perpétuel crypto, lui, se négocie simultanément sur des dizaines d'exchanges qui ne se parlent pas. L'hybride reconstruit ce que la crypto n'a pas : six exchanges normalisés au même schéma, recalés entre eux par les prix réellement tradés (basis mesuré en continu), puis fusionnés en un carnet et un flux uniques.\n\n## Trois incarnations\n\n- **Dans l'affichage** : la vitrine — le marché recentralisé se regarde en direct, footprint et heatmap consolidés, dislocations mises en évidence quand un exchange décroche des autres.\n- **Dans le backtesting** : des études ciblées — vérifier qu'un edge validé sur Binance survit sur le flux consolidé, et tester les stratégies dont la dislocation est le signal.\n- **Dans l'automatisation** : le pont opérationnel — les signaux naissent à des prix Binance, les ordres s'exécutent à des prix Bitget ; le basis mesuré par l'hybride traduit l'un vers l'autre, et la détection de dislocation sert de garde-fou.\n\n## Pourquoi c'est spécifique à la crypto\n\nSur les indices, la centralisation est donnée d'avance par la structure du marché. En crypto, il faut la construire — et c'est précisément ce travail de reconstruction qui fait apparaître l'information invisible depuis un seul exchange : qui mène le prix, qui suit, et quand le consensus se déchire.\n\n## Du concept au terminal\n\nLes exchanges ne tradent pas au même prix absolu : quelques dollars d'écart selon le basis perp/spot, la liquidité et les frais. La vue hybride du terminal décale chaque exchange sur l'axe de prix de Bitget, puis additionne leur orderflow en un seul footprint, un seul DOM cumulé et une heatmap fusionnée. Périmètre : Bitget, Binance, Bybit, OKX et KuCoin (Coinbase exclu : pas de futures, paires USDT peu liquides).\n\n## Le cœur : recaler les prix sur Bitget\n\nL'erreur évitée : le recalage ne se fait pas sur l'écart des milieux de carnet, biaisés par le décalage asynchrone entre carnets (l'un bouge avant l'autre pendant un mouvement). Le basis est estimé sur les prix réellement tradés, par appariement temporel des trades (≤ 500 ms) et médiane sur 60 s. L'appariement annule le timing et donne le vrai offset.\n\n## Trois protections cumulées\n\n1 — Basis figé par bucket de 60 s. Le basis n'est pas un scalaire global mais une carte « bucket de 60 s → offset ». Chaque bucket est calculé une seule fois puis gelé, ce qui évite que tout le footprint d'un exchange saute de position quand la médiane frémit.\n\n2 — Découplage ancre / référence. L'axe affiché reste Bitget, mais le basis est estimé contre le flux le plus liquide (Binance), Bitget étant trop peu tradé. Mesuré : appariement de 89 à 98 % contre Binance, contre 11 à 53 % contre Bitget.\n\n3 — Gel par trade. Le prix recalé de chaque trade est calculé une seule fois (à sa première apparition) puis mis en cache par trade_id : un trade déjà affiché ne rebouge jamais.\n\n## Basis observé par exchange (mesuré en direct)\n\nBybit ≈ +5,9 $ (~1 bps), stable. OKX ≈ −2,9 $ (~−0,5 bps), stable. KuCoin ≈ −21 $ (~−3,5 bps) : exchange moins liquide, écart réel.\n\n## Les phases\n\nPhase 1 — Footprint hybride (fait) : pour chaque flux, décaler ses rangs de prix du basis du bucket puis sommer les volumes bid/ask dans la grille unifiée. Bitget reste la référence d'axe (décochable : on masque alors son volume sans changer l'axe).\n\nPhase 2 — Heatmap et DOM hybride en direct (fait) : le DOM est un seul carnet cumulé (somme des flux recalés, anti-croisement au milieu Bitget) ; la heatmap est la somme recalée des carnets en mémoire. Limite : couvre le direct (~2 h) ; l'historique profond multi-flux reste à faire.\n\nPhase 3 — Détection de dislocation (fait) : repérer en direct les écarts réels entre exchanges, en bps nets de frais. Livrée dans le terminal, elle devient le garde-fou du pilier Automatisation — voir cette section.",
+        "en": "## The concept\n\nAn index future is born on a central market: one book, one feed, one truth about prices. The same crypto perpetual trades simultaneously on dozens of exchanges that don't talk to each other. The hybrid rebuilds what crypto lacks: six exchanges normalized to the same schema, realigned with each other through actually-traded prices (a continuously measured basis), then merged into a single book and a single tape.\n\n## Three incarnations\n\n- **In the display**: the showcase — the recentralized market can be watched live, consolidated footprint and heatmap, dislocations highlighted whenever one exchange breaks away from the others.\n- **In the backtesting**: targeted studies — checking that an edge validated on Binance survives on the consolidated flow, and testing the strategies where dislocation itself is the signal.\n- **In the automation**: the operational bridge — signals are born at Binance prices, orders execute at Bitget prices; the basis measured by the hybrid translates one into the other, and dislocation detection acts as the safeguard.\n\n## Why this is crypto-specific\n\nOn indices, centralization comes for free from the market's structure. In crypto it has to be built — and that reconstruction work is precisely what surfaces the information invisible from any single exchange: who leads the price, who follows, and when the consensus tears apart.\n\n## From concept to terminal\n\nExchanges don't trade at the same absolute price: a few dollars apart depending on the perp/spot basis, liquidity and fees. The terminal's hybrid view shifts each exchange onto Bitget's price axis, then sums their orderflow into a single footprint, a single cumulative DOM and a merged heatmap. Scope: Bitget, Binance, Bybit, OKX and KuCoin (Coinbase excluded: no futures, thin USDT pairs).\n\n## The core: re-pricing onto Bitget\n\nThe mistake avoided: the re-pricing is not based on the gap between book mids, which are biased by the asynchronous lag between books (one moves before the other during a swing). The basis is estimated on actually-traded prices, by time-matching trades (≤ 500 ms) with a 60 s median. Matching cancels the timing and yields the true offset.\n\n## Three stacked protections\n\n1 — Basis frozen per 60 s bucket. The basis isn't a global scalar but a \"60 s bucket → offset\" map. Each bucket is computed once then frozen, so an exchange's whole footprint never jumps around when the median flickers.\n\n2 — Anchor / reference decoupling. The displayed axis stays Bitget, but the basis is estimated against the most liquid feed (Binance), Bitget being too thinly traded. Measured: 89–98% matching against Binance versus 11–53% against Bitget.\n\n3 — Per-trade freeze. Each trade's re-priced value is computed once (on first appearance) then cached by trade_id: a trade already displayed never moves again.\n\n## Observed basis per exchange (measured live)\n\nBybit ≈ +$5.9 (~1 bps), stable. OKX ≈ −$2.9 (~−0.5 bps), stable. KuCoin ≈ −$21 (~−3.5 bps): a less liquid exchange, a real gap.\n\n## The phases\n\nPhase 1 — Hybrid footprint (done): for each feed, shift its price rows by the bucket's basis then sum bid/ask volumes into the unified grid. Bitget remains the axis reference (uncheckable: its volume is hidden without changing the axis).\n\nPhase 2 — Live hybrid heatmap and DOM (done): the DOM is a single cumulative book (sum of re-priced feeds, anti-crossing at the Bitget mid); the heatmap is the re-priced sum of in-memory books. Limit: covers live (~2 h); deep multi-feed history remains to be done.\n\nPhase 3 — Dislocation detection (done): spotting real cross-exchange gaps live, in fee-net basis points. Shipped in the terminal, it becomes the safeguard of the Automation pillar — see that section."
+      },
+      "intro": {
+        "fr": "L'aboutissement du projet : chaque exchange est décalé sur l'axe de prix de Bitget, puis leur orderflow est sommé en un seul footprint, un DOM cumulé et une heatmap fusionnée.",
+        "en": "The project's culmination: each exchange is shifted onto Bitget's price axis, then their orderflow is summed into a single footprint, a cumulative DOM and a merged heatmap."
+      },
+      "items": [
+        {
+          "id": "vue",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/Hybride.PNG",
+          "titre": {
+            "fr": "Vue orderflow — Hybride",
+            "en": "Orderflow view — Hybride"
+          },
+          "description": {
+            "fr": "Capture en direct du terminal sur le flux Hybride (BTC/USDT).",
+            "en": "Live capture of the terminal on the Hybride feed (BTC/USDT)."
+          }
+        },
+        {
+          "id": "recalage",
+          "type": "figure",
+          "url": "assets/crypto/affichage/svg/recalage-hybride.svg",
+          "titre": {
+            "fr": "Recalage des prix sur Bitget (avant / après)",
+            "en": "Re-pricing onto Bitget (before / after)"
+          },
+          "description": {
+            "fr": "Schéma : le basis estimé sur les prix tradés décale chaque flux sur l'axe Bitget.",
+            "en": "Schema: the basis estimated on traded prices shifts each feed onto the Bitget axis."
+          }
+        }
+      ]
     }
   ]
 }
