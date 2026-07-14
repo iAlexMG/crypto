@@ -7,4 +7,4 @@ REM  Pratique au quotidien ; en cas de souci, utilise "Lancer.bat"
 REM  (avec console) pour voir les erreurs.
 REM ====================================================================
 cd /d "%~dp0"
-start "" "C:\Users\Moi\anaconda3\envs\crypto-agg\pythonw.exe" run_gui.py
+start "" "C:\Users\Moi\miniconda3\envs\crypto-agg\pythonw.exe" run_gui.py

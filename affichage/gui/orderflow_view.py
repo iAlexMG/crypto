@@ -101,31 +101,67 @@ _HEAT = pg.ColorMap(
 
 _TIME_STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200,
                14400, 21600, 43200, 86400, 172800, 604800]
+_MINOR_MAX = 96      # nb max de subdivisions fines dans la plage (au-dela : pas superieur)
 
 
 class TzDateAxis(pg.DateAxisItem):
     """Axe temps a l'heure du Quebec. Les graduations sont calculees a partir de
     la PLAGE seule (pas de la largeur en pixels) -> les deux panneaux, lies sur le
-    meme intervalle, affichent TOUJOURS exactement les memes graduations/format."""
+    meme intervalle, affichent TOUJOURS exactement les memes graduations/format.
 
-    def tickValues(self, minVal, maxVal, size):
-        span = maxVal - minVal
-        if span <= 0:
-            return []
-        spacing = _TIME_STEPS[-1]
-        for s in _TIME_STEPS:
-            if span / s <= 7:               # vise ~6-7 graduations majeures
-                spacing = s
-                break
+    La grille est ANCREE sur la resolution des bougies (res_s) : tous les pas sont
+    des multiples de la resolution et ne descendent jamais dessous (division
+    minimale = 1 bougie). Deux niveaux : graduations majeures labellisees (~6-7)
+    + subdivisions fines a la resolution tant qu'elles restent lisibles, puis au
+    multiple suivant quand le dezoom est trop grand."""
+
+    res_s = 1.0            # resolution des bougies (injectee par OrderflowView)
+    _label_spacing = 0.0   # pas du niveau labellise (les autres restent muets)
+
+    def _steps(self) -> list:
+        """Pas candidats : la resolution puis ses multiples usuels."""
+        res = max(1.0, float(self.res_s))
+        steps = [float(s) for s in _TIME_STEPS if s >= res and s % res == 0]
+        if not steps or steps[0] != res:
+            steps.insert(0, res)
+        return steps
+
+    @staticmethod
+    def _ticks(minVal, maxVal, spacing) -> list:
         first = math.ceil(minVal / spacing) * spacing
         ticks = []
         v = first
         while v <= maxVal:
             ticks.append(v)
             v += spacing
-        return [(spacing, ticks)]
+        return ticks
+
+    def tickValues(self, minVal, maxVal, size):
+        span = maxVal - minVal
+        if span <= 0:
+            return []
+        steps = self._steps()
+        major = steps[-1]
+        for s in steps:
+            if span / s <= 7:               # vise ~6-7 graduations majeures
+                major = s
+                break
+        self._label_spacing = major
+        levels = [(major, self._ticks(minVal, maxVal, major))]
+        # subdivisions fines (grille seulement, sans label) : la resolution si la
+        # densite le permet, sinon le plus petit multiple lisible.
+        for s in steps:
+            if s >= major:
+                break
+            if span / s <= _MINOR_MAX:
+                minors = [v for v in self._ticks(minVal, maxVal, s) if v % major != 0]
+                levels.append((s, minors))
+                break
+        return levels
 
     def tickStrings(self, values, scale, spacing):
+        if spacing < self._label_spacing:      # subdivisions fines : grille muette
+            return [""] * len(values)
         out = []
         for v in values:
             try:
@@ -257,8 +293,10 @@ class OrderflowView(QWidget):
         self.vb.owner = self
         self.price_axis = PriceAxis(orientation="right")
         self.price_axis.owner = self
+        self.time_axis = TzDateAxis(orientation="bottom")
+        self.time_axis.res_s = self.res_s
         self.plot = pg.PlotWidget(viewBox=self.vb, axisItems={
-            "bottom": TzDateAxis(orientation="bottom"),
+            "bottom": self.time_axis,
             "right": self.price_axis,
         })
         self.plot.hideAxis("left")
@@ -422,6 +460,10 @@ class OrderflowView(QWidget):
     def set_resolution(self, res_s: float) -> None:
         self.res_s = max(1.0, float(res_s))
         self.fp.set_resolution(self.res_s)
+        # grille : division minimale = 1 bougie -> re-ancre l'axe et redessine
+        self.time_axis.res_s = self.res_s
+        self.time_axis.picture = None
+        self.time_axis.update()
 
     def _apply_z_order(self) -> None:
         """Assigne les Z selon l'ordre courant (bas -> haut = arriere -> avant)."""

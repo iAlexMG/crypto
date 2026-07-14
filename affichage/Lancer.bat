@@ -8,7 +8,7 @@ REM ====================================================================
 title Crypto Orderflow
 cd /d "%~dp0"
 
-set "PYEXE=C:\Users\Moi\anaconda3\envs\crypto-agg\python.exe"
+set "PYEXE=C:\Users\Moi\miniconda3\envs\crypto-agg\python.exe"
 if not exist "%PYEXE%" (
     echo Interpreteur introuvable : %PYEXE%
     echo Verifie le chemin de l'env conda "crypto-agg".
