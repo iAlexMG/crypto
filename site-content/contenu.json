@@ -2,6 +2,7 @@
   "sections": [
     {
       "id": "historique",
+      "etage": 1,
       "titre": {
         "fr": "Historiques (REST)",
         "en": "Histories (REST)"
@@ -27,6 +28,7 @@
     },
     {
       "id": "temps-reel",
+      "etage": 1,
       "titre": {
         "fr": "Temps réel (WebSocket)",
         "en": "Real time (WebSocket)"
@@ -51,6 +53,7 @@
     },
     {
       "id": "affichage",
+      "etage": 2,
       "titre": {
         "fr": "Visualisations",
         "en": "Visualizations"
@@ -91,6 +94,7 @@
     },
     {
       "id": "backtesting",
+      "etage": 3,
       "titre": {
         "fr": "Backtesting",
         "en": "Backtesting"
@@ -112,6 +116,7 @@
     },
     {
       "id": "automatisation",
+      "etage": 4,
       "titre": {
         "fr": "Automatisation",
         "en": "Automation"
@@ -182,7 +187,7 @@
       ]
     }
   ],
-  "exchanges": [
+  "sources": [
     {
       "id": "bitget",
       "nom": "Bitget",
