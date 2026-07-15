@@ -11,16 +11,16 @@
         "en": "Tick-by-tick history, exchange by exchange: public archives, capped REST or nothing at all — each page states what the exchange allows, with proof."
       },
       "intro": {
-        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick pour alimenter le backtesting. L'enjeu justifie la méthode : un backtest ne vaut que ce que vaut son historique, alors chaque flux est récupéré par deux voies indépendantes puis confronté minute par minute — quand elles concordent, l'erreur silencieuse (trou d'ingestion, unité mal convertie, horodatage décalé) est exclue. Binance (r = 0,999 999 99) sert de modèle ; chaque autre exchange est documenté sur le même plan : ce qu'il offre, les voies d'extraction, ce qu'on en a tiré, et ses limites constatées.",
-        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history to feed the backtesting. The stakes justify the method: a backtest is only worth what its history is worth, so each feed is retrieved through two independent routes then confronted minute by minute — when they agree, silent errors (ingestion gaps, misconverted units, shifted timestamps) are ruled out. Binance (r = 0.99999999) sets the model; every other exchange is documented on the same outline: what it offers, the extraction routes, what we got out of it, and its observed limits."
+        "fr": "Le point de départ de la chaîne : récupérer et normaliser l'historique des transactions tick-par-tick pour alimenter le backtesting. L'enjeu justifie la méthode : un backtest ne vaut que ce que vaut son historique, alors chaque flux est récupéré par deux voies indépendantes puis confronté minute par minute.",
+        "en": "The starting point of the chain: fetching and normalizing the tick-by-tick trade history to feed the backtesting. The stakes justify the method: a backtest is only worth what its history is worth, so each feed is retrieved through two independent routes then confronted minute by minute."
       },
       "statut": {
-        "fr": "Exchange par exchange — Binance, Bybit, OKX, KuCoin validés",
-        "en": "Exchange by exchange — Binance, Bybit, OKX, KuCoin validated"
+        "fr": "4 exchanges validés sur 7",
+        "en": "4 exchanges validated out of 7"
       },
       "texte": {
-        "fr": "## Le collecteur : un thread par exchange\n\nUn exchange lent ou rate-limité ne doit pas affamer les autres : chacun a son thread. Le plancher commun est le trade le plus ancien que Bitget accepte de servir — c'est lui qui borne la fenêtre où les six flux existent tous. Le collecteur travaille en deux temps : d'abord combler les trous du présent jusqu'à ce plancher, ensuite descendre dans le passé profond. Un trou vide confirmé n'est jamais retenté ; une erreur ou un 429 déclenche un cooldown.\n\n## Écrire pendant qu'on lit\n\nL'archivage tourne pendant que l'écran interroge les mêmes bases. En SQLite avec le journal WAL : une seule connexion en écriture et son verrou, et une connexion en lecture seule par thread (query_only=1) qui reste hors du verrou. Le résultat se mesure — un agrégat lourd de ~4 s ne bloque plus rien : insert à 0,2 ms médian, mesuré pendant deux agrégats concurrents.\n\n## Une base qui ne grossit pas sans fin\n\nPurge horaire des trades bruts de plus de sept jours et déjà agrégés : le footprint leur survit dans le rollup, et les points de la bande des trades ne couvrent que la dernière heure. Les vieux snapshots de carnet sont purgés de même.",
-        "en": "## The collector: one thread per exchange\n\nA slow or rate-limited exchange must not starve the others: each gets its own thread. The common floor is the oldest trade Bitget agrees to serve — that's what bounds the window where all six feeds exist. The collector works in two passes: first fill the gaps from the present down to that floor, then descend into the deep past. A confirmed-empty gap is never retried; an error or a 429 triggers a cooldown.\n\n## Writing while reading\n\nArchiving runs while the screen queries the same databases. In SQLite with the WAL journal: a single write connection and its lock, and one read-only connection per thread (query_only=1) that stays outside the lock. The result is measurable — a heavy 4 s aggregate no longer blocks anything: 0.2 ms median insert, measured during two concurrent aggregates.\n\n## A database that doesn't grow forever\n\nHourly purge of raw trades older than seven days and already aggregated: the footprint survives them in the rollup, and the trade tape's dots only cover the last hour. Old book snapshots are purged the same way."
+        "fr": "## La collecte en continu\n\nUn thread par exchange, pour qu'un flux lent ou rate-limité n'affame pas les autres : la passe comble d'abord les trous du présent, puis descend dans le passé. L'archivage écrit pendant que l'écran lit les mêmes bases (SQLite en WAL), et les trades bruts de plus de sept jours déjà agrégés sont purgés — le footprint leur survit dans le rollup.",
+        "en": "## Continuous collection\n\nOne thread per exchange, so a slow or rate-limited feed doesn't starve the others: a pass first fills the gaps in the present, then descends into the past. Archiving writes while the screen reads the same databases (SQLite in WAL mode), and raw trades older than seven days that are already aggregated get purged — the footprint survives them in the rollup."
       },
       "sousHub": true,
       "inclure": "historique"
@@ -36,12 +36,16 @@
         "en": "Live data: WebSocket connectors, normalization to a common schema, order book integrity, continuous archiving."
       },
       "intro": {
-        "fr": "Entre l'historique et l'écran, il y a la donnée vivante. Six exchanges sont branchés en WebSocket, chacun avec son dialecte : tout est normalisé vers un schéma commun — symbole BTCUSDT, taille en actif de base, horodatage en millisecondes UTC, side = agresseur —, l'intégrité de chaque carnet est garantie (snapshot, mises à jour, resynchronisation au moindre écart) et tout est archivé en continu. Chaque page documente un exchange : sa connexion, l'initialisation de son carnet et ses embûches d'ingestion.",
-        "en": "Between history and the screen sits the live data. Six exchanges are connected over WebSocket, each with its own dialect: everything is normalized to a common schema — BTCUSDT symbol, size in base asset, millisecond UTC timestamps, side = aggressor —, every book's integrity is enforced (snapshot, updates, resync on any mismatch) and everything is archived continuously. Each page documents one exchange: its connection, its book initialization and its ingestion pitfalls."
+        "fr": "Entre l'historique et l'écran, il y a la donnée vivante. Six exchanges sont branchés en WebSocket, chacun avec son dialecte, et tout est ramené au même schéma avant d'atteindre le premier pixel.",
+        "en": "Between history and the screen sits the live data. Six exchanges are connected over WebSocket, each with its own dialect, and everything is brought back to the same schema before it reaches the first pixel."
       },
       "statut": {
-        "fr": "6 exchanges branchés",
-        "en": "6 exchanges connected"
+        "fr": "6 exchanges branchés sur 7",
+        "en": "6 exchanges connected out of 7"
+      },
+      "texte": {
+        "fr": "## Un schéma commun\n\nSix dialectes, un seul format : symbole BTCUSDT, taille en actif de base, horodatage en millisecondes UTC, side = agresseur. L'intégrité de chaque carnet est garantie — snapshot, mises à jour, resynchronisation au moindre écart — et tout est archivé en continu.",
+        "en": "## One shared schema\n\nSix dialects, one format: BTCUSDT symbol, size in base asset, millisecond UTC timestamps, side = aggressor. Every book's integrity is enforced — snapshot, updates, resync on any mismatch — and everything is archived continuously."
       },
       "sousHub": true
     },
@@ -56,8 +60,8 @@
         "en": "Four views stackable on a single chart — trades, DOM, heatmap, footprint — across six exchanges."
       },
       "intro": {
-        "fr": "Un terminal d'orderflow façon Bookmap : quatre vues superposables sur un seul graphe — la bande des trades (orderflow), le carnet en direct (DOM), la heatmap de liquidité et le footprint. Chaque page explique la méthode qui reconstruit sa vue. Tout ce qui alimente ces pixels — connexion, normalisation, intégrité des carnets — vit dans le pilier Temps réel ; la fusion de tous les flux en un seul marché a sa propre page : L'hybride.",
-        "en": "A Bookmap-style orderflow terminal: four views stackable on a single chart — the trade tape (orderflow), the live book (DOM), the liquidity heatmap and the footprint. Each page explains the method that rebuilds its view. Everything feeding those pixels — connection, normalization, book integrity — lives in the Real time pillar; the fusion of all feeds into one market has its own page: The hybrid."
+        "fr": "Un terminal d'orderflow façon Bookmap : quatre vues superposables sur un seul graphe — la bande des trades (orderflow), le carnet en direct (DOM), la heatmap de liquidité et le footprint. La capture ci-dessous les montre toutes à la fois ; en dessous, chacune est reprise seule, avec la méthode qui la reconstruit. Tout ce qui alimente ces pixels — connexion, normalisation, intégrité des carnets — vit dans le pilier Temps réel ; la fusion de tous les flux en un seul marché a sa propre page : L'hybride.",
+        "en": "A Bookmap-style orderflow terminal: four views stackable on a single chart — the trade tape (orderflow), the live book (DOM), the liquidity heatmap and the footprint. The capture below shows all of them at once; underneath, each one is taken on its own, with the method that rebuilds it. Everything feeding those pixels — connection, normalization, book integrity — lives in the Real time pillar; the fusion of all feeds into one market has its own page: The hybrid."
       },
       "statut": {
         "fr": "4 vues",
@@ -71,14 +75,14 @@
         {
           "id": "terminal",
           "type": "figure",
-          "url": "assets/crypto/affichage/img/Binance.PNG",
+          "url": "assets/crypto/affichage/img/All.PNG",
           "titre": {
             "fr": "Le terminal — les quatre vues superposées (Binance, BTC/USDT)",
             "en": "The terminal — the four views stacked (Binance, BTC/USDT)"
           },
           "description": {
-            "fr": "Une seule capture, les quatre vues à la fois : le footprint en boîtes chiffrées, la bande des trades en points, la heatmap en stries à droite, le carnet sur le bord.",
-            "en": "A single capture, all four views at once: the footprint as numbered boxes, the trade tape as dots, the heatmap as stripes on the right, the book on the edge."
+            "fr": "Une seule capture, les quatre vues à la fois : le footprint en boîtes chiffrées, la bande des trades en bulles, la heatmap en stries de fond, le carnet sur le bord droit. Les trois pages qui suivent démontent cette image.",
+            "en": "A single capture, all four views at once: the footprint as numbered boxes, the trade tape as bubbles, the heatmap as background stripes, the book on the right edge. The three pages that follow take this image apart."
           }
         }
       ],
@@ -96,8 +100,8 @@
         "en": "Test before you bet: eight strategies, two engines, and two ways of judging them."
       },
       "intro": {
-        "fr": "Construire un backtesting de niveau pro sur de vraies données crypto. Deux moteurs se répondent : LEAN, événementiel, qui rejoue le marché barre par barre — c'est là que vivent les huit stratégies ; et vectorbt PRO, vectorisé, qui calcule tout l'historique d'un coup. Chaque stratégie est jugée deux fois : une optimisation de ses paramètres, et une lecture order-flow multi-échelles. La formation qui enseigne les deux moteurs a sa place ailleurs, sous Formations.",
-        "en": "Building professional-grade backtesting on real crypto data. Two engines answer each other: LEAN, event-driven, which replays the market bar by bar — that's where the eight strategies live; and vectorbt PRO, vectorized, which computes the whole history in one shot. Each strategy is judged twice: a parameter optimization, and a multi-scale order-flow reading. The course that teaches both engines belongs elsewhere, under Formations."
+        "fr": "Construire un backtesting de niveau pro sur de vraies données crypto. Les huit stratégies ne sont pas huit idées au hasard : elles montent une marche à la fois. Buy & Hold pose le plancher que les sept autres doivent battre. Viennent ensuite les deux familles classiques qui s'opposent — suivre la tendance (SMA 50/200, MACD) ou parier contre elle (RSI, bandes de Bollinger) —, puis ce qui sépare un signal d'une vraie stratégie : les garde-fous (RSI + stops), leur mise en commun (filtre de régime, taille au risque, stop suiveur), et enfin la seule nourrie à l'order-flow, le volume profile par session. Deux moteurs les jugent : LEAN, événementiel, rejoue le marché barre par barre — c'est là qu'elles vivent ; vectorbt PRO, vectorisé, calcule tout l'historique d'un coup et sert de contre-champ. Chaque stratégie est jugée deux fois : une optimisation de ses paramètres, et une lecture order-flow multi-échelles. La formation qui enseigne les deux moteurs a sa place ailleurs, sous Formations.",
+        "en": "Building professional-grade backtesting on real crypto data. The eight strategies aren't eight random ideas: they climb one step at a time. Buy & Hold sets the floor the other seven have to beat. Then come the two classic families that oppose each other — following the trend (SMA 50/200, MACD) or betting against it (RSI, Bollinger Bands) —, then what separates a signal from an actual strategy: the guardrails (RSI + stops), their pooling (regime filter, risk sizing, trailing stop), and finally the only one fed by order-flow, the volume profile per session. Two engines judge them: LEAN, event-driven, replays the market bar by bar — that's where they live; vectorbt PRO, vectorized, computes the whole history in one shot and serves as the counter-shot. Each strategy is judged twice: a parameter optimization, and a multi-scale order-flow reading. The course that teaches both engines belongs elsewhere, under Formations."
       },
       "statut": {
         "fr": "2 moteurs — 8 stratégies",
