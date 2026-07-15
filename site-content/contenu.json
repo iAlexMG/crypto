@@ -18,6 +18,10 @@
         "fr": "Exchange par exchange — Binance, Bybit, OKX, KuCoin validés",
         "en": "Exchange by exchange — Binance, Bybit, OKX, KuCoin validated"
       },
+      "texte": {
+        "fr": "## Le collecteur : un thread par exchange\n\nUn exchange lent ou rate-limité ne doit pas affamer les autres : chacun a son thread. Le plancher commun est le trade le plus ancien que Bitget accepte de servir — c'est lui qui borne la fenêtre où les six flux existent tous. Le collecteur travaille en deux temps : d'abord combler les trous du présent jusqu'à ce plancher, ensuite descendre dans le passé profond. Un trou vide confirmé n'est jamais retenté ; une erreur ou un 429 déclenche un cooldown.\n\n## Écrire pendant qu'on lit\n\nL'archivage tourne pendant que l'écran interroge les mêmes bases. En SQLite avec le journal WAL : une seule connexion en écriture et son verrou, et une connexion en lecture seule par thread (query_only=1) qui reste hors du verrou. Le résultat se mesure — un agrégat lourd de ~4 s ne bloque plus rien : insert à 0,2 ms médian, mesuré pendant deux agrégats concurrents.\n\n## Une base qui ne grossit pas sans fin\n\nPurge horaire des trades bruts de plus de sept jours et déjà agrégés : le footprint leur survit dans le rollup, et les points de la bande des trades ne couvrent que la dernière heure. Les vieux snapshots de carnet sont purgés de même.",
+        "en": "## The collector: one thread per exchange\n\nA slow or rate-limited exchange must not starve the others: each gets its own thread. The common floor is the oldest trade Bitget agrees to serve — that's what bounds the window where all six feeds exist. The collector works in two passes: first fill the gaps from the present down to that floor, then descend into the deep past. A confirmed-empty gap is never retried; an error or a 429 triggers a cooldown.\n\n## Writing while reading\n\nArchiving runs while the screen queries the same databases. In SQLite with the WAL journal: a single write connection and its lock, and one read-only connection per thread (query_only=1) that stays outside the lock. The result is measurable — a heavy 4 s aggregate no longer blocks anything: 0.2 ms median insert, measured during two concurrent aggregates.\n\n## A database that doesn't grow forever\n\nHourly purge of raw trades older than seven days and already aggregated: the footprint survives them in the rollup, and the trade tape's dots only cover the last hour. Old book snapshots are purged the same way."
+      },
       "sousHub": true,
       "inclure": "historique"
     },
@@ -32,12 +36,12 @@
         "en": "Live data: WebSocket connectors, normalization to a common schema, order book integrity, continuous archiving."
       },
       "intro": {
-        "fr": "Entre l'historique et l'écran, il y a la donnée vivante. Six exchanges sont branchés en WebSocket, chacun avec son dialecte : tout est normalisé vers un schéma commun — symbole BTCUSDT, taille en actif de base, horodatage en millisecondes UTC, side = agresseur —, l'intégrité de chaque carnet est garantie (snapshot, mises à jour, resynchronisation au moindre écart) et tout est archivé en continu. Chaque page documente un exchange : sa connexion, l'initialisation de son carnet et ses embûches d'ingestion. Deux pages à part : le rejet de Kraken, et l'architecture qui fait tenir l'ensemble sans gel.",
-        "en": "Between history and the screen sits the live data. Six exchanges are connected over WebSocket, each with its own dialect: everything is normalized to a common schema — BTCUSDT symbol, size in base asset, millisecond UTC timestamps, side = aggressor —, every book's integrity is enforced (snapshot, updates, resync on any mismatch) and everything is archived continuously. Each page documents one exchange: its connection, its book initialization and its ingestion pitfalls. Two pages stand apart: the Kraken rejection, and the architecture that keeps it all running without freezing."
+        "fr": "Entre l'historique et l'écran, il y a la donnée vivante. Six exchanges sont branchés en WebSocket, chacun avec son dialecte : tout est normalisé vers un schéma commun — symbole BTCUSDT, taille en actif de base, horodatage en millisecondes UTC, side = agresseur —, l'intégrité de chaque carnet est garantie (snapshot, mises à jour, resynchronisation au moindre écart) et tout est archivé en continu. Chaque page documente un exchange : sa connexion, l'initialisation de son carnet et ses embûches d'ingestion.",
+        "en": "Between history and the screen sits the live data. Six exchanges are connected over WebSocket, each with its own dialect: everything is normalized to a common schema — BTCUSDT symbol, size in base asset, millisecond UTC timestamps, side = aggressor —, every book's integrity is enforced (snapshot, updates, resync on any mismatch) and everything is archived continuously. Each page documents one exchange: its connection, its book initialization and its ingestion pitfalls."
       },
       "statut": {
-        "fr": "6 exchanges branchés — Kraken écarté",
-        "en": "6 exchanges connected — Kraken set aside"
+        "fr": "6 exchanges branchés",
+        "en": "6 exchanges connected"
       },
       "sousHub": true
     },
@@ -52,13 +56,32 @@
         "en": "Four views stackable on a single chart — trades, DOM, heatmap, footprint — across six exchanges."
       },
       "intro": {
-        "fr": "Un terminal d'orderflow façon Bookmap : quatre vues superposables sur un seul graphe — la bande des trades (orderflow), le carnet en direct (DOM), la heatmap de liquidité et le footprint. Chaque page explique la méthode qui reconstruit la vue, puis montre sa capture sur chacun des six exchanges. Tout ce qui alimente ces pixels — connexion, normalisation, intégrité des carnets — vit dans le pilier Temps réel ; la fusion de tous les flux en un seul marché a sa propre page : L'hybride.",
-        "en": "A Bookmap-style orderflow terminal: four views stackable on a single chart — the trade tape (orderflow), the live book (DOM), the liquidity heatmap and the footprint. Each page explains the method that rebuilds the view, then shows its capture on each of the six exchanges. Everything feeding those pixels — connection, normalization, book integrity — lives in the Real time pillar; the fusion of all feeds into one market has its own page: The hybrid."
+        "fr": "Un terminal d'orderflow façon Bookmap : quatre vues superposables sur un seul graphe — la bande des trades (orderflow), le carnet en direct (DOM), la heatmap de liquidité et le footprint. Chaque page explique la méthode qui reconstruit sa vue. Tout ce qui alimente ces pixels — connexion, normalisation, intégrité des carnets — vit dans le pilier Temps réel ; la fusion de tous les flux en un seul marché a sa propre page : L'hybride.",
+        "en": "A Bookmap-style orderflow terminal: four views stackable on a single chart — the trade tape (orderflow), the live book (DOM), the liquidity heatmap and the footprint. Each page explains the method that rebuilds its view. Everything feeding those pixels — connection, normalization, book integrity — lives in the Real time pillar; the fusion of all feeds into one market has its own page: The hybrid."
       },
       "statut": {
-        "fr": "4 vues × 6 exchanges",
-        "en": "4 views × 6 exchanges"
+        "fr": "4 vues",
+        "en": "4 views"
       },
+      "texte": {
+        "fr": "## Rien de lourd sur le thread d'affichage\n\nLes quatre vues partagent une règle : le thread Qt ne fait que dessiner. Footprint et heatmap historiques, lectures disque, rollup — tout part en threads de fond, avec cache et debounce. C'est ce qui permet de fouiller un historique profond sans jamais figer l'écran : le GIL ne sature pas, et le collecteur n'est pas affamé pendant ce temps.",
+        "en": "## Nothing heavy on the display thread\n\nThe four views share one rule: the Qt thread does nothing but draw. Historical footprint and heatmap, disk reads, rollup — everything runs on background threads, with cache and debounce. That's what makes it possible to dig through deep history without ever freezing the screen: the GIL doesn't saturate, and the collector isn't starved in the meantime."
+      },
+      "items": [
+        {
+          "id": "terminal",
+          "type": "figure",
+          "url": "assets/crypto/affichage/img/Binance.PNG",
+          "titre": {
+            "fr": "Le terminal — les quatre vues superposées (Binance, BTC/USDT)",
+            "en": "The terminal — the four views stacked (Binance, BTC/USDT)"
+          },
+          "description": {
+            "fr": "Une seule capture, les quatre vues à la fois : le footprint en boîtes chiffrées, la bande des trades en points, la heatmap en stries à droite, le carnet sur le bord.",
+            "en": "A single capture, all four views at once: the footprint as numbered boxes, the trade tape as dots, the heatmap as stripes on the right, the book on the edge."
+          }
+        }
+      ],
       "sousHub": true,
       "inclure": "affichage"
     },
@@ -69,16 +92,16 @@
         "en": "Backtesting"
       },
       "accroche": {
-        "fr": "Tester avant de miser : deux résultats phares, et une formation en trois temps.",
-        "en": "Test before you bet: two headline results, and a course in three parts."
+        "fr": "Tester avant de miser : huit stratégies, deux moteurs, et deux façons de les juger.",
+        "en": "Test before you bet: eight strategies, two engines, and two ways of judging them."
       },
       "intro": {
-        "fr": "Construire un backtesting de niveau pro sur de vraies données crypto : deux résultats phares, et une formation en trois temps — LEAN, vectorbt, réconciliation.",
-        "en": "Building professional-grade backtesting on real crypto data: two headline results, and a course in three parts — LEAN, vectorbt, reconciliation."
+        "fr": "Construire un backtesting de niveau pro sur de vraies données crypto. Deux moteurs se répondent : LEAN, événementiel, qui rejoue le marché barre par barre — c'est là que vivent les huit stratégies ; et vectorbt PRO, vectorisé, qui calcule tout l'historique d'un coup. Chaque stratégie est jugée deux fois : une optimisation de ses paramètres, et une lecture order-flow multi-échelles. La formation qui enseigne les deux moteurs a sa place ailleurs, sous Formations.",
+        "en": "Building professional-grade backtesting on real crypto data. Two engines answer each other: LEAN, event-driven, which replays the market bar by bar — that's where the eight strategies live; and vectorbt PRO, vectorized, which computes the whole history in one shot. Each strategy is judged twice: a parameter optimization, and a multi-scale order-flow reading. The course that teaches both engines belongs elsewhere, under Formations."
       },
       "statut": {
-        "fr": "Vitrines + formation",
-        "en": "Showcases + course"
+        "fr": "2 moteurs — 8 stratégies",
+        "en": "2 engines — 8 strategies"
       },
       "sousHub": true,
       "inclure": "backtesting"
@@ -153,6 +176,107 @@
           }
         }
       ]
+    }
+  ],
+  "exchanges": [
+    {
+      "id": "bitget",
+      "nom": "Bitget",
+      "monogramme": "BG",
+      "couleur": "#1DA2B4",
+      "statut": {
+        "fr": "Exécution",
+        "en": "Execution"
+      },
+      "role": {
+        "fr": "L'exchange où partiront les ordres. Flux peu dense (~17 trades/30 s), mais son trade le plus ancien fixe le plancher commun de tout le projet, et son axe de prix sert de référence à l'hybride.",
+        "en": "The exchange where orders will go out. A sparse feed (~17 trades/30 s), but its oldest trade sets the common floor for the whole project, and its price axis anchors the hybrid."
+      }
+    },
+    {
+      "id": "binance",
+      "nom": "Binance",
+      "monogramme": "BN",
+      "couleur": "#F0B90B",
+      "statut": {
+        "fr": "Référence",
+        "en": "Reference"
+      },
+      "role": {
+        "fr": "Le marché de référence : le flux le plus dense du périmètre (~222 trades/30 s), le carnet le plus profond (1 000 niveaux), et l'historique sur lequel les deux voies d'extraction concordent à r = 0,999 999 99. C'est là que se calculent les signaux et les backtests.",
+        "en": "The reference market: the densest feed in scope (~222 trades/30 s), the deepest book (1,000 levels), and the history where both extraction routes agree at r = 0.99999999. This is where signals and backtests are computed."
+      }
+    },
+    {
+      "id": "bybit",
+      "nom": "Bybit",
+      "monogramme": "BY",
+      "couleur": "#F7A600",
+      "statut": {
+        "fr": "Branché",
+        "en": "Connected"
+      },
+      "role": {
+        "fr": "Branché en temps réel et validé à l'historique. Dans l'hybride, il se recale à environ +5,90 $ de Bitget (~1 bps) — un écart stable.",
+        "en": "Connected live and validated on history. In the hybrid it realigns about +$5.90 from Bitget (~1 bps) — a stable gap."
+      }
+    },
+    {
+      "id": "okx",
+      "nom": "OKX",
+      "monogramme": "OK",
+      "couleur": "#5B7FFF",
+      "statut": {
+        "fr": "Branché",
+        "en": "Connected"
+      },
+      "role": {
+        "fr": "Branché en temps réel et validé à l'historique, une fois passé son piège d'horodatage : ses archives sont datées en UTC+8, pas en UTC. Il se recale à environ −2,90 $ de Bitget (~−0,5 bps).",
+        "en": "Connected live and validated on history, once past its timestamp trap: its archives are dated in UTC+8, not UTC. It realigns about −$2.90 from Bitget (~−0.5 bps)."
+      }
+    },
+    {
+      "id": "kucoin",
+      "nom": "KuCoin",
+      "monogramme": "KC",
+      "couleur": "#24AE8F",
+      "statut": {
+        "fr": "Branché",
+        "en": "Connected"
+      },
+      "role": {
+        "fr": "Branché en temps réel et validé à l'historique. Le moins liquide des cinq retenus dans l'hybride, et ça se voit : il se recale à environ −21 $ de Bitget (~−3,5 bps). L'écart est réel, pas une erreur de mesure.",
+        "en": "Connected live and validated on history. The least liquid of the five kept in the hybrid, and it shows: it realigns about −$21 from Bitget (~−3.5 bps). The gap is real, not a measurement error."
+      }
+    },
+    {
+      "id": "coinbase",
+      "nom": "Coinbase",
+      "monogramme": "CB",
+      "couleur": "#0052FF",
+      "statut": {
+        "fr": "Hors hybride",
+        "en": "Outside the hybrid"
+      },
+      "role": {
+        "fr": "Branché en temps réel, mais tenu hors de l'hybride : pas de futures et des paires USDT trop peu liquides pour que le recalage ait un sens. Il reste affiché pour ce qu'il est — un marché spot de référence.",
+        "en": "Connected live, but kept out of the hybrid: no futures, and USDT pairs too thin for the realignment to mean anything. It stays on display for what it is — a reference spot market."
+      }
+    },
+    {
+      "id": "kraken",
+      "nom": "Kraken",
+      "monogramme": "KR",
+      "couleur": "#7B68EE",
+      "ecarte": true,
+      "statut": {
+        "fr": "Écarté",
+        "en": "Set aside"
+      },
+      "role": {
+        "fr": "Évalué comme septième exchange, puis écarté — un choix de jugement, pas un échec. Le perpétuel BTCUSDT n'existe pas chez lui : ses contrats sont libellés autrement, hors du périmètre USDT du projet. S'ajoutent deux API séparées, Spot et Futures, sans cohérence d'endpoints — un double effort d'intégration pour un apport marginal. Rien n'a été extrait, par décision. Le pipeline reste prêt à l'accueillir si le périmètre change.",
+        "en": "Evaluated as a seventh exchange, then set aside — a judgment call, not a failure. The BTCUSDT perpetual doesn't exist there: its contracts are denominated differently, outside the project's USDT scope. On top of that, two separate APIs, Spot and Futures, with no consistency between endpoints — double the integration effort for marginal gain. Nothing was extracted, by decision. The pipeline stays ready to take it in if the scope changes."
+      }
     }
   ]
 }

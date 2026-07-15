@@ -145,28 +145,8 @@
       "texte": {
         "fr": "## Résultats\n\nKraken a été évalué comme septième exchange, puis écarté — décision documentée dans le dossier de conception (§7).\n\nLe pipeline reste prêt à accueillir tout exchange au même format (un BaseConnector et sa fiche de documentation).\n\n## Embûche : Spot et Futures, deux API séparées\n\nSymptôme — aucune cohérence d'endpoints ni de conventions entre les deux marchés Kraken.\n\nCause — architecture historique de Kraken (Kraken Pro face à Kraken Futures).\n\nSolution — double effort d'intégration pour un apport marginal → rejet.\n\n## Embûche : futures non-USDT\n\nSymptôme — les perps Kraken ne s'alignent pas sur le périmètre USDT du projet.\n\nCause — libellés et quotités différents.\n\nSolution — hors du périmètre hybride-Futures USDT → écarté.",
         "en": "## Results\n\nKraken was evaluated as a seventh exchange, then set aside — a decision documented in the design document (§7).\n\nThe pipeline remains ready to take in any exchange in the same format (a BaseConnector and its documentation sheet).\n\n## Pitfall: Spot and Futures, two separate APIs\n\nSymptom — no consistency of endpoints or conventions between Kraken's two markets.\n\nCause — Kraken's legacy architecture (Kraken Pro versus Kraken Futures).\n\nSolution — double the integration effort for a marginal gain → rejected.\n\n## Pitfall: non-USDT futures\n\nSymptom — Kraken perps don't line up with the project's USDT scope.\n\nCause — different tickers and contract sizes.\n\nSolution — outside the USDT Futures-hybrid scope → set aside."
-      }
-    },
-    {
-      "id": "tr-architecture",
-      "parent": "temps-reel",
-      "titre": {
-        "fr": "Architecture & ingénierie",
-        "en": "Architecture & engineering"
       },
-      "accroche": {
-        "fr": "Les briques transversales qui tiennent le temps réel sans gel.",
-        "en": "The cross-cutting machinery that keeps real time from freezing."
-      },
-      "intro": {
-        "fr": "Les briques transversales qui n'appartiennent à aucun exchange, mais qui font tenir l'ensemble en temps réel sans gel : rollup, concurrence SQLite, collecteur, rétention.",
-        "en": "The cross-cutting building blocks that belong to no single exchange but keep the whole thing running in real time without freezing: rollup, SQLite concurrency, collector, retention."
-      },
-      "items": [],
-      "texte": {
-        "fr": "## Vue d'ensemble\n\nLes briques transversales qui n'appartiennent à aucun exchange en particulier, mais qui font tenir l'ensemble en temps réel sans gel.\n\n## Rollup pré-agrégé du footprint\n\nReconstruire le footprint depuis les trades bruts coûte O(trades), soit ~300 ms par frame en zoom arrière (gel, GIL saturé). Parade : un rollup base 60 s × tick × side, maintenu de façon incrémentale par un curseur sur le rowid (capte tout insert, même hors ordre, une seule fois). Coût de lecture borné par l'affichage : ~3 à 5 ms par frame côté Qt.\n\n## Concurrence SQLite (WAL)\n\nÉcriture = une connexion et un verrou ; lectures = une connexion en lecture seule par thread (query_only=1), hors verrou. Un agrégat lourd (~4 s) ne bloque plus l'archivage en direct ni le collecteur (insert à 0,2 ms médian, mesuré pendant deux agrégats concurrents).\n\n## Collecteur d'historique — un thread par exchange\n\nParallélisme réseau : un exchange lent ou rate-limité n'affame plus les autres. Ancrage sur Bitget (plancher commun). Phase A : combler tous les trous (> 30 s) du présent jusqu'au plancher ; Phase B : passé profond. Un trou vide confirmé n'est plus retenté ; une erreur ou un 429 déclenche un cooldown.\n\n## Tout le lourd hors thread Qt\n\nFootprint et heatmap historiques, lectures disque, rollup : threads de fond, cache et debounce. Le thread Qt ne fait que rendre — le GIL n'est jamais saturé, le collecteur n'est pas affamé, la navigation profonde ne gèle jamais.\n\n## Rétention bornée\n\nPurge horaire des trades bruts de plus de 7 jours et déjà agrégés (le footprint survit dans le rollup ; les scatters ne couvrent que la dernière heure), plus purge des vieux snapshots de carnet : les bases ne grossissent plus sans fin.\n\n## Snapshots de carnet à 1 Hz\n\nAucun exchange n'offre d'orderbook historique : les snapshots de carnet sont persistés à 1 Hz pendant que l'app tourne. C'est cette persistance qui donne à la heatmap son historique — il ne grandit que vers l'avant.",
-        "en": "## Overview\n\nThe cross-cutting building blocks that belong to no single exchange, but keep the whole thing running in real time without freezing.\n\n## Pre-aggregated footprint rollup\n\nRebuilding the footprint from raw trades costs O(trades), i.e. ~300 ms per frame when zoomed out (freeze, saturated GIL). The answer: a 60 s × tick × side base rollup, maintained incrementally by a cursor on the rowid (catches every insert, even out of order, exactly once). Read cost bounded by the display: ~3 to 5 ms per frame on the Qt side.\n\n## SQLite concurrency (WAL)\n\nWrites = one connection and one lock; reads = one read-only connection per thread (query_only=1), outside the lock. A heavy aggregate (~4 s) no longer blocks live archiving or the collector (0.2 ms median insert, measured during two concurrent aggregates).\n\n## History collector — one thread per exchange\n\nNetwork parallelism: a slow or rate-limited exchange no longer starves the others. Anchored on Bitget (the common floor). Phase A: fill every gap (> 30 s) from the present down to the floor; Phase B: deep past. A confirmed-empty gap is never retried; an error or a 429 triggers a cooldown.\n\n## Everything heavy off the Qt thread\n\nHistorical footprint and heatmap, disk reads, rollup: background threads, cache and debounce. The Qt thread does nothing but render — the GIL never saturates, the collector is never starved, deep navigation never freezes.\n\n## Bounded retention\n\nHourly purge of raw trades older than 7 days and already aggregated (the footprint survives in the rollup; the scatters only cover the last hour), plus purge of old book snapshots: the databases no longer grow without end.\n\n## Book snapshots at 1 Hz\n\nNo exchange offers a historical order book: book snapshots are persisted at 1 Hz while the app runs. That persistence is what gives the heatmap its history — it only grows forward."
-      }
+      "masque": true
     },
     {
       "id": "trades",
@@ -179,121 +159,18 @@
         "en": "The trade tape, normalized and archived continuously — the aggressor's side in color."
       },
       "intro": {
-        "fr": "La bande des transactions en direct, point par point, colorée selon le côté de l'agresseur. Une même méthode pour les six exchanges — une capture par exchange ci-dessous.",
-        "en": "The live trade tape, point by point, colored by the aggressor's side. One method for all six exchanges — one capture per exchange below."
+        "fr": "La bande des transactions en direct, point par point, colorée selon le côté de l'agresseur. Une même méthode pour les six exchanges.",
+        "en": "The live trade tape, point by point, colored by the aggressor's side. One method for all six exchanges."
       },
       "statut": {
-        "fr": "6 exchanges",
-        "en": "6 exchanges"
+        "fr": "Méthode",
+        "en": "Method"
       },
       "texte": {
         "fr": "## Ce que montre la vue\n\nLes transactions en direct, point par point, colorées selon le côté de l'agresseur. Les points ne sont tracés que sur la dernière heure — au-delà, l'information vit dans le footprint.\n\n## La méthode\n\nUne seule mécanique pour les six exchanges : chaque connecteur pousse ses trades au hub dans le schéma commun (prix, taille en actif de base, côté agresseur, horodatage exchange en millisecondes), et la vue les trace tels quels — aucun retraitement à l'affichage. Ce qui varie à l'écran vient du flux lui-même : la densité (~222 trades/30 s chez Binance contre ~17 chez Bitget) et la profondeur d'historique affichable, de « jusqu'au plancher commun » (Binance, OKX) à « vers l'avant seulement » (Bybit, KuCoin). La connexion, les conversions et l'archivage qui alimentent la vue sont documentés au pilier Temps réel, exchange par exchange.",
         "en": "## What the view shows\n\nLive transactions, point by point, colored by the aggressor's side. Points are only drawn over the last hour — beyond that, the information lives in the footprint.\n\n## The method\n\nA single mechanism for all six exchanges: each connector pushes its trades to the hub in the shared schema (price, size in base asset, aggressor side, exchange timestamp in milliseconds), and the view draws them as they are — no reprocessing at display time. What varies on screen comes from the feed itself: density (~222 trades/30 s on Binance versus ~17 on Bitget) and the displayable history depth, from \"down to the common floor\" (Binance, OKX) to \"forward only\" (Bybit, KuCoin). The connection, conversions and archiving that feed the view are documented in the Real time pillar, exchange by exchange."
       },
-      "items": [
-        {
-          "id": "bitget",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bitget-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — Bitget",
-            "en": "Trades / orderflow — Bitget"
-          },
-          "description": {
-            "fr": "La bande des transactions en direct — l'historique remonte ~90 jours via REST.",
-            "en": "The live trade tape — history reaches back ~90 days via REST."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLa bande de référence — un flux peu dense (~17 trades/30 s) : chaque point se distingue. L'historique affichable remonte ~90 jours, la profondeur REST de Bitget, dont le trade le plus ancien sert de plancher commun aux autres exchanges. Les embûches d'ingestion (casse du side, snapshot d'amorçage du canal trade) sont documentées sur la page Bitget du Temps réel.",
-            "en": "## What you see\n\nThe reference tape — a sparse feed (~17 trades/30 s): every point stands out. Displayable history reaches back ~90 days, Bitget's REST depth, whose oldest trade serves as the common floor for the other exchanges. The ingestion pitfalls (side casing, trade-channel seeding snapshot) are documented on the Bitget page of the Real time pillar."
-          }
-        },
-        {
-          "id": "binance",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/binance-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — Binance",
-            "en": "Trades / orderflow — Binance"
-          },
-          "description": {
-            "fr": "Le flux le plus dense du périmètre (~222 trades/30 s).",
-            "en": "The densest feed in scope (~222 trades/30 s)."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLa bande la plus dense du périmètre (~222 trades/30 s contre ~17 pour Bitget) — c'est ce flux qui sert d'ancre au recalage hybride. L'historique affichable descend jusqu'au plancher Bitget. Sans le filtrage des trades parasites à prix 0, la vue montrait des mèches infinies et de faux trous : ce filtre et les autres embûches du flux (@aggTrade muet sur les futures, déduplication live/REST) sont documentés sur la page Binance du Temps réel.",
-            "en": "## What you see\n\nThe densest tape in scope (~222 trades/30 s versus ~17 for Bitget) — this is the feed that anchors the hybrid re-pricing. Displayable history goes down to the Bitget floor. Without the filter on junk trades at price 0, the view showed infinite wicks and false gaps: that filter and the feed's other pitfalls (@aggTrade silent on futures, live/REST deduplication) are documented on the Binance page of the Real time pillar."
-          }
-        },
-        {
-          "id": "bybit",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bybit-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — Bybit",
-            "en": "Trades / orderflow — Bybit"
-          },
-          "description": {
-            "fr": "La bande s'arrête au passé là où l'app n'a pas tourné : la limite d'API se voit à l'écran.",
-            "en": "The tape stops in the past where the app wasn't running: the API limit shows on screen."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUne bande complète en direct — mais l'orderflow historique s'arrête net là où l'app n'a pas tourné : la limite d'API de Bybit (aucun historique REST profond) se voit directement dans cette vue. Le détail de la limite et le séquencement du flux sont documentés sur la page Bybit du Temps réel.",
-            "en": "## What you see\n\nA complete tape live — but historical orderflow stops dead where the app wasn't running: Bybit's API limit (no deep REST history) shows directly in this view. The limit's details and the feed's sequencing are documented on the Bybit page of the Real time pillar."
-          }
-        },
-        {
-          "id": "okx",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/okx-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — OKX",
-            "en": "Trades / orderflow — OKX"
-          },
-          "description": {
-            "fr": "Tailles converties de contrats en BTC (ctVal 0,01) : des points comparables aux autres exchanges.",
-            "en": "Sizes converted from contracts to BTC (ctVal 0.01): points comparable to the other exchanges."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUn flux dense, aux tailles comparables aux autres exchanges — parce que chaque trade est converti de contrats en BTC (ctVal 0,01) à l'ingestion : sans cette conversion, les points étaient géants et le volume 100× trop gros (vécu). Historique profond affichable, borné au plancher Bitget. La conversion et le 403 REST sont documentés sur la page OKX du Temps réel.",
-            "en": "## What you see\n\nA dense feed, with sizes comparable to the other exchanges — because every trade is converted from contracts to BTC (ctVal 0.01) at ingestion: without that conversion, the points were giant and the volume 100× too big (lived through it). Deep displayable history, bounded by the Bitget floor. The conversion and the REST 403 are documented on the OKX page of the Real time pillar."
-          }
-        },
-        {
-          "id": "kucoin",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/kucoin-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — KuCoin",
-            "en": "Trades / orderflow — KuCoin"
-          },
-          "description": {
-            "fr": "Bande clairsemée d'un exchange ~20× plus petit que Binance, aux mêmes échelles que les autres.",
-            "en": "The sparse tape of an exchange ~20× smaller than Binance, at the same scales as the others."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUne bande clairsemée — l'exchange est ~20× plus petit que Binance — affichée aux mêmes échelles que les autres. L'historique n'existe que vers l'avant : le REST public s'arrête aux 100 derniers trades, comme chez Bybit. Les trois conversions du flux (nanosecondes, contrats, XBT) sont documentées sur la page KuCoin du Temps réel.",
-            "en": "## What you see\n\nA sparse tape — the exchange is ~20× smaller than Binance — displayed at the same scales as the others. History only exists going forward: the public REST stops at the last 100 trades, as with Bybit. The feed's three conversions (nanoseconds, contracts, XBT) are documented on the KuCoin page of the Real time pillar."
-          }
-        },
-        {
-          "id": "coinbase",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/coinbase-trades.png",
-          "titre": {
-            "fr": "Trades / orderflow — Coinbase",
-            "en": "Trades / orderflow — Coinbase"
-          },
-          "description": {
-            "fr": "Bande mince : les paires USDT de Coinbase sont peu actives. Spot seulement.",
-            "en": "A thin tape: Coinbase's USDT pairs are quiet. Spot only."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUne bande mince : beaucoup de silences de 30 s sont de vrais creux de marché — les paires USDT de Coinbase sont peu actives (l'exchange est d'ailleurs exclu de la vue hybride). Les couleurs d'agresseur ne sont justes que parce que le side du maker est inversé à l'ingestion : ce piège classique est documenté sur la page Coinbase du Temps réel.",
-            "en": "## What you see\n\nA thin tape: many 30 s silences are real market lulls — Coinbase's USDT pairs are quiet (the exchange is in fact excluded from the hybrid view). The aggressor colors are only right because the maker's side is inverted at ingestion: that classic trap is documented on the Coinbase page of the Real time pillar."
-          }
-        }
-      ]
+      "items": []
     },
     {
       "id": "dom",
@@ -306,121 +183,18 @@
         "en": "The live book, from top 50 to top 1,000 depending on the exchange."
       },
       "intro": {
-        "fr": "Le carnet d'ordres en direct, sur le bord droit du graphe : les quantités en attente aux meilleurs prix, côté achat et côté vente. Une capture par exchange ci-dessous.",
-        "en": "The live order book, on the right edge of the chart: resting quantities at the best prices, bid side and ask side. One capture per exchange below."
+        "fr": "Le carnet d'ordres en direct, sur le bord droit du graphe : les quantités en attente aux meilleurs prix, côté achat et côté vente.",
+        "en": "The live order book, on the right edge of the chart: resting quantities at the best prices, bid side and ask side."
       },
       "statut": {
-        "fr": "6 exchanges",
-        "en": "6 exchanges"
+        "fr": "Méthode",
+        "en": "Method"
       },
       "texte": {
         "fr": "## Ce que montre la vue\n\nLes quantités en attente aux meilleurs prix, côté achat et côté vente, mises à jour en continu sur le bord droit du graphe.\n\n## La méthode\n\nLe hub maintient pour chaque exchange un carnet local reconstruit — snapshot, mises à jour incrémentales, contrôle d'intégrité, resynchronisation au moindre écart ; la mécanique exacte, propre à chaque exchange, est documentée au pilier Temps réel. La vue lit ce carnet et le dessine en colonne. Ce qui change d'un exchange à l'autre : la profondeur affichable — de 50 niveaux par côté (KuCoin, Coinbase) à 1 000 (Binance) — et la densité de la colonne qui va avec.",
         "en": "## What the view shows\n\nThe resting quantities at the best prices, bid side and ask side, updated continuously on the right edge of the chart.\n\n## The method\n\nFor each exchange the hub maintains a rebuilt local book — snapshot, incremental updates, integrity check, resync on any mismatch; the exact mechanics, specific to each exchange, are documented in the Real time pillar. The view reads that book and draws it as a column. What changes from one exchange to the next: the displayable depth — from 50 levels per side (KuCoin, Coinbase) to 1,000 (Binance) — and the density of the column that comes with it."
       },
-      "items": [
-        {
-          "id": "bitget",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bitget-dom.png",
-          "titre": {
-            "fr": "DOM — Bitget",
-            "en": "DOM — Bitget"
-          },
-          "description": {
-            "fr": "Le carnet en direct : 300 niveaux (150 + 150), sur Spot comme sur USDT-Futures.",
-            "en": "The live book: 300 levels (150 + 150), on Spot and USDT-Futures alike."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUn carnet maintenu plein à 300 niveaux (150 + 150) en permanence, sur les deux marchés (Spot et USDT-Futures). L'initialisation et le contrôle d'intégrité (checksum CRC32) sont documentés sur la page Bitget du Temps réel.",
-            "en": "## What you see\n\nA book kept full at 300 levels (150 + 150) at all times, on both markets (Spot and USDT-Futures). Initialization and the integrity check (CRC32 checksum) are documented on the Bitget page of the Real time pillar."
-          }
-        },
-        {
-          "id": "binance",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/binance-dom.png",
-          "titre": {
-            "fr": "DOM — Binance",
-            "en": "DOM — Binance"
-          },
-          "description": {
-            "fr": "Carnet initialisé à 1 000 niveaux, rafraîchi toutes les 100 ms.",
-            "en": "A book initialized at 1,000 levels, refreshed every 100 ms."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe carnet le plus profond à l'initialisation (1 000 niveaux), rafraîchi toutes les 100 ms : la colonne du DOM est dense et réactive. Le raccord snapshot/diffs par numéro de séquence et le watchdog de carnet figé sont documentés sur la page Binance du Temps réel.",
-            "en": "## What you see\n\nThe deepest book at initialization (1,000 levels), refreshed every 100 ms: the DOM column is dense and responsive. The snapshot/diff join by sequence number and the frozen-book watchdog are documented on the Binance page of the Real time pillar."
-          }
-        },
-        {
-          "id": "bybit",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bybit-dom.png",
-          "titre": {
-            "fr": "DOM — Bybit",
-            "en": "DOM — Bybit"
-          },
-          "description": {
-            "fr": "Carnet de profondeur 200, rafraîchi toutes les 100 ms ; 150 meilleurs niveaux affichés.",
-            "en": "A book at depth 200, refreshed every 100 ms; the 150 best levels shown."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nUn carnet de profondeur 200, rafraîchi toutes les 100 ms ; les 150 meilleurs niveaux sont poussés au hub, alignés sur Bitget et Binance. Le séquencement et la resynchronisation sur snapshot frais sont documentés sur la page Bybit du Temps réel.",
-            "en": "## What you see\n\nA depth-200 book, refreshed every 100 ms; the 150 best levels are pushed to the hub, aligned with Bitget and Binance. The sequencing and the fresh-snapshot resynchronization are documented on the Bybit page of the Real time pillar."
-          }
-        },
-        {
-          "id": "okx",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/okx-dom.png",
-          "titre": {
-            "fr": "DOM — OKX",
-            "en": "DOM — OKX"
-          },
-          "description": {
-            "fr": "Le carnet le plus profond du périmètre : 400 niveaux.",
-            "en": "The deepest book in scope: 400 levels."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe carnet le plus profond du périmètre (400 niveaux) : la colonne du DOM reste bien remplie loin du prix. Les tailles sont affichées après conversion des contrats en BTC (ctVal), comme les trades. Le chaînage de séquence et la conversion sont documentés sur la page OKX du Temps réel.",
-            "en": "## What you see\n\nThe deepest book in scope (400 levels): the DOM column stays well filled away from the price. Sizes are displayed after converting contracts to BTC (ctVal), like the trades. The sequence chaining and the conversion are documented on the OKX page of the Real time pillar."
-          }
-        },
-        {
-          "id": "kucoin",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/kucoin-dom.png",
-          "titre": {
-            "fr": "DOM — KuCoin",
-            "en": "DOM — KuCoin"
-          },
-          "description": {
-            "fr": "Top 50 par côté, rafraîchi d'un bloc (~100 ms).",
-            "en": "Top 50 per side, refreshed as a block (~100 ms)."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe top 50 de chaque côté, rafraîchi d'un bloc toutes les ~100 ms : la colonne la plus courte du périmètre — au-delà des 50 meilleurs niveaux, le flux ne donne rien. Le bootstrap du token WebSocket est documenté sur la page KuCoin du Temps réel.",
-            "en": "## What you see\n\nThe top 50 on each side, refreshed as a block every ~100 ms: the shortest column in scope — beyond the 50 best levels, the feed gives nothing. The WebSocket token bootstrap is documented on the KuCoin page of the Real time pillar."
-          }
-        },
-        {
-          "id": "coinbase",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/coinbase-dom.png",
-          "titre": {
-            "fr": "DOM — Coinbase",
-            "en": "DOM — Coinbase"
-          },
-          "description": {
-            "fr": "50 niveaux par côté, souvent clairsemés. Spot seulement.",
-            "en": "50 levels per side, often sparse. Spot only."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\n50 niveaux par côté, souvent clairsemés : les paires USDT de Coinbase sont peu actives. Spot seulement — la GUI bascule automatiquement le menu Marché sur Spot. Le régime best-effort (ni séquence ni checksum, watchdog de carnet figé) est documenté sur la page Coinbase du Temps réel.",
-            "en": "## What you see\n\n50 levels per side, often sparse: Coinbase's USDT pairs are quiet. Spot only — the GUI automatically switches the Market menu to Spot. The best-effort regime (no sequence, no checksum, frozen-book watchdog) is documented on the Coinbase page of the Real time pillar."
-          }
-        }
-      ]
+      "items": []
     },
     {
       "id": "heatmap",
@@ -433,121 +207,18 @@
         "en": "Book liquidity over time — persisted at 1 Hz, rebuilt from trades where the book is missing."
       },
       "intro": {
-        "fr": "La liquidité du carnet dans le temps, façon Bookmap. Aucun exchange n'offre d'orderbook historique : tout se capte en direct — et là où le carnet manque, les lignes best bid/ask sont reconstruites depuis les trades. Une capture par exchange ci-dessous.",
-        "en": "Book liquidity over time, Bookmap-style. No exchange offers a historical order book: everything is captured live — and where the book is missing, the best bid/ask lines are rebuilt from trades. One capture per exchange below."
+        "fr": "La liquidité du carnet dans le temps, façon Bookmap. Aucun exchange n'offre d'orderbook historique : tout se capte en direct — et là où le carnet manque, les lignes best bid/ask sont reconstruites depuis les trades.",
+        "en": "Book liquidity through time, Bookmap style. No exchange offers a historical order book: everything is captured live — and where the book is missing, the best bid/ask lines are rebuilt from the trades."
       },
       "statut": {
-        "fr": "6 exchanges",
-        "en": "6 exchanges"
+        "fr": "Méthode",
+        "en": "Method"
       },
       "texte": {
         "fr": "## Ce que montre la vue\n\nChaque colonne est un instant, chaque rangée un niveau de prix, l'intensité est la quantité en attente : on voit les murs de liquidité se poser, tenir ou disparaître.\n\n## La méthode\n\nAucun exchange n'offre d'orderbook historique : les snapshots de carnet sont persistés à 1 Hz pendant que l'app tourne, et l'historique de liquidité ne grandit que vers l'avant. Les ~2 dernières heures vivent en mémoire ; au-delà, la lecture disque est bornée (~1000 colonnes réparties sur la fenêtre, quel que soit le volume) et asynchrone — la navigation profonde ne gèle jamais.\n\n## Les lignes best bid/ask reconstruites sur l'historique\n\nLà où l'app n'a pas tourné, il n'y a pas de carnet — mais il y a des trades. Or chaque trade révèle un bord du carnet à son instant : un acheteur agresseur a nécessairement tapé le meilleur ask, un vendeur agresseur le meilleur bid. Les lignes du meilleur bid et du meilleur ask sont donc reconstruites depuis les trades archivés : le side donne le bord (ask ou bid), le prix donne le niveau. La ligne affichée fusionne le carnet réel — prioritaire partout où il existe — et cette reconstruction dans les trous ; elle se coupe sur les vrais trous de données, plutôt que d'inventer un carnet là où il n'y a ni snapshots ni trades.",
         "en": "## What the view shows\n\nEach column is a moment, each row a price level, and the intensity is the resting quantity: you watch liquidity walls get placed, hold or vanish.\n\n## The method\n\nNo exchange offers a historical order book: book snapshots are persisted at 1 Hz while the app runs, and the liquidity history only grows forward. The last ~2 hours live in memory; beyond that, disk reads are bounded (~1,000 columns spread over the window, whatever the volume) and asynchronous — deep navigation never freezes.\n\n## The best bid/ask lines rebuilt over history\n\nWhere the app wasn't running there is no book — but there are trades. And every trade reveals one edge of the book at its instant: an aggressive buyer necessarily hit the best ask, an aggressive seller the best bid. The best-bid and best-ask lines are therefore rebuilt from the archived trades: the side gives the edge (ask or bid), the price gives the level. The displayed line merges the real book — which takes priority wherever it exists — with this reconstruction in the gaps; it breaks off on true data gaps, rather than inventing a book where there are neither snapshots nor trades."
       },
-      "items": [
-        {
-          "id": "bitget",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bitget-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — Bitget",
-            "en": "Heatmap — Bitget"
-          },
-          "description": {
-            "fr": "La liquidité du carnet dans le temps — persistée à 1 Hz, elle ne grandit que vers l'avant.",
-            "en": "Book liquidity over time — persisted at 1 Hz, it only grows forward."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLa bande de référence (150 + 150 niveaux). C'est en branchant Bitget qu'on a découvert la limite commune : aucun endpoint d'orderbook historique — d'où la persistance à 1 Hz et l'historique qui ne grandit que vers l'avant.",
-            "en": "## What you see\n\nThe reference band (150 + 150 levels). Plugging in Bitget is how the shared limit was discovered: no historical order-book endpoint — hence the 1 Hz persistence and a history that only grows forward."
-          }
-        },
-        {
-          "id": "binance",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/binance-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — Binance",
-            "en": "Heatmap — Binance"
-          },
-          "description": {
-            "fr": "Densité maximale en direct ; l'historique du carnet reste borné aux sessions captées.",
-            "en": "Maximum density live; book history remains limited to captured sessions."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLa bande la plus dense du périmètre en direct (carnet initialisé à 1 000 niveaux). Le passé reste borné aux sessions captées, comme partout.",
-            "en": "## What you see\n\nThe densest band in scope live (book initialized at 1,000 levels). The past stays bounded by the captured sessions, as everywhere."
-          }
-        },
-        {
-          "id": "bybit",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bybit-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — Bybit",
-            "en": "Heatmap — Bybit"
-          },
-          "description": {
-            "fr": "Même régime : la liquidité ne se capte que vers l'avant.",
-            "en": "Same regime: liquidity is only captured going forward."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nBande de 200 niveaux (150 poussés au hub). Comme l'orderflow, la liquidité ne se capte que vers l'avant, pendant les sessions.",
-            "en": "## What you see\n\nA 200-level band (150 pushed to the hub). Like the orderflow, liquidity is only captured going forward, during sessions."
-          }
-        },
-        {
-          "id": "okx",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/okx-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — OKX",
-            "en": "Heatmap — OKX"
-          },
-          "description": {
-            "fr": "Carnet profond (400 niveaux) → bande de liquidité large.",
-            "en": "Deep book (400 levels) → a wide liquidity band."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe carnet à 400 niveaux donne la bande de liquidité la plus large du périmètre. Les tailles du carnet subissent la même conversion ctVal que les trades.",
-            "en": "## What you see\n\nThe 400-level book yields the widest liquidity band in scope. Book sizes get the same ctVal conversion as the trades."
-          }
-        },
-        {
-          "id": "kucoin",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/kucoin-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — KuCoin",
-            "en": "Heatmap — KuCoin"
-          },
-          "description": {
-            "fr": "Limitée aux 50 meilleurs niveaux par côté — la bande la plus étroite du périmètre.",
-            "en": "Limited to the 50 best levels per side — the narrowest band in scope."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLimitée aux 50 meilleurs niveaux de chaque côté (le flux level2Depth50 ne donne rien de plus) : la bande de liquidité la plus étroite du périmètre.",
-            "en": "## What you see\n\nLimited to the 50 best levels on each side (the level2Depth50 feed gives nothing more): the narrowest liquidity band in scope."
-          }
-        },
-        {
-          "id": "coinbase",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/coinbase-heatmap.png",
-          "titre": {
-            "fr": "Heatmap — Coinbase",
-            "en": "Heatmap — Coinbase"
-          },
-          "description": {
-            "fr": "Bande étroite et peu contrastée — la liquidité USDT de Coinbase est mince. Spot seulement.",
-            "en": "A narrow, low-contrast band — Coinbase's USDT liquidity is thin. Spot only."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nBande étroite (50 niveaux) et peu contrastée : les paires USDT de Coinbase sont peu actives. Spot seulement — l'exchange est d'ailleurs exclu de la vue hybride.",
-            "en": "## What you see\n\nA narrow band (50 levels) with little contrast: Coinbase's USDT pairs are quiet. Spot only — the exchange is in fact excluded from the hybrid view."
-          }
-        }
-      ]
+      "items": []
     },
     {
       "id": "footprint",
@@ -560,121 +231,18 @@
         "en": "Buy and sell volumes per price level, rebuilt from the trades."
       },
       "intro": {
-        "fr": "Les volumes d'achat et de vente par niveau de prix et par chandelle, reconstruits depuis les trades archivés. Le footprint hérite des trades : densité du flux, conversions d'unités et profondeur d'historique font toute la différence. Une capture par exchange ci-dessous.",
-        "en": "Buy and sell volumes per price level and per candle, rebuilt from the archived trades. The footprint inherits from the trades: feed density, unit conversions and history depth make all the difference. One capture per exchange below."
+        "fr": "Les volumes d'achat et de vente par niveau de prix et par chandelle, reconstruits depuis les trades archivés. Le footprint hérite des trades : densité du flux, conversions d'unités et profondeur d'historique font toute la différence.",
+        "en": "Buy and sell volumes per price level and per candle, rebuilt from the archived trades. The footprint inherits from the trades: feed density, unit conversions and history depth make all the difference."
       },
       "statut": {
-        "fr": "6 exchanges",
-        "en": "6 exchanges"
+        "fr": "Méthode",
+        "en": "Method"
       },
       "texte": {
-        "fr": "## Ce que montre la vue\n\nPour chaque chandelle, les volumes d'achat et de vente à chaque niveau de prix (tick stable par instrument), avec le delta. C'est la vue qui condense l'orderflow au-delà de la dernière heure.\n\n## La méthode\n\nReconstruite depuis les trades archivés. En zoom serré, sur les trades bruts (réactivité du direct) ; en zoom arrière, depuis un rollup pré-agrégé (base 60 s × tick × sens) maintenu en continu : le coût de lecture reste borné par l'affichage, quel que soit l'historique accumulé.",
-        "en": "## What the view shows\n\nFor each candle, the buy and sell volumes at every price level (a stable tick per instrument), with the delta. This is the view that condenses the orderflow beyond the last hour.\n\n## The method\n\nRebuilt from the archived trades. Zoomed in, from the raw trades (live responsiveness); zoomed out, from a pre-aggregated rollup (60 s × tick × side base) maintained continuously: read cost stays bounded by the display, however much history accumulates."
+        "fr": "## Ce que montre la vue\n\nPour chaque chandelle, les volumes d'achat et de vente à chaque niveau de prix (tick stable par instrument), avec le delta. C'est la vue qui condense l'orderflow au-delà de la dernière heure.\n\n## La méthode\n\nReconstruite depuis les trades archivés. En zoom serré, sur les trades bruts — c'est la réactivité du direct qui prime. En zoom arrière, sur un rollup pré-agrégé.\n\n## Pourquoi un rollup\n\nRecalculer le footprint depuis les trades bruts coûte O(trades) : en zoom arrière, ~300 ms par frame, le temps d'un gel bien visible. Le rollup est une base 60 s × tick × sens, maintenue au fil de l'eau par un curseur sur le rowid — qui capte tout insert, même arrivé hors ordre, et une seule fois. Le coût de lecture redevient borné par ce que l'écran affiche, pas par l'historique accumulé : ~3 à 5 ms par frame.",
+        "en": "## What the view shows\n\nFor each candle, buy and sell volumes at every price level (stable tick per instrument), with the delta. This is the view that condenses orderflow beyond the last hour.\n\n## The method\n\nRebuilt from the archived trades. Zoomed in, straight from the raw trades — live responsiveness comes first. Zoomed out, from a pre-aggregated rollup.\n\n## Why a rollup\n\nRecomputing the footprint from raw trades costs O(trades): zoomed out, that's ~300 ms per frame — a very visible freeze. The rollup is a 60 s × tick × side base, maintained on the fly by a cursor on the rowid — which catches every insert, even out-of-order ones, exactly once. Read cost is bounded by what the screen shows again, not by the accumulated history: ~3 to 5 ms per frame."
       },
-      "items": [
-        {
-          "id": "bitget",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bitget-footprint.png",
-          "titre": {
-            "fr": "Footprint — Bitget",
-            "en": "Footprint — Bitget"
-          },
-          "description": {
-            "fr": "Volumes bid/ask par niveau de prix — le format Bitget est le schéma cible, sans conversion.",
-            "en": "Bid/ask volumes per price level — the Bitget format is the target schema, no conversion."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe footprint de référence : prix, tailles et horodatages sont déjà au format cible, aucun recalage ni conversion. Historique ~90 jours (la profondeur REST de Bitget).",
-            "en": "## What you see\n\nThe reference footprint: prices, sizes and timestamps are already in the target format, no re-pricing and no conversion. History ~90 days (Bitget's REST depth)."
-          }
-        },
-        {
-          "id": "binance",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/binance-footprint.png",
-          "titre": {
-            "fr": "Footprint — Binance",
-            "en": "Footprint — Binance"
-          },
-          "description": {
-            "fr": "Le footprint le plus fourni — c'est lui l'ancre du recalage hybride.",
-            "en": "The fullest footprint — it anchors the hybrid re-pricing."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nLe footprint le plus fourni du périmètre, à la mesure du flux (~222 trades/30 s) — c'est lui l'ancre du basis du recalage hybride. Son historique descend jusqu'au plancher Bitget grâce au seek par temps des aggTrades.",
-            "en": "## What you see\n\nThe fullest footprint in scope, in line with the feed (~222 trades/30 s) — it anchors the basis of the hybrid re-pricing. Its history goes down to the Bitget floor thanks to the aggTrades time seek."
-          }
-        },
-        {
-          "id": "bybit",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/bybit-footprint.png",
-          "titre": {
-            "fr": "Footprint — Bybit",
-            "en": "Footprint — Bybit"
-          },
-          "description": {
-            "fr": "Complet en direct ; au passé, limité aux sessions où l'app a tourné.",
-            "en": "Complete live; in the past, limited to sessions where the app ran."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nComplet en direct ; au passé, il s'arrête là où l'app n'a pas tourné : la limite d'API de Bybit (pas de REST profond) se voit directement dans cet affichage.",
-            "en": "## What you see\n\nComplete live; in the past, it stops where the app wasn't running: Bybit's API limit (no deep REST) shows directly in this display."
-          }
-        },
-        {
-          "id": "okx",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/okx-footprint.png",
-          "titre": {
-            "fr": "Footprint — OKX",
-            "en": "Footprint — OKX"
-          },
-          "description": {
-            "fr": "Volumes comparables aux autres exchanges une fois la conversion ctVal appliquée.",
-            "en": "Volumes comparable to other exchanges once the ctVal conversion is applied."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nSans la conversion ctVal, le volume était 100× trop gros et le footprint hybride était dominé par OKX (vécu). Après conversion, volumes comparables aux autres ; historique profond possible, borné au plancher Bitget.",
-            "en": "## What you see\n\nWithout the ctVal conversion, the volume was 100× too big and the hybrid footprint was dominated by OKX (lived through it). After conversion, volumes comparable to the others; deep history possible, bounded by the Bitget floor."
-          }
-        },
-        {
-          "id": "kucoin",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/kucoin-footprint.png",
-          "titre": {
-            "fr": "Footprint — KuCoin",
-            "en": "Footprint — KuCoin"
-          },
-          "description": {
-            "fr": "Exchange ~20× plus petit que Binance : footprint clairsemé mais aux mêmes échelles.",
-            "en": "An exchange ~20× smaller than Binance: a sparse footprint, at the same scales."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nExchange ~20× plus petit que Binance : footprint clairsemé, mais affiché aux mêmes échelles que les autres (× multiplier 0,001 appliqué aux tailles futures).",
-            "en": "## What you see\n\nAn exchange ~20× smaller than Binance: a sparse footprint, but displayed at the same scales as the others (× 0.001 multiplier applied to futures sizes)."
-          }
-        },
-        {
-          "id": "coinbase",
-          "type": "figure",
-          "url": "assets/crypto/affichage/img/coinbase-footprint.png",
-          "titre": {
-            "fr": "Footprint — Coinbase",
-            "en": "Footprint — Coinbase"
-          },
-          "description": {
-            "fr": "Clairsemé : beaucoup de minutes vides sont de vrais creux, pas des trous de données.",
-            "en": "Sparse: many empty minutes are real lulls, not data gaps."
-          },
-          "texte": {
-            "fr": "## Ce qu'on voit\n\nClairsemé : les minutes vides sont souvent de vrais creux de marché, pas des trous de données — la liquidité USDT de Coinbase est mince.",
-            "en": "## What you see\n\nSparse: the empty minutes are often real market lulls, not data gaps — Coinbase's USDT liquidity is thin."
-          }
-        }
-      ]
+      "items": []
     }
   ]
 }

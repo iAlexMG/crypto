@@ -482,7 +482,8 @@
       "texte": {
         "fr": "## Pas de BTCUSDT, pas de banc\n\nLes contrats de Kraken sont libellés autrement : le perpétuel BTCUSDT n'y existe pas, et la question de l'historique s'arrête là — quelles que soient les qualités de ses archives ou de son REST. L'affichage l'avait déjà écartée (deux API séparées Spot/Futures, futures hors du périmètre USDT) ; l'historique confirme et clôt. Rien n'a été extrait — par décision, pas par échec. Si le périmètre change un jour, l'évaluation standard reste applicable.",
         "en": "## No BTCUSDT, no bench\n\nKraken's contracts are labelled differently: the BTCUSDT perpetual doesn't exist there, and the history question stops right here — whatever the merits of the exchange's archives or REST. The display had already set it aside (two separate Spot/Futures APIs, futures outside the USDT scope); the history confirms and closes it. Nothing was extracted — by decision, not by failure. If the scope ever changes, the standard evaluation still applies."
-      }
+      },
+      "masque": true
     }
   ]
 }

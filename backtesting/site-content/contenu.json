@@ -1,22 +1,63 @@
 {
   "sections": [
     {
-      "id": "optimisation",
+      "id": "moteur-lean",
       "titre": {
-        "fr": "Optimisation de paramètres",
-        "en": "Parameter optimization"
+        "fr": "LEAN — le moteur événementiel",
+        "en": "LEAN — the event-driven engine"
       },
       "accroche": {
-        "fr": "Trouver les « meilleurs » réglages — et prouver quand ils mentent.",
-        "en": "Finding the \"best\" settings — and proving when they lie."
+        "fr": "Huit stratégies sur le même banc : mêmes données, mêmes frais, même capital — et deux juges pour chacune.",
+        "en": "Eight strategies on the same bench: same data, same fees, same capital — and two judges for each."
       },
       "intro": {
-        "fr": "Balayer toutes les combinaisons de paramètres d'une stratégie avec le vrai moteur LEAN, puis les juger sur des données qu'elles n'ont jamais vues.",
-        "en": "Sweeping every parameter combination of a strategy with the real LEAN engine, then judging them on data they have never seen."
+        "fr": "Huit stratégies passées au vrai moteur LEAN, barre par barre, sur le même banc d'essai : BTC/USDT en barres d'une heure, frais taker de 0,04 %, capital de 100 000 $, long/flat. Chacune est ensuite jugée deux fois — une optimisation de ses paramètres, et une lecture order-flow multi-échelles.",
+        "en": "Eight strategies run through the real LEAN engine, bar by bar, on the same test bench: BTC/USDT hourly bars, 0.04% taker fees, $100,000 capital, long/flat. Each is then judged twice — a parameter optimization, and a multi-scale order-flow reading."
+      },
+      "statut": {
+        "fr": "8 stratégies",
+        "en": "8 strategies"
       },
       "texte": {
-        "fr": "## Hypothèse\n\nOn « optimise » une stratégie en cherchant, sur l'historique, la combinaison de paramètres qui rapporte le plus. Le piège : sur des données passées, il existe toujours une combinaison qui brille par pur hasard. La vraie question n'est donc pas « quel est le meilleur réglage ? » mais « ce réglage tient-il sur des données qu'il n'a jamais vues ? ».\n\n## Démarche\n\nUn outil pilote le VRAI moteur LEAN — pas un proxy vectorisé — sur une grille complète de combinaisons, en parallèle (49 réglages de croisement de moyennes en ~100 s). Chaque point est un backtest complet, avec toutes ses métriques. On applique ensuite le juge honnête : le walk-forward in-sample / out-of-sample. On optimise sur la première moitié de l'historique (in-sample, IS), on teste le champion sur la seconde (out-of-sample, OOS) — jamais vue — et on le compare au réglage de référence, non optimisé.\n\n## Résultats\n\nLa heatmap révèle l'espace des paramètres : pour le croisement de moyennes, un seul coin gagne (réglage lent 80/300, +13 %), tout le reste perd. Mais l'out-of-sample a DEUX visages. Sur ce croisement de moyennes, le champion tient : +2,8 % en in-sample, +10 % en out-of-sample, mieux que la référence — un vrai plateau robuste. Sur le RSI, à l'inverse, le champion s'effondre : −3 % en in-sample puis −19 % en out-of-sample, battu par le réglage non optimisé. Optimiser a activement nui. Même méthode, verdicts opposés.\n\n## Conclusion\n\nL'optimisation mesure l'espace des paramètres ; elle ne certifie rien. Un « meilleur » réglage in-sample peut être un plateau solide ou un mirage de sur-apprentissage — et la seule façon de trancher est de lui montrer des données qu'il n'a jamais vues. Le juge, c'est l'out-of-sample.",
-        "en": "## Hypothesis\n\nWe \"optimize\" a strategy by searching the history for the parameter combination that returns the most. The trap: on past data, there is always a combination that shines by pure chance. So the real question isn't \"what is the best setting?\" but \"does that setting hold on data it has never seen?\".\n\n## Method\n\nA tool drives the REAL LEAN engine — not a vectorized proxy — across a full grid of combinations, in parallel (49 moving-average-crossover settings in ~100 s). Each point is a complete backtest, with all its metrics. We then apply the honest judge: the in-sample / out-of-sample walk-forward. We optimize on the first half of the history (in-sample, IS), test the champion on the second (out-of-sample, OOS) — never seen — and compare it to the un-optimized reference setting.\n\n## Results\n\nThe heatmap reveals the parameter space: for the moving-average crossover, a single corner wins (the slow 80/300 setting, +13 %), everything else loses. But out-of-sample has TWO faces. On this crossover, the champion holds: +2.8 % in-sample, +10 % out-of-sample, better than the reference — a genuinely robust plateau. On the RSI, in contrast, the champion collapses: −3 % in-sample then −19 % out-of-sample, beaten by the un-optimized setting. Optimizing actively hurt. Same method, opposite verdicts.\n\n## Conclusion\n\nOptimization measures the parameter space; it certifies nothing. A \"best\" in-sample setting can be a solid plateau or an overfitting mirage — and the only way to tell is to show it data it has never seen. The judge is out-of-sample."
+        "fr": "## Le même banc pour toutes\n\nComparer deux stratégies n'a de sens que si rien d'autre ne change. Toutes tournent donc sur les mêmes données (BTC/USDT en barres d'une heure, issues du pilier Historiques), les mêmes frais (0,04 % au taker, le palier standard de Binance USDⓈ-M), le même capital de départ (100 000 $) et la même contrainte : long ou flat, jamais de vente à découvert. C'est ce qui les rend directement comparables au Buy & Hold, qui sert de plancher.\n\n## Le moteur, pas un proxy\n\nLEAN est événementiel : il rejoue le marché barre par barre et fait vivre le cycle complet — signal, ordre, exécution, portefeuille. Plus lent qu'un calcul vectorisé, mais c'est le prix de la fidélité : le fill, les frais et le capital disponible se comportent comme en réel. Les optimisations pilotent ce vrai moteur, pas une approximation.\n\n## Premier juge — l'optimisation\n\nOn balaye la grille complète des paramètres d'une stratégie, chaque point étant un backtest complet. Le piège est connu : sur des données passées, il existe toujours un réglage qui brille par pur hasard. La vraie question n'est donc pas « quel est le meilleur réglage ? » mais « tient-il sur des données qu'il n'a jamais vues ? ». D'où le walk-forward : on optimise sur la première moitié de l'historique (in-sample), on teste le champion sur la seconde (out-of-sample), et on le compare au réglage de référence, non optimisé.\n\n## Second juge — la lecture order-flow\n\nUne bougie ne connaît que le volume TOTAL de sa période : elle écrase qui a acheté, qui a vendu, et à quel prix. En revenant aux transactions tick par tick, on reconstruit cette dimension perdue — le volume profile (où le marché a échangé) et le footprint (l'agression acheteur/vendeur par niveau), à plusieurs échelles de temps. Ce n'est pas un générateur de signaux, c'est une façon de voir ce que la stratégie a traversé.\n\n## Où en est le chantier\n\nLes deux juges ont d'abord servi à trois stratégies — le croisement de moyennes, le RSI et le volume profile. Les cinq autres attendent leur tour : leur page dit ce qu'elles font, et ce qui reste à mesurer.",
+        "en": "## The same bench for all\n\nComparing two strategies only means something if nothing else changes. So they all run on the same data (BTC/USDT hourly bars, from the Histories pillar), the same fees (0.04% taker, Binance USDⓈ-M's standard tier), the same starting capital ($100,000) and the same constraint: long or flat, never short. That's what makes them directly comparable to Buy & Hold, which acts as the floor.\n\n## The engine, not a proxy\n\nLEAN is event-driven: it replays the market bar by bar and runs the full cycle — signal, order, fill, portfolio. Slower than a vectorized computation, but that's the price of fidelity: fills, fees and available capital behave as they would live. The optimizations drive that real engine, not an approximation.\n\n## First judge — optimization\n\nWe sweep a strategy's full parameter grid, each point being a complete backtest. The trap is well known: on past data, there is always a setting that shines by pure chance. So the real question isn't \"what's the best setting?\" but \"does it hold on data it has never seen?\". Hence the walk-forward: we optimize on the first half of the history (in-sample), test the champion on the second (out-of-sample), and compare it to the reference, un-optimized setting.\n\n## Second judge — the order-flow reading\n\nA candle only knows the TOTAL volume of its period: it crushes who bought, who sold, and at what price. Going back to tick-by-tick trades rebuilds that lost dimension — the volume profile (where the market traded) and the footprint (buyer/seller aggression per level), at several time scales. It isn't a signal generator, it's a way of seeing what the strategy went through.\n\n## Where the work stands\n\nBoth judges have served three strategies so far — the moving-average crossover, the RSI and the volume profile. The other five are waiting their turn: their page says what they do, and what remains to be measured."
+      },
+      "sousHub": true
+    },
+    {
+      "id": "strat-buyhold",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Buy & Hold",
+        "en": "Buy & Hold"
+      },
+      "accroche": {
+        "fr": "Acheter, ne rien faire. Le plancher que toute stratégie doit battre.",
+        "en": "Buy, then do nothing. The floor every strategy has to beat."
+      },
+      "statut": {
+        "fr": "Référence",
+        "en": "Benchmark"
+      },
+      "texte": {
+        "fr": "## La stratégie\n\nAcheter au premier prix de l'historique, ne plus jamais toucher à rien. Aucun paramètre, aucun signal, un seul aller-retour de frais.\n\n## Pourquoi elle est là\n\nDeux rôles. D'abord le sol de vérité : c'est le seul backtest dont le résultat se recalcule à la main, ce qui permet de vérifier que le moteur, les données et les frais racontent bien la même chose avant de lui faire confiance sur des stratégies plus complexes. Ensuite le plancher : une stratégie qui multiplie les ordres, les paramètres et les frais sans battre l'achat-conservation ne justifie pas son existence.\n\n## Optimisation\n\nSans objet — il n'y a rien à optimiser. C'est précisément ce qui en fait un point de comparaison honnête : le Buy & Hold ne peut pas sur-apprendre.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nBuy at the first price in the history, then never touch anything again. No parameters, no signals, a single round trip of fees.\n\n## Why it's here\n\nTwo roles. First, the ground truth: it's the only backtest whose result can be recomputed by hand, which is how you check that the engine, the data and the fees all tell the same story before trusting them on anything more complex. Second, the floor: a strategy that piles on orders, parameters and fees without beating buy-and-hold doesn't justify its existence.\n\n## Optimization\n\nNot applicable — there's nothing to optimize. That's exactly what makes it an honest benchmark: Buy & Hold cannot overfit.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-sma",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Croisement de moyennes (SMA 50/200)",
+        "en": "Moving-average crossover (SMA 50/200)"
+      },
+      "accroche": {
+        "fr": "Suivre la tendance — et le seul cas où l'optimisation a tenu ses promesses hors échantillon.",
+        "en": "Following the trend — and the one case where optimization kept its promise out of sample."
+      },
+      "statut": {
+        "fr": "Optimisation : plateau robuste",
+        "en": "Optimization: robust plateau"
       },
       "items": [
         {
@@ -24,33 +65,134 @@
           "type": "figure",
           "url": "assets/crypto/backtesting/figures/optim-heatmap-isoos.png",
           "titre": {
-            "fr": "Balayage réel LEAN + démasquage in/out-of-sample",
-            "en": "Real LEAN sweep + in/out-of-sample unmasking"
+            "fr": "Grille de paramètres et verdict out-of-sample",
+            "en": "Parameter grid and out-of-sample verdict"
           },
           "description": {
-            "fr": "À gauche, le rendement de chaque combinaison de moyennes mobiles (rapide × lente) mesuré par le vrai moteur. À droite, le champion in-sample confronté à l'out-of-sample : le croisement de moyennes tient, le RSI s'effondre.",
-            "en": "Left: the return of each moving-average combination (fast × slow), measured by the real engine. Right: the in-sample champion confronted with out-of-sample: the moving-average crossover holds, the RSI collapses."
+            "fr": "La heatmap des 49 réglages du croisement, et le face-à-face in-sample / out-of-sample du champion.",
+            "en": "The heatmap of the crossover's 49 settings, and the champion's in-sample / out-of-sample face-off."
           }
         }
-      ]
+      ],
+      "texte": {
+        "fr": "## La stratégie\n\nDeux moyennes mobiles, une courte et une longue. Quand la courte passe au-dessus de la longue, on achète ; quand elle repasse dessous, on sort. C'est le suivi de tendance dans sa forme la plus nue : on achète la force, on n'anticipe rien.\n\n## Optimisation\n\nLa grille complète des 49 réglages passe au vrai moteur LEAN, en parallèle, en une centaine de secondes. La heatmap révèle un espace de paramètres brutal : un seul coin gagne — le réglage lent 80/300, à +13 % — et tout le reste perd.\n\nReste le juge honnête. Le champion tient : +2,8 % en in-sample, puis +10 % en out-of-sample, sur des données qu'il n'avait jamais vues, et mieux que le réglage de référence non optimisé. Ce n'est pas un pic isolé mais un vrai plateau — les réglages voisins se comportent comme lui, signe que l'avantage ne tient pas à un alignement fortuit.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nTwo moving averages, one short and one long. When the short crosses above the long, we buy; when it crosses back below, we exit. Trend-following in its barest form: buy strength, anticipate nothing.\n\n## Optimization\n\nThe full grid of 49 settings goes through the real LEAN engine, in parallel, in about a hundred seconds. The heatmap reveals a brutal parameter space: a single corner wins — the slow 80/300 setting, at +13% — and everything else loses.\n\nThen comes the honest judge. The champion holds: +2.8% in-sample, then +10% out-of-sample, on data it had never seen, and better than the un-optimized reference setting. This isn't an isolated spike but a real plateau — neighboring settings behave like it, a sign that the edge doesn't rest on a lucky alignment.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
     },
     {
-      "id": "orderflow",
+      "id": "strat-macd",
+      "parent": "moteur-lean",
       "titre": {
-        "fr": "Analyse order-flow multi-échelles",
-        "en": "Multi-scale order-flow analysis"
+        "fr": "MACD",
+        "en": "MACD"
       },
       "accroche": {
-        "fr": "Voir où se forme la valeur — et qui, des acheteurs ou des vendeurs, pousse le prix.",
-        "en": "Seeing where value forms — and who, buyers or sellers, is pushing price."
+        "fr": "Le suivi de tendance, en plus réactif : le momentum de la tendance plutôt que la tendance elle-même.",
+        "en": "Trend-following, more reactive: the trend's momentum rather than the trend itself."
       },
-      "intro": {
-        "fr": "Reconstruire, à partir des transactions tick par tick, le volume et l'agression par niveau de prix — à plusieurs échelles de temps, sur une session de marché.",
-        "en": "Rebuilding, from tick-by-tick trades, volume and aggression per price level — at several time scales, over a market session."
+      "statut": {
+        "fr": "En attente",
+        "en": "Pending"
       },
       "texte": {
-        "fr": "## Hypothèse\n\nUne bougie ne connaît que le volume TOTAL de sa période : elle écrase l'information de qui a acheté, qui a vendu, et à quel prix. En revenant aux transactions individuelles (les ticks), on reconstruit cette dimension perdue — le volume profile (où le marché a échangé) et le footprint (l'agression acheteur/vendeur par niveau). L'idée : voir la valeur se former et migrer au fil d'une session.\n\n## Démarche\n\nOn streame les transactions d'une session (heure de New York) depuis une base de ~328 millions de ticks, et on les agrège par niveau de prix et par tranche de temps réglable (1 min, 5 min, 15 min…). Deux lectures : le volume profile — le volume par niveau, coloré par l'intensité d'agression (acheteurs contre vendeurs) — et le footprint — l'écart acheteur/vendeur (le delta) niveau par niveau. Un POC glissant suit la valeur en formation, comparé au profil cumulé de toute la session.\n\n## Résultats\n\nSur une même session, les sous-profils par tranche de X minutes s'emboîtent dans le profil complet de la session, et l'on voit la valeur migrer : le point de contrôle (POC) glissant remonte avec un rallye acheteur, puis redescend. Le footprint révèle où l'agression nette s'est concentrée — le compteur de delta cumulé plonge sur les creux vendeurs, remonte sur les poussées acheteuses. Trois dimensions distinctes — la forme du profil, le prix, la masse — qu'on garde séparées pour ne pas les confondre.\n\n## Conclusion\n\nCes outils ne prédisent pas le marché : les descripteurs order-flow testés ressortent à plat, sans avantage exploitable. Ce sont des outils d'ANALYSE — pour voir la structure de l'enchère (où la valeur se forme, s'accepte ou se rejette), pas des signaux d'entrée. Bien lue, cette lecture éclaire le contexte ; mal lue, elle donne l'illusion d'un signal là où il n'y en a pas.",
-        "en": "## Hypothesis\n\nA candle only knows the TOTAL volume of its period: it flattens the information of who bought, who sold, and at what price. By going back to the individual trades (the ticks), we rebuild that lost dimension — the volume profile (where the market traded) and the footprint (buyer/seller aggression per level). The idea: watch value form and migrate over a session.\n\n## Method\n\nWe stream a session's trades (New York time) from a base of ~328 million ticks, and aggregate them by price level and by an adjustable time slice (1 min, 5 min, 15 min…). Two reads: the volume profile — volume per level, colored by aggression intensity (buyers versus sellers) — and the footprint — the buyer/seller imbalance (the delta) level by level. A rolling POC follows the value in formation, compared to the cumulative profile of the whole session.\n\n## Results\n\nOver one session, the sub-profiles per X-minute slice nest inside the full session profile, and we watch value migrate: the rolling point of control (POC) rises with a buying rally, then falls back. The footprint reveals where net aggression concentrated — the cumulative delta counter dives on selling lows, climbs on buying pushes. Three distinct dimensions — the profile's shape, the price, the mass — kept separate so as not to confuse them.\n\n## Conclusion\n\nThese tools do not predict the market: the order-flow descriptors we tested come out flat, with no exploitable edge. They are ANALYSIS tools — to see the structure of the auction (where value forms, is accepted or rejected), not entry signals. Read well, this view illuminates context; read badly, it gives the illusion of a signal where there is none."
+        "fr": "## La stratégie\n\nMême famille que le croisement de moyennes, mais un cran plus réactif. Le MACD est l'écart entre deux moyennes exponentielles (12 et 26) — la vitesse de la tendance, pas sa direction. Sa ligne de signal en est la moyenne exponentielle sur 9 périodes, et l'histogramme, l'écart entre les deux, change de signe exactement au croisement. On achète quand le MACD passe au-dessus de son signal, on sort quand il repasse dessous. Long/flat, comme les autres.\n\n## Optimisation\n\nEn attente.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nSame family as the moving-average crossover, but a notch more reactive. The MACD is the gap between two exponential moving averages (12 and 26) — the trend's speed, not its direction. Its signal line is the MACD's 9-period exponential average, and the histogram, the gap between the two, flips sign exactly at the crossover. We buy when the MACD moves above its signal, we exit when it drops back below. Long/flat, like the others.\n\n## Optimization\n\nPending.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-rsi",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "RSI — retour à la moyenne",
+        "en": "RSI — mean reversion"
+      },
+      "accroche": {
+        "fr": "Parier contre la tendance — et la démonstration que l'optimisation peut activement nuire.",
+        "en": "Betting against the trend — and the proof that optimization can actively hurt."
+      },
+      "statut": {
+        "fr": "Optimisation : mirage",
+        "en": "Optimization: mirage"
+      },
+      "texte": {
+        "fr": "## La stratégie\n\nLe miroir du croisement de moyennes. Au lieu de suivre la tendance, on parie contre : le RSI sur 14 barres mesure la force relative des hausses face aux baisses ; sous 30 le marché est dit survendu, on achète en pariant sur le rebond ; au-dessus de 70 il est suracheté, on sort. Long/flat, donc directement comparable au croisement et au Buy & Hold.\n\n## Optimisation\n\nMême méthode que pour le croisement de moyennes, verdict opposé. Le champion in-sample perd déjà — −3 % — et s'effondre en out-of-sample : −19 %, battu par le réglage de référence, celui qu'on n'avait pas optimisé. Optimiser n'a pas seulement été inutile : ça a activement nui.\n\nC'est le résultat le plus utile des deux. Même moteur, même grille, même walk-forward : sur une stratégie, l'optimisation révèle un plateau solide, sur l'autre elle fabrique un mirage. L'optimisation mesure l'espace des paramètres ; elle ne certifie rien. Le seul juge, c'est l'out-of-sample.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nThe mirror image of the moving-average crossover. Instead of following the trend, we bet against it: the 14-bar RSI measures the relative strength of gains against losses; below 30 the market is called oversold, we buy on the bounce; above 70 it's overbought, we exit. Long/flat, so directly comparable to the crossover and to Buy & Hold.\n\n## Optimization\n\nSame method as the crossover, opposite verdict. The in-sample champion already loses — −3% — and collapses out of sample: −19%, beaten by the reference setting, the one we hadn't optimized. Optimizing wasn't merely useless: it actively hurt.\n\nThis is the more useful of the two results. Same engine, same grid, same walk-forward: on one strategy the optimization reveals a solid plateau, on the other it manufactures a mirage. Optimization measures the parameter space; it certifies nothing. The only judge is the out-of-sample.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-bollinger",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Bandes de Bollinger",
+        "en": "Bollinger Bands"
+      },
+      "accroche": {
+        "fr": "Le retour à la moyenne, mais avec un seuil qui respire au rythme de la volatilité.",
+        "en": "Mean reversion, but with a threshold that breathes with volatility."
+      },
+      "statut": {
+        "fr": "En attente",
+        "en": "Pending"
+      },
+      "texte": {
+        "fr": "## La stratégie\n\nLa suite logique du RSI. Le reproche fait au RSI : ses seuils sont FIXES (30 et 70), quel que soit le régime du marché. Les bandes de Bollinger remplacent le seuil fixe par une enveloppe qui se resserre et s'élargit avec la volatilité : on achète sous la bande basse — une faiblesse excessive relativement au régime courant, pas dans l'absolu — et on sort au retour à la bande médiane, sans attendre un surachat lointain. Long/flat.\n\n## Optimisation\n\nEn attente.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nThe logical follow-up to the RSI. The complaint against the RSI: its thresholds are FIXED (30 and 70), whatever the market regime. Bollinger Bands replace the fixed threshold with an envelope that tightens and widens with volatility: we buy below the lower band — an excess of weakness relative to the current regime, not in absolute terms — and we exit on the return to the middle band, without waiting for a distant overbought reading. Long/flat.\n\n## Optimization\n\nPending.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-risque",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Gestion du risque (RSI + stops)",
+        "en": "Risk management (RSI + stops)"
+      },
+      "accroche": {
+        "fr": "Même signal que le RSI nu, mais avec des garde-fous : séparer la décision d'entrer de la décision de rester.",
+        "en": "Same signal as the bare RSI, but with safeguards: separating the decision to enter from the decision to stay."
+      },
+      "statut": {
+        "fr": "En attente",
+        "en": "Pending"
+      },
+      "texte": {
+        "fr": "## La stratégie\n\nLe même signal RSI 30/70, à une chose près : la logique de signal et la logique de risque sont séparées. Le RSI dit quand entrer ; un stop-loss et un take-profit disent quand sortir, indépendamment de lui.\n\nLa cible est précise. Le RSI nu encaisse un trade catastrophe : acheté à 93 614 $ sur un signal de survente, tenu jusqu'à 68 652 $ parce qu'aucun surachat n'est jamais venu déclencher la sortie — 27 000 $ perdus sur un seul trade. Un stop coupe ça avant que ça saigne. La question que pose la page : à quel prix ? Un stop coupe aussi les trades qui seraient revenus.\n\n## Optimisation\n\nEn attente.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nThe same RSI 30/70 signal, with one difference: the signal logic and the risk logic are separated. The RSI says when to enter; a stop-loss and a take-profit say when to exit, independently of it.\n\nThe target is specific. The bare RSI takes one catastrophic trade: bought at $93,614 on an oversold signal, held down to $68,652 because no overbought reading ever came to trigger the exit — $27,000 lost on a single trade. A stop cuts that before it bleeds. The question the page raises: at what cost? A stop also cuts the trades that would have come back.\n\n## Optimization\n\nPending.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-avancee",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Stratégie avancée",
+        "en": "Advanced strategy"
+      },
+      "accroche": {
+        "fr": "Tout au même endroit : filtre de régime, momentum, taille au risque, stop suiveur.",
+        "en": "Everything in one place: regime filter, momentum, risk-based sizing, trailing stop."
+      },
+      "statut": {
+        "fr": "En attente",
+        "en": "Pending"
+      },
+      "texte": {
+        "fr": "## La stratégie\n\nCelle qui réunit les briques des précédentes en un seul algorithme.\n\nLe régime d'abord : tant que le prix est sous sa moyenne de fond (SMA 200), on n'achète jamais — un filtre, pas un signal. L'entrée ensuite : le MACD au-dessus de son signal ET le RSI au-dessus de 50, soit deux confirmations de momentum plutôt qu'une. La taille enfin, et c'est là que ça devient intéressant : on ne mise pas une somme fixe, on risque 1 % du capital par trade. C'est la distance au stop — deux fois l'ATR — qui fixe la quantité : plus le marché est nerveux, plus la position est petite.\n\nLes sorties sont triples : un stop suiveur à 2×ATR sous le plus haut atteint depuis l'entrée, un take-profit à 4×ATR (un ratio de 2 pour 1), et une sortie sèche si le régime casse.\n\n## Optimisation\n\nEn attente. C'est la stratégie où l'exercice sera le plus délicat : plus il y a de paramètres, plus la grille est large, et plus il devient facile de trouver le réglage qui brille par hasard. Le walk-forward comptera double.\n\n## Analyse order-flow multi-échelles\n\nEn attente.",
+        "en": "## The strategy\n\nThe one that brings the previous building blocks together into a single algorithm.\n\nRegime first: as long as price sits below its baseline average (SMA 200), we never buy — a filter, not a signal. Entry next: the MACD above its signal AND the RSI above 50, two momentum confirmations rather than one. Sizing last, and this is where it gets interesting: we don't bet a fixed amount, we risk 1% of capital per trade. The distance to the stop — twice the ATR — sets the quantity: the jumpier the market, the smaller the position.\n\nExits are threefold: a trailing stop at 2×ATR below the highest close since entry, a take-profit at 4×ATR (a 2-to-1 ratio), and a hard exit if the regime breaks.\n\n## Optimization\n\nPending. This is the strategy where the exercise will be trickiest: the more parameters, the wider the grid, and the easier it becomes to find the setting that shines by chance. The walk-forward will count double.\n\n## Multi-scale order-flow analysis\n\nPending."
+      }
+    },
+    {
+      "id": "strat-volume-profile",
+      "parent": "moteur-lean",
+      "titre": {
+        "fr": "Volume profile par session",
+        "en": "Volume profile per session"
+      },
+      "accroche": {
+        "fr": "La seule stratégie nourrie à l'order-flow — et la seule dont l'analyse a déjà rendu son verdict.",
+        "en": "The only strategy fed by order-flow — and the only one whose analysis has already returned its verdict."
+      },
+      "statut": {
+        "fr": "OF-ME : descripteurs à plat",
+        "en": "OF-ME: flat descriptors"
       },
       "items": [
         {
@@ -62,8 +204,8 @@
             "en": "Multi-scale volume profile"
           },
           "description": {
-            "fr": "Chaque tranche de 5 minutes a son mini-profil de volume, coloré par l'agression acheteur/vendeur ; à droite, le profil cumulé de toute la session ; en violet, le POC glissant qui suit la valeur.",
-            "en": "Each 5-minute slice has its own mini volume profile, colored by buyer/seller aggression; on the right, the cumulative profile of the whole session; in purple, the rolling POC that follows value."
+            "fr": "Les sous-profils par tranche de temps s'emboîtent dans le profil complet de la session ; le POC glissant suit la valeur en formation.",
+            "en": "The per-slice sub-profiles nest inside the session's full profile; the sliding POC tracks value as it forms."
           }
         },
         {
@@ -71,310 +213,42 @@
           "type": "figure",
           "url": "assets/crypto/backtesting/figures/footprint-multiscale.png",
           "titre": {
-            "fr": "Footprint : l'agression par niveau",
-            "en": "Footprint: aggression per level"
+            "fr": "Footprint multi-échelles",
+            "en": "Multi-scale footprint"
           },
           "description": {
-            "fr": "Par niveau de prix, le volume vendeur (rouge, à gauche) contre acheteur (vert, à droite) ; en bas, le delta cumulé de la session — le compteur d'agression nette.",
-            "en": "Per price level, seller volume (red, left) versus buyer (green, right); at the bottom, the session's cumulative delta — the net-aggression counter."
+            "fr": "L'écart acheteur/vendeur niveau par niveau, et le delta cumulé qui plonge sur les creux vendeurs.",
+            "en": "The buyer/seller gap level by level, and the cumulative delta diving on seller lows."
           }
         }
-      ]
-    },
-    {
-      "id": "formation",
-      "titre": {
-        "fr": "La formation",
-        "en": "The course"
-      },
-      "accroche": {
-        "fr": "Un backtesting de niveau pro, bâti de zéro sur deux moteurs — en trois temps.",
-        "en": "Professional-grade backtesting, built from scratch on two engines — in three parts."
-      },
-      "intro": {
-        "fr": "Construire un backtesting de niveau professionnel sur deux moteurs complémentaires — LEAN (événementiel) et vectorbt (vectorisé) — appliqué à de vraies données crypto, puis réconcilier leurs résultats.",
-        "en": "Building professional-grade backtesting on two complementary engines — LEAN (event-driven) and vectorbt (vectorized) — applied to real crypto data, then reconciling their results."
-      },
-      "statut": {
-        "fr": "3 parties",
-        "en": "3 parts"
-      },
-      "sousHub": true,
+      ],
       "texte": {
-        "fr": "## Deux moteurs, trois temps\n\nUn backtesting fiable ne se juge pas à un seul moteur. Cette formation construit les mêmes stratégies sur deux moteurs complémentaires — LEAN (événementiel) et vectorbt (vectorisé) — puis les réconcilie au centime. C'est la compétence qui sépare un backtest fiable d'un joli graphique trompeur. Choisissez une partie ci-dessous.\n\n## Avertissement\n\nContenu pédagogique. Rien ici n'est un conseil financier ; les performances passées, a fortiori simulées, ne préjugent pas des performances futures.",
-        "en": "## Two engines, three parts\n\nA reliable backtest isn't judged on a single engine. This course builds the same strategies on two complementary engines — LEAN (event-driven) and vectorbt (vectorized) — then reconciles them to the cent. That's the skill that separates a reliable backtest from a pretty, misleading chart. Pick a part below.\n\n## Disclaimer\n\nEducational content. Nothing here is financial advice; past — let alone simulated — performance does not guarantee future results."
+        "fr": "## La stratégie\n\nLa seule qui ne lit pas des bougies. Deux flux entrent dans le même algorithme : le prix en barres d'une heure, et les descripteurs du profil de la session en cours — reconstruits tick par tick depuis une base de ~328 millions de transactions, développés barre après barre.\n\nLa lecture retenue est la cassure du haut de la value area : quand le marché accepte des prix au-dessus de la valeur de l'enchère en cours, confirmée par un delta acheteur. Le profil fournit lui-même la cible et le stop — pas besoin d'aller les chercher ailleurs. Les sessions sont Asia, London et New York, à l'heure de New York, avec deux garde-fous posés d'avance : pas d'entrée hors session ni dans les deux premières barres (le profil est encore embryonnaire), et aucun croisement retenu à cheval sur deux enchères, puisque les niveaux sautent au reset.\n\n## Optimisation\n\nEn attente.\n\n## Analyse order-flow multi-échelles\n\nElle est faite — et son verdict est négatif, ce qui est précisément l'intérêt.\n\nCe qu'on voit : sur une même session, les sous-profils par tranche de X minutes s'emboîtent dans le profil complet, et la valeur migre — le point de contrôle glissant remonte avec un rallye acheteur, puis redescend. Le footprint montre où l'agression nette s'est concentrée ; le delta cumulé plonge sur les creux vendeurs et remonte sur les poussées acheteuses.\n\nCe qu'on n'en tire pas : les descripteurs order-flow testés ressortent à plat, sans avantage exploitable. Ce sont des outils d'ANALYSE — pour voir la structure de l'enchère, où la valeur se forme, s'accepte ou se rejette — pas des signaux d'entrée. Bien lue, cette vue éclaire le contexte ; mal lue, elle donne l'illusion d'un signal là où il n'y en a pas.",
+        "en": "## The strategy\n\nThe only one that doesn't read candles. Two feeds enter the same algorithm: price in hourly bars, and the descriptors of the session's profile — rebuilt tick by tick from a database of ~328 million trades, developed bar after bar.\n\nThe chosen reading is the break of the value area's high: when the market accepts prices above the current auction's value, confirmed by a buyer delta. The profile supplies the target and the stop itself — no need to look elsewhere. The sessions are Asia, London and New York, on New York time, with two safeguards set in advance: no entry outside a session nor in its first two bars (the profile is still embryonic), and no crossing kept when it straddles two auctions, since the levels jump at the reset.\n\n## Optimization\n\nPending.\n\n## Multi-scale order-flow analysis\n\nIt's done — and its verdict is negative, which is precisely the point.\n\nWhat we see: within a single session, the per-slice sub-profiles nest inside the full profile, and value migrates — the sliding point of control rises with a buyer rally, then falls back. The footprint shows where net aggression concentrated; cumulative delta dives on seller lows and climbs on buyer pushes.\n\nWhat we don't get out of it: the order-flow descriptors we tested come out flat, with no exploitable edge. These are ANALYSIS tools — for seeing the auction's structure, where value forms, gets accepted or rejected — not entry signals. Read well, this view lights up the context; read badly, it gives the illusion of a signal where there is none."
       }
     },
     {
-      "id": "lean",
-      "parent": "formation",
+      "id": "moteur-vbt",
       "titre": {
-        "fr": "01 · LEAN — le moteur événementiel",
-        "en": "01 · LEAN — the event-driven engine"
+        "fr": "vectorbt PRO — le moteur vectorisé",
+        "en": "vectorbt PRO — the vectorized engine"
       },
       "accroche": {
-        "fr": "Neuf leçons : d'un moteur compilé à la main jusqu'à l'order-flow tick par tick.",
-        "en": "Nine lessons: from an engine compiled by hand to tick-by-tick order flow."
+        "fr": "L'autre façon de backtester : tout l'historique d'un coup, en tableaux. Le contre-champ de LEAN.",
+        "en": "The other way to backtest: the whole history at once, in arrays. LEAN's counterpoint."
       },
       "intro": {
-        "fr": "Construire un backtesting de niveau professionnel sur le moteur événementiel LEAN, appliqué à de vraies données crypto (BTCUSDT perp), en mesurant tout — jamais en supposant.",
-        "en": "Building professional-grade backtesting on the LEAN event-driven engine, applied to real crypto data (BTCUSDT perp), measuring everything — never assuming."
-      },
-      "statut": {
-        "fr": "9 leçons",
-        "en": "9 lessons"
-      },
-      "sousMenu": true,
-      "texte": {
-        "fr": "## La démarche\n\nChaque leçon part d'une hypothèse, la teste sur le vrai moteur LEAN (compilé depuis les sources GitHub, sans Docker), puis cherche à la falsifier. Aucun chiffre n'est figé : tout est recalculé depuis les données réellement chargées, souvent au centime près. Sept stratégies sont construites et mesurées côte à côte — du Buy & Hold à une stratégie complète (régime + momentum + risque) — plus une extension order-flow.\n\n## Les données\n\nBTCUSDT, futures perpétuels margés en USDT (Binance USDⓈ-M) : des barres horaires OHLCV dérivées de ~328 millions de ticks bruts, une seule « source de vérité » consommée telle quelle. L'historique s'étend au fil du cours — les chiffres ci-dessous valent pour la fenêtre mesurée (janvier-juin 2026) ; la démarche, elle, vaut toujours.\n\n## Feuille de route\n\nSection 01 — LEAN : publiée, les neuf leçons ci-dessous. Section 02 — vectorbt : rejouer les mêmes stratégies en vectorisé (en attente de licence). Section 03 — Conclusion : réconcilier les deux moteurs au centime et expliquer chaque écart (à venir).\n\n## Avertissement\n\nContenu pédagogique. Rien ici n'est un conseil financier ; les performances passées, a fortiori simulées, ne préjugent pas des performances futures.",
-        "en": "## The approach\n\nEach lesson starts from a hypothesis, tests it on the real LEAN engine (compiled from the GitHub sources, no Docker), then tries to falsify it. No number is hard-coded: everything is recomputed from the data actually loaded, often to the cent. Seven strategies are built and measured side by side — from Buy & Hold to a full strategy (regime + momentum + risk) — plus an order-flow extension.\n\n## The data\n\nBTCUSDT, USDT-margined perpetual futures (Binance USDⓈ-M): hourly OHLCV bars derived from ~328 million raw ticks, a single \"ground truth\" consumed as-is. The history grows over the course — the figures below hold for the measured window (January-June 2026); the method itself always holds.\n\n## Roadmap\n\nSection 01 — LEAN: published, the nine lessons below. Section 02 — vectorbt: replay the same strategies vectorized (awaiting a license). Section 03 — Conclusion: reconcile both engines to the cent and explain every gap (coming).\n\n## Disclaimer\n\nEducational content. Nothing here is financial advice; past — let alone simulated — performance does not guarantee future results."
-      },
-      "items": [
-        {
-          "id": "lecon-01",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-01-docker-vs-source.png",
-          "titre": {
-            "fr": "Leçon 01 — Compiler LEAN sans Docker",
-            "en": "Lesson 01 — Compiling LEAN without Docker"
-          },
-          "description": {
-            "fr": "Cloner et compiler le moteur soi-même — capot ouvert, lisible et débogable.",
-            "en": "Clone and compile the engine yourself — hood open, readable and debuggable."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nLEAN est un moteur de backtesting événementiel : il rejoue le marché barre par barre. Plutôt que la CLI officielle qui fait tourner une image Docker opaque, on prend l'autre voie — cloner les sources GitHub et les compiler soi-même (SDK .NET 10). Le moteur devient un simple processus lisible : quand un fill surprendra, on ouvrira le code qui l'a produit.\n\n## La démarche\n\nTrois outils suffisent : Git, le SDK .NET 10 et un Python 3.11 isolé (conda) pour les algos Python, branché par deux variables (PYTHONNET_PYDLL, PYTHONHOME). On compile le seul projet Launcher, on lance un premier backtest natif C#, puis le même en Python.\n\n## Le résultat\n\nL'algo de démonstration affiche exactement Net Profit 1,692 % — notre premier « chiffre de conformité ». Pas de Docker, pas de démon : un processus .NET qui démarre, produit ses quatre fichiers de résultats (JSON complets, résumé, événements d'ordres, journal), puis se termine.",
-            "en": "## The goal\n\nLEAN is an event-driven backtesting engine: it replays the market bar by bar. Instead of the official CLI running an opaque Docker image, we take the other road — clone the GitHub sources and compile them ourselves (.NET 10 SDK). The engine becomes a plain, readable process: when a fill surprises us, we open the code that produced it.\n\n## The approach\n\nThree tools are enough: Git, the .NET 10 SDK, and an isolated Python 3.11 (conda) for Python algos, wired in via two variables (PYTHONNET_PYDLL, PYTHONHOME). We build the single Launcher project, run a first native C# backtest, then the same one in Python.\n\n## The result\n\nThe demo algo prints exactly Net Profit 1.692 % — our first \"conformity number.\" No Docker, no daemon: a .NET process that starts, produces its four result files (full JSON, summary, order events, log), and exits."
-          }
-        },
-        {
-          "id": "lecon-02",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-02-boucle-evenementielle.png",
-          "titre": {
-            "fr": "Leçon 02 — Le moteur à l'œuvre et nos données",
-            "en": "Lesson 02 — The engine at work, and our data"
-          },
-          "description": {
-            "fr": "La boucle événementielle, la sémantique des fills mesurée, et nos données BTCUSDT branchées.",
-            "en": "The event loop, fill semantics measured, and our BTCUSDT data plugged in."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nComprendre ce que le moteur fait vraiment — la boucle événementielle, les ordres, les fills, mesurés et non supposés — puis lui faire consommer nos données BTCUSDT à la place du SPY d'exemple.\n\n## La démarche\n\nUn premier algorithme bavard journalise chaque barre et chaque fill. On lit le contrat d'une barre (bar.time = ouverture ; on_data appelé à la clôture : on décide sur du passé) et on écrit un lecteur PythonData custom pour brancher notre CSV horaire.\n\n## Le résultat\n\nSémantique des fills, mesurée : en séance, un ordre au marché est rempli immédiatement au dernier prix connu (le close observé) — convention légèrement optimiste, assumée ; hors séance, il est converti en MarketOnOpen. LEAN rejoue nos 4 344 barres sans en perdre une. Preuve du fuseau : sans UTC explicite, le moteur lit l'heure de New York et avale une barre en silence au passage à l'heure d'été (8 mars) — 4 343 au lieu de 4 344.",
-            "en": "## The goal\n\nUnderstand what the engine really does — the event loop, orders, fills, measured not assumed — then feed it our BTCUSDT data instead of the sample SPY.\n\n## The approach\n\nA first, verbose algorithm logs every bar and every fill. We read a bar's contract (bar.time = open; on_data called at the close: we decide on the past) and write a custom PythonData reader to plug in our hourly CSV.\n\n## The result\n\nFill semantics, measured: in-session, a market order fills immediately at the last known price (the observed close) — a slightly optimistic, assumed convention; out of session it converts to MarketOnOpen. LEAN replays our 4,344 bars without losing one. Time-zone proof: without explicit UTC, the engine reads New York time and silently swallows a bar at the DST switch (March 8) — 4,343 instead of 4,344."
-          }
-        },
-        {
-          "id": "lecon-03",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-03-buyhold-equite.png",
-          "titre": {
-            "fr": "Leçon 03 — Buy & Hold : le sol de vérité",
-            "en": "Lesson 03 — Buy & Hold: the ground truth"
-          },
-          "description": {
-            "fr": "Le backtest le plus simple, recalculé à la main au centime près.",
-            "en": "The simplest backtest, recomputed by hand to the cent."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nValider toute la chaîne données → fill → frais → équité sur la « stratégie » la plus bête : acheter une fois, ne plus rien faire. Son résultat est de l'arithmétique pure — si le backtest ne retombe pas exactement sur le calcul à la main, quelque chose est faux.\n\n## La démarche\n\nTrois réglages nouveaux : SymbolProperties avec un lot d'un satoshi (quantités fractionnaires), une bourse 24/7 en UTC, et un modèle de frais taker Binance de 0,04 % du notionnel — LA constante de frais du cours. On recalcule l'équité finale à la main, depuis le seul CSV.\n\n## Le résultat\n\nÉcart LEAN vs calcul manuel = 0,000000 $ : cohérence interne et externe. Net Profit mesuré −33,2 %, drawdown 40 % (le rendement final ne dit rien du chemin). Falsification : sans le lot d'un satoshi, LEAN arrondit à 1 BTC entier et teste silencieusement une autre stratégie (−29 % au lieu de −33 %) — sans le moindre avertissement.",
-            "en": "## The goal\n\nValidate the whole chain data → fill → fees → equity on the dumbest \"strategy\": buy once, do nothing more. Its result is pure arithmetic — if the backtest doesn't land exactly on the by-hand calculation, something is wrong.\n\n## The approach\n\nThree new settings: SymbolProperties with a one-satoshi lot (fractional quantities), a 24/7 exchange in UTC, and a Binance taker fee model of 0.04 % of notional — THE fee constant of the course. We recompute final equity by hand, from the CSV alone.\n\n## The result\n\nLEAN vs by-hand gap = $0.000000: internal and external consistency. Measured Net Profit −33.2 %, drawdown 40 % (the final return says nothing about the path). Falsification: without the one-satoshi lot, LEAN rounds to a whole 1 BTC and silently tests a different strategy (−29 % instead of −33 %) — without a single warning."
-          }
-        },
-        {
-          "id": "lecon-04",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-04-sma-croisement.png",
-          "titre": {
-            "fr": "Leçon 04 — Suivre la tendance : SMA & MACD",
-            "en": "Lesson 04 — Trend following: SMA & MACD"
-          },
-          "description": {
-            "fr": "Même camp, un seul facteur isolé : la réactivité. Le lent écrase le rapide.",
-            "en": "Same camp, a single factor isolated: reactivity. Slow crushes fast."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nPremière famille de stratégies : le suivi de tendance. Deux implémentations — croisement SMA 50/200 (lent) et MACD 12/26/9 (rapide) — même marché, mêmes frais, pour isoler un seul facteur : la réactivité.\n\n## La démarche\n\nUn croisement est un changement de signe, pas un état : on mémorise le pas précédent pour n'agir qu'au franchissement. Les deux stratégies restent long/flat, directement comparables au Buy & Hold.\n\n## Le résultat\n\nVerdict contre-intuitif : la SMA lente fait 22 trades (−4,3 %, drawdown 16,5 %), le MACD rapide 341 trades (−32,1 %, drawdown 33,1 %, ~12 % du capital en frais). Sur un horaire bruité, la réactivité ne capte que du bruit. La leçon profonde : un indicateur n'a de sens qu'accordé à son échelle de temps — 12/26/9 est pensé pour le graphe journalier.",
-            "en": "## The goal\n\nFirst strategy family: trend following. Two implementations — SMA 50/200 crossover (slow) and MACD 12/26/9 (fast) — same market, same fees, to isolate a single factor: reactivity.\n\n## The approach\n\nA crossover is a sign change, not a state: we remember the previous step to act only at the crossing. Both strategies stay long/flat, directly comparable to Buy & Hold.\n\n## The result\n\nCounter-intuitive verdict: the slow SMA makes 22 trades (−4.3 %, 16.5 % drawdown), the fast MACD 341 trades (−32.1 %, 33.1 % drawdown, ~12 % of capital in fees). On noisy hourly data, reactivity only captures noise. The deeper lesson: an indicator only makes sense tuned to its timeframe — 12/26/9 is meant for the daily chart."
-          }
-        },
-        {
-          "id": "lecon-05",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-05-rsi.png",
-          "titre": {
-            "fr": "Leçon 05 — Le retour à la moyenne : RSI & Bollinger",
-            "en": "Lesson 05 — Mean reversion: RSI & Bollinger"
-          },
-          "description": {
-            "fr": "Acheter la faiblesse — et le trade catastrophe à −27 000 $.",
-            "en": "Buying weakness — and the catastrophe trade at −$27,000."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nLe camp opposé : le retour à la moyenne. Acheter la faiblesse avec deux outils — le RSI (seuils fixes 30/70) et les bandes de Bollinger (seuils adaptatifs ± 2σ) — sur le même marché baissier.\n\n## La démarche\n\nMême cadre long/flat, mêmes frais. Le RSI achète la survente ; Bollinger achète la cassure sous la bande basse et sort au retour à la médiane — un objectif proche qui multiplie les trades.\n\n## Le résultat\n\nLes deux perdent lourdement, chacune un défaut structurel différent. Le RSI n'a aucun stop : un seul trade tenu 25 jours efface ~27 000 $ (acheté à 93 614, revendu à 68 652). Bollinger sur-trade : 155 ordres, ~5 % du capital en frais. En tendance, la survente n'annonce pas un rebond — elle annonce plus de baisse.",
-            "en": "## The goal\n\nThe opposite camp: mean reversion. Buy weakness with two tools — the RSI (fixed 30/70 thresholds) and Bollinger Bands (adaptive ± 2σ thresholds) — on the same falling market.\n\n## The approach\n\nSame long/flat frame, same fees. The RSI buys oversold; Bollinger buys the break below the lower band and exits on the return to the median — a close target that multiplies trades.\n\n## The result\n\nBoth lose heavily, each with a different structural flaw. The RSI has no stop: a single trade held 25 days wipes out ~$27,000 (bought at 93,614, sold at 68,652). Bollinger over-trades: 155 orders, ~5 % of capital in fees. In a trend, oversold doesn't signal a bounce — it signals more downside."
-          }
-        },
-        {
-          "id": "lecon-06",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-06-risque.png",
-          "titre": {
-            "fr": "Leçon 06 — La gestion du risque",
-            "en": "Lesson 06 — Risk management"
-          },
-          "description": {
-            "fr": "Séparer le signal de la survie — et le paradoxe du stop qui nuit.",
-            "en": "Separating signal from survival — and the paradox of the stop that hurts."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nUn backtest se gagne autant par la gestion du risque que par le signal. Trois leviers, séparés de la logique de signal : le stop-loss, le take-profit, et le dimensionnement (le sizing, jamais bougé depuis la leçon 03).\n\n## La démarche\n\nOn garde exactement le signal RSI de la leçon 05 — celui du trade catastrophe — et on greffe par-dessus une couche stop/take, évaluée avant le signal et prioritaire, avec sa propre mémoire (le prix d'entrée).\n\n## Le résultat\n\nParadoxe mesuré : le stop coupe le pire trade (de −27 % à −9,3 %) mais dégrade le total (−26,4 % → −29,0 %). Un stop vend le creux — précisément ce qu'une stratégie de retour à la moyenne veut détenir : il combat son propre edge. La vraie leçon : « séparer le signal du risque » veut dire accorder le risque au type de signal. Seule la mesure tranche.",
-            "en": "## The goal\n\nA backtest is won by risk management as much as by the signal. Three levers, kept separate from signal logic: stop-loss, take-profit, and sizing (untouched since Lesson 03).\n\n## The approach\n\nWe keep exactly the RSI signal from Lesson 05 — the one behind the catastrophe trade — and graft a stop/take layer on top, evaluated before the signal and taking priority, with its own memory (the entry price).\n\n## The result\n\nMeasured paradox: the stop cuts the worst trade (from −27 % to −9.3 %) but degrades the total (−26.4 % → −29.0 %). A stop sells the dip — exactly what a mean-reversion strategy wants to hold: it fights its own edge. The real lesson: \"separate signal from risk\" means matching the risk to the type of signal. Only measurement decides."
-          }
-        },
-        {
-          "id": "lecon-07",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-07-metriques.png",
-          "titre": {
-            "fr": "Leçon 07 — Métriques & optimisation",
-            "en": "Lesson 07 — Metrics & optimization"
-          },
-          "description": {
-            "fr": "Lire un rapport comme un pro — et reconnaître un backtest trop beau pour être vrai.",
-            "en": "Reading a report like a pro — and spotting a backtest too good to be true."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nDeux compétences : lire un rapport de backtest sans se faire piéger par les métriques qui mentent, puis optimiser sans se mentir — reconnaître le sur-apprentissage.\n\n## La démarche\n\nOn exploite les six backtests déjà mesurés. Trois familles de métriques (rendement, risque, ajusté au risque), plus la famille par trade où seule l'expectancy dit la vérité. Puis une grille de paramètres SMA, jugée par un découpage in-sample / out-of-sample.\n\n## Le résultat\n\nLe piège du win rate : le RSI gagne 60 % de ses trades et perd −26 % (expectancy négative). Tous les Sharpe sont négatifs — la SMA est la moins pire, pas bonne. Démasquage : le meilleur réglage in-sample (30,50) s'effondre out-of-sample (+3,2 % → +0,4 %), battu par la référence fixe non optimisée (+8,2 %). Optimiser a activement nui. Le juge, c'est l'out-of-sample : robuste, pas performant.",
-            "en": "## The goal\n\nTwo skills: read a backtest report without being fooled by lying metrics, then optimize without lying to yourself — recognizing overfitting.\n\n## The approach\n\nWe reuse the six backtests already measured. Three metric families (return, risk, risk-adjusted), plus the per-trade family where only expectancy tells the truth. Then a grid of SMA parameters, judged by an in-sample / out-of-sample split.\n\n## The result\n\nThe win-rate trap: the RSI wins 60 % of its trades and loses −26 % (negative expectancy). Every Sharpe is negative — the SMA is the least bad, not good. The unmasking: the best in-sample setting (30,50) collapses out-of-sample (+3.2 % → +0.4 %), beaten by the un-optimized fixed reference (+8.2 %). Optimizing actively hurt. The judge is out-of-sample: robust, not top-performing."
-          }
-        },
-        {
-          "id": "lecon-08",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-08-synthese.png",
-          "titre": {
-            "fr": "Leçon 08 — La stratégie avancée : tout assembler",
-            "en": "Lesson 08 — The advanced strategy: putting it all together"
-          },
-          "description": {
-            "fr": "Régime + momentum + sizing au risque : la casse contrôlée, mesurée.",
-            "en": "Regime + momentum + risk-based sizing: controlled damage, measured."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nAssembler toutes les briques en un vrai backtest final : filtre de régime (SMA 200), entrée momentum (croisement MACD confirmé par le RSI), sizing au risque (1 % du capital, taillé par l'ATR) et sorties de risque (stop suiveur, take, sortie de régime). Paramètres fixés a priori, aucune optimisation.\n\n## La démarche\n\nL'entrée est un signal, les sorties sont du risque. Le sizing par l'ATR inverse le set_holdings(1.0) : plus le marché est nerveux, plus la position est petite, pour un risque par trade constant à 1 %.\n\n## Le résultat\n\nLa vraie victoire est le drawdown : 8 % contre 40 % en Buy & Hold, à 13,8 % du temps exposé. Mais elle perd encore −3,3 %, et le coupable est un vieil ennemi : 2,7 des 3,3 points sont des frais. Une seule ligne (état → croisement) divise les frais par deux. Les cinq vérités du cours : l'exécution domine, les frais décident, le risque doit matcher le signal, les métriques seules mentent, le passé se sur-apprend.",
-            "en": "## The goal\n\nAssemble every building block into a real final backtest: regime filter (SMA 200), momentum entry (MACD crossover confirmed by RSI), risk-based sizing (1 % of capital, scaled by ATR) and risk exits (trailing stop, take, regime exit). Parameters fixed a priori, no optimization.\n\n## The approach\n\nThe entry is a signal, the exits are risk. ATR sizing inverts set_holdings(1.0): the more nervous the market, the smaller the position, for a constant 1 % risk per trade.\n\n## The result\n\nThe real win is drawdown: 8 % versus 40 % for Buy & Hold, at 13.8 % time exposed. But it still loses −3.3 %, and the culprit is an old enemy: 2.7 of those 3.3 points are fees. A single line (state → crossover) halves the fees. The course's five truths: execution dominates, fees decide, risk must match the signal, metrics alone lie, the past gets overfit."
-          }
-        },
-        {
-          "id": "lecon-09",
-          "type": "figure",
-          "url": "assets/crypto/backtesting/figures/lecon-09-volume-profile-sessions.png",
-          "titre": {
-            "fr": "Leçon 09 — Le volume profile par session",
-            "en": "Lesson 09 — Session volume profile"
-          },
-          "description": {
-            "fr": "Reconstruire depuis les ticks la dimension que l'OHLCV a écrasée — sans casser la causalité.",
-            "en": "Rebuilding from ticks the dimension OHLCV flattened — without breaking causality."
-          },
-          "texte": {
-            "fr": "## L'objectif\n\nExploiter le volume, jamais utilisé jusqu'ici. Reconstruire depuis les ticks le volume par niveau de prix (POC, value area 70 %), ancré sur les vraies sessions (Asia/London/NY, heure de New York, DST), et brancher un filtre order-flow sans casser la causalité.\n\n## La démarche\n\nOn repart des ~328 millions de ticks, agrégés par prix et par session. Un second flux custom porte les features du profil, livrées à t+1h — causal par construction. La stratégie : la cassure du VAH de session confirmée par le delta acheteur.\n\n## Le résultat\n\nLe filtre delta vaut +11,6 points de rendement sur les mêmes signaux (drawdown presque divisé par deux) — l'analyse des volumes comme filtre de qualité mesurable. Mais l'ancrage change tout : une stratégie positive en fenêtre glissante (+9,6 %) s'évapore sur les sessions (−2,5 %) — ce n'était pas un edge, mais une coïncidence d'échantillon. Falsification : un look-ahead d'une heure ne rend pas le backtest meilleur, il le rend faux — dans un sens imprévisible.",
-            "en": "## The goal\n\nExploit volume, unused until now. Rebuild from ticks the volume per price level (POC, 70 % value area), anchored on real sessions (Asia/London/NY, New York time, DST), and wire in an order-flow filter without breaking causality.\n\n## The approach\n\nWe go back to the ~328 million ticks, aggregated by price and by session. A second custom feed carries the profile features, delivered at t+1h — causal by construction. The strategy: a break of the session VAH confirmed by buyer delta.\n\n## The result\n\nThe delta filter is worth +11.6 points of return on the same signals (drawdown almost halved) — volume analysis as a measurable quality filter. But anchoring changes everything: a strategy positive on a rolling window (+9.6 %) evaporates on sessions (−2.5 %) — that was no edge, just a sample coincidence. Falsification: a one-hour look-ahead doesn't make the backtest better, it makes it wrong — in an unpredictable direction."
-          }
-        }
-      ]
-    },
-    {
-      "id": "vbt",
-      "parent": "formation",
-      "titre": {
-        "fr": "02 · vectorbt — le moteur vectorisé",
-        "en": "02 · vectorbt — the vectorized engine"
-      },
-      "accroche": {
-        "fr": "Les mêmes stratégies, calculées sur toute la série d'un coup — pour explorer des milliers de variantes en quelques secondes.",
-        "en": "The same strategies, computed over the whole series at once — to explore thousands of variants in seconds."
-      },
-      "intro": {
-        "fr": "Rejouer en vectorisé les stratégies de la sous-section LEAN avec vectorbt Pro : même source de vérité OHLCV, mêmes frais — la condition de la parité traitée en conclusion.",
-        "en": "Replaying the LEAN sub-section's strategies vectorized with vectorbt Pro: same OHLCV ground truth, same fees — the condition for the parity handled in the conclusion."
+        "fr": "Là où LEAN rejoue le marché barre par barre, vectorbt calcule sur l'historique entier d'un seul coup, en tableaux. Des ordres de grandeur plus rapide sur un balayage de paramètres — au prix d'hypothèses qu'il faut savoir nommer.",
+        "en": "Where LEAN replays the market bar by bar, vectorbt computes over the whole history in one shot, in arrays. Orders of magnitude faster on a parameter sweep — at the price of assumptions you have to be able to name."
       },
       "statut": {
         "fr": "En attente",
-        "en": "On hold"
+        "en": "Pending"
       },
       "texte": {
-        "fr": "## En attente de licence\n\nvectorbt Pro est un paquet privé sous licence (dépôt GitHub privé, installation par pip depuis une URL SSH). La licence n'est pas encore acquise : dès qu'elle le sera, cette sous-section sera construite en miroir de la sous-section LEAN, avec la même source de vérité OHLCV et les mêmes frais.\n\n## Plan prévu (miroir de LEAN)\n\nInstallation et philosophie vectorisée (vs événementielle). Buy & Hold : from_holding, frais, freq, pf.stats(). Les mêmes stratégies que côté LEAN, une par une. L'optimisation de grille — là où vectorbt brille : des milliers de combinaisons en quelques secondes. Puis le walk-forward, et une synthèse qui prépare la confrontation des deux moteurs.\n\n## Pourquoi deux moteurs ?\n\nLEAN rejoue le marché barre par barre — réaliste, débogable, orienté production. vectorbt calcule sur toute la série d'un coup — idéal pour explorer. La compétence finale de la formation : réconcilier leurs résultats sur les mêmes stratégies.",
-        "en": "## Awaiting a license\n\nvectorbt Pro is a private, licensed package (private GitHub repo, installed via pip from an SSH URL). The license is not yet acquired: as soon as it is, this sub-section will be built as a mirror of the LEAN one, with the same OHLCV ground truth and the same fees.\n\n## Planned outline (mirror of LEAN)\n\nInstallation and the vectorized philosophy (vs event-driven). Buy & Hold: from_holding, fees, freq, pf.stats(). The same strategies as on the LEAN side, one by one. Grid optimization — where vectorbt shines: thousands of combinations in seconds. Then walk-forward, and a synthesis that sets up the confrontation of the two engines.\n\n## Why two engines?\n\nLEAN replays the market bar by bar — realistic, debuggable, production-oriented. vectorbt computes over the whole series at once — ideal for exploring. The course's final skill: reconciling their results on the same strategies."
+        "fr": "## Le contre-champ de LEAN\n\nDeux moteurs, deux philosophies. LEAN est événementiel : il rejoue le marché barre par barre, chaque ordre passe par un cycle complet, et la fidélité se paie en temps. vectorbt est vectorisé : il applique la stratégie à tout l'historique d'un coup, en tableaux — des ordres de grandeur plus rapide sur un balayage de milliers de combinaisons, mais au prix d'hypothèses simplificatrices sur le fill, les frais et le capital disponible.\n\n## Ce qui est prévu\n\nLes mêmes stratégies que sous LEAN, portées sur vectorbt, puis la seule question qui vaille : les deux moteurs disent-ils la même chose ? Là où ils divergent, l'écart n'est pas du bruit — c'est une hypothèse du moteur vectorisé qui vient de se voir. La réconciliation des deux est l'objet de la conclusion de la formation.\n\n## Où ça en est\n\nRien de mesuré pour l'instant : la partie vectorbt de la formation est écrite, les portages ne sont pas faits. Cette page se remplira au fur et à mesure, stratégie par stratégie, sur le même plan que LEAN.",
+        "en": "## LEAN's counterpoint\n\nTwo engines, two philosophies. LEAN is event-driven: it replays the market bar by bar, every order goes through a full cycle, and the fidelity is paid for in time. vectorbt is vectorized: it applies the strategy to the whole history at once, in arrays — orders of magnitude faster on a sweep of thousands of combinations, but at the price of simplifying assumptions about fills, fees and available capital.\n\n## What's planned\n\nThe same strategies as under LEAN, ported to vectorbt, then the only question that matters: do both engines say the same thing? Where they diverge, the gap isn't noise — it's an assumption of the vectorized engine showing itself. Reconciling the two is the subject of the course's conclusion.\n\n## Where it stands\n\nNothing measured yet: the vectorbt part of the course is written, the ports aren't done. This page will fill in as it goes, strategy by strategy, on the same outline as LEAN."
       }
-    },
-    {
-      "id": "conclusion",
-      "parent": "formation",
-      "titre": {
-        "fr": "03 · Conclusion — réconcilier les deux moteurs",
-        "en": "03 · Conclusion — reconciling the two engines"
-      },
-      "accroche": {
-        "fr": "Le même backtest des deux côtés doit retomber au centime — et chaque écart s'explique.",
-        "en": "The same backtest on both sides must land to the cent — and every gap is explained."
-      },
-      "intro": {
-        "fr": "Confronter LEAN et vectorbt sur les mêmes stratégies : sol de vérité, parité stratégie par stratégie, puis le verdict — quel moteur pour quoi.",
-        "en": "Confronting LEAN and vectorbt on the same strategies: ground truth, strategy-by-strategy parity, then the verdict — which engine for what."
-      },
-      "statut": {
-        "fr": "À venir",
-        "en": "Coming"
-      },
-      "texte": {
-        "fr": "## Le test « sol de vérité »\n\nSur un Buy & Hold, les deux moteurs doivent retrouver close_dernier / open_premier − 1 (moins les frais). Sinon, la normalisation ou les frais sont faux — on corrige avant d'aller plus loin.\n\n## Parité stratégie par stratégie\n\nMêmes signaux, mêmes fills, mêmes P&L ? Chaque écart est expliqué : sémantique d'exécution, sizing, annualisation des métriques.\n\n## Le verdict\n\nUn tableau comparatif final : quand utiliser quel moteur, les limites assumées de chacun, et comment les combiner dans un flux de travail pro.\n\n## Prérequis\n\nLes sous-sections 01 — LEAN et 02 — vectorbt terminées.",
-        "en": "## The \"ground truth\" test\n\nOn a Buy & Hold, both engines must recover last_close / first_open − 1 (minus fees). Otherwise, normalization or fees are wrong — we fix it before going further.\n\n## Strategy-by-strategy parity\n\nSame signals, same fills, same P&L? Every gap is explained: execution semantics, sizing, metric annualization.\n\n## The verdict\n\nA final comparison table: when to use which engine, each one's assumed limits, and how to combine them in a pro workflow.\n\n## Prerequisites\n\nThe 01 — LEAN and 02 — vectorbt sub-sections completed."
-      }
-    },
-    {
-      "id": "references",
-      "titre": {
-        "fr": "Références",
-        "en": "References"
-      },
-      "accroche": {
-        "fr": "La documentation des deux moteurs.",
-        "en": "The documentation for both engines."
-      },
-      "intro": {
-        "fr": "Les plateformes derrière la formation : le moteur de backtesting open source LEAN et le backtesting vectorisé haute performance VectorbtPro.",
-        "en": "The platforms behind the course: the open-source LEAN backtesting engine and high-performance vectorized backtesting with VectorbtPro."
-      },
-      "items": [
-        {
-          "id": "bt-1",
-          "type": "pdf",
-          "fichier": "assets/crypto/backtesting/01- QuantConnect_LEAN.pdf",
-          "titre": {
-            "fr": "QuantConnect / LEAN",
-            "en": "QuantConnect / LEAN"
-          },
-          "description": {
-            "fr": "Le moteur de backtesting open source LEAN et la plateforme QuantConnect.",
-            "en": "The open-source LEAN backtesting engine and the QuantConnect platform."
-          }
-        },
-        {
-          "id": "bt-2",
-          "type": "pdf",
-          "fichier": "assets/crypto/backtesting/02- VectorbtPro.pdf",
-          "titre": {
-            "fr": "VectorbtPro",
-            "en": "VectorbtPro"
-          },
-          "description": {
-            "fr": "Backtesting vectorisé haute performance avec VectorbtPro.",
-            "en": "High-performance vectorized backtesting with VectorbtPro."
-          }
-        }
-      ]
     }
   ]
 }
