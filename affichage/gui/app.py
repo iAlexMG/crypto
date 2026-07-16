@@ -36,7 +36,8 @@ from .service import (
     fetch_range_for, HYBRID_LABEL, hybrid_feeds, hybrid_base,
 )
 
-DATA_DIR = "data"  # dossier dedie des bases SQLite (trades.db, books.db + WAL)
+DATA_DIR = "data"  # bases SQLite (trades.db, books.db + WAL). Sur ce poste "data" est une
+                   # jonction NTFS -> H:\crypto-affichage (les .db vivent sur H:, pas sur C:).
 REFRESH_MS = 100   # ~10 images/s (rendu)
 SAMPLE_MS = 200    # cadence d'appel du sampler (throttle interne a SAMPLE_MS de history)
 HEALTH_MS = 15000  # log de sante par flux toutes les 15s (age dernier trade / book)
