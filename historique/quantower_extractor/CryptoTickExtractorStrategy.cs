@@ -56,7 +56,7 @@ public sealed class CryptoTickExtractorStrategy : Strategy
     private volatile bool _busy;
     private volatile bool _stopRequested;
 
-    public CryptoTickExtractorStrategy() => Name = "Crypto Tick Extractor";
+    public CryptoTickExtractorStrategy() => Name = "Crypto History Ticks";
 
     protected override void OnRun()
     {

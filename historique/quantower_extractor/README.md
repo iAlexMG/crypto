@@ -1,6 +1,6 @@
 # Méthode B — ticks crypto via Quantower → SQLite (multi-exchange)
 
-Stratégie Quantower (`Crypto Tick Extractor`) qui télécharge les ticks d'un symbole crypto
+Stratégie Quantower (`Crypto History Ticks`) qui télécharge les ticks d'un symbole crypto
 via une connexion **déjà authentifiée dans Quantower** — Binance, Bybit, OKX, … : c'est la
 connexion du symbole choisi qui fixe l'exchange — et les écrit au **schéma exact** de la
 méthode A (`binance_history.py`, `bybit_history.py`) → la chaîne Python aval (`candles.py`, …)
@@ -78,12 +78,11 @@ powershell -ExecutionPolicy Bypass -File historique\quantower_extractor\deploy.p
 ```
 
 ⚠️ **Quantower ne charge les DLL de stratégies qu'au démarrage** : après un déploiement,
-redémarrer la plateforme, sinon c'est l'ancienne version qui tourne (vérifiable au nom —
-l'ancienne s'appelait « Crypto Tick Extractor (Binance) », l'actuelle « Crypto Tick
-Extractor » tout court).
+redémarrer la plateforme, sinon c'est l'ancienne version qui tourne (vérifiable au nom
+affiché : la version courante s'appelle « Crypto History Ticks »).
 
 Puis dans Quantower (connexion voulue active — Binance, Bybit, …) : panneau **Strategies** →
-`Crypto Tick Extractor` → paramètre **Symbole = BTCUSDT** *depuis la bonne connexion*
+`Crypto History Ticks` → paramètre **Symbole = BTCUSDT** *depuis la bonne connexion*
 (futures perp si la connexion les expose, sinon spot) → **Start**. Suivre l'onglet **Logs**
 (la première ligne « Base : … » confirme le fichier et la connexion utilisés).
 Résultat par défaut : `historique\data\BTCUSDT-binance-perp-qt.db` (Binance) ou

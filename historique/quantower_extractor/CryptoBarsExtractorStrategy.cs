@@ -59,7 +59,7 @@ public sealed class CryptoBarsExtractorStrategy : Strategy
     private volatile bool _busy;
     private volatile bool _stopRequested;
 
-    public CryptoBarsExtractorStrategy() => Name = "Crypto Bars Extractor";
+    public CryptoBarsExtractorStrategy() => Name = "Crypto History Bars 1m";
 
     protected override void OnRun()
     {

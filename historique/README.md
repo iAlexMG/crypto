@@ -74,7 +74,7 @@ piloté par les 3 run configs :
 ## Méthode B — les mêmes ticks via Quantower
 
 [`quantower_extractor/`](quantower_extractor/README.md) : une stratégie Quantower
-(`Crypto Tick Extractor`, **multi-exchange** : la connexion du symbole choisi fixe
+(`Crypto History Ticks`, **multi-exchange** : la connexion du symbole choisi fixe
 l'exchange et le nom de la base) adaptée de l'extracteur NQ/Rithmic archivé
 (`Portfolio/_archive/Quantower/extractor`). Elle tourne **dans** Quantower (les connexions
 n'y sont authentifiées que là), télécharge les ticks jour par jour via
@@ -85,7 +85,7 @@ purgé/ré-inséré).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File quantower_extractor\deploy.ps1   # build + copie dans Settings\Scripts\Strategies
-# puis dans Quantower : Strategies -> Crypto Tick Extractor -> Symbole (sa connexion fixe l'exchange) -> Start
+# puis dans Quantower : Strategies -> Crypto History Ticks -> Symbole (sa connexion fixe l'exchange) -> Start
 ```
 
 ### Comparatif A / B
