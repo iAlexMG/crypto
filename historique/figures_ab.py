@@ -106,7 +106,7 @@ def main() -> int:
     p.add_argument("--venue", choices=sorted(VENUES),
                    help="exchange du registre (drapeaux explicites prioritaires)")
     p.add_argument("--tous", action="store_true",
-                   help="les 4 exchanges valides (binance, bybit, okx, kucoin)")
+                   help="les 5 exchanges du registre (binance, bybit, okx, kucoin, bitget)")
     p.add_argument("--a", default=None, help="base voie A (defaut : registre)")
     p.add_argument("--b", default=None, help="base voie B (defaut : registre)")
     p.add_argument("--start", default=FENETRE_START)
@@ -127,7 +127,7 @@ def main() -> int:
     if not args.tous and not args.venue:
         p.error("--venue <slug> ou --tous requis")
     rc = 0
-    slugs = ["binance", "bybit", "okx", "kucoin"] if args.tous else [args.venue]
+    slugs = ["binance", "bybit", "okx", "kucoin", "bitget"] if args.tous else [args.venue]
     for slug in slugs:
         cfg = VENUES[slug]
         ns = argparse.Namespace(

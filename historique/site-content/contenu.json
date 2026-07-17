@@ -344,21 +344,100 @@
         "en": "Bitget"
       },
       "accroche": {
-        "fr": "90 jours et pas un de plus — l'API le dit elle-même.",
-        "en": "90 days and not one more — the API says so itself."
+        "fr": "Pas de contre-épreuve indépendante — mais les archives existent, et nos chandelles collent au centime aux klines officielles de l'exchange.",
+        "en": "No independent cross-check — but the archives do exist, and our candles match the exchange's official klines to the cent."
       },
       "intro": {
-        "fr": "L'exchange central du projet n'offre ni archives publiques ni REST profond : une fenêtre glissante de 90 jours. La parade : collecter en continu, pour construire soi-même l'historique que l'exchange ne donne pas.",
-        "en": "The project's central exchange offers neither public archives nor deep REST: a rolling 90-day window. The workaround: collect continuously, to build the history the exchange doesn't provide."
+        "fr": "L'exchange central du projet n'a pas de seconde voie indépendante : Quantower ne s'y connecte pas. Mais Bitget publie bien des archives de trades (portail officiel, profondeur vérifiée jusqu'en 2023) et sert ses propres chandelles 1 minute. Faute d'un second témoin, on valide autrement : notre historique reconstruit depuis les trades d'archives, confronté aux chandelles officielles de l'exchange. Ce n'est pas une preuve d'indépendance — c'est une auto-cohérence, et elle certifie la reconstruction sur laquelle tout le pilier repose.",
+        "en": "The project's central exchange has no independent second route: Quantower doesn't connect to it. But Bitget does publish trade archives (an official portal, depth verified back to 2023) and serves its own 1-minute candles. Lacking a second witness, we validate differently: our history rebuilt from the archive trades, confronted with the exchange's official candles. This is not a proof of independence — it's a self-consistency check, and it certifies the reconstruction the whole pillar rests on."
       },
       "statut": {
-        "fr": "À venir — fenêtre de 90 jours",
-        "en": "Coming up — 90-day window"
+        "fr": "2 voies (archives + klines officielles) — auto-cohérence, r = 1,0",
+        "en": "2 routes (archives + official klines) — self-consistency, r = 1.0"
       },
-      "items": [],
+      "items": [
+        {
+          "id": "historique-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-historique-complet.svg",
+          "titre": {
+            "fr": "Quarante jours, deux reconstructions superposées",
+            "en": "Forty days, two reconstructions overlaid"
+          },
+          "description": {
+            "fr": "Toute la fenêtre commune (1er juin → 10 juillet 2026) : nos chandelles minute reconstruites depuis 70,3 millions de trades d'archives (voie A) et les chandelles officielles de l'exchange (voie B), tracées l'une par-dessus l'autre — bande high-low et clôture. Une seule courbe reste visible : elles coïncident.",
+            "en": "The whole common window (June 1 → July 10, 2026): our minute candles rebuilt from 70.3 million archive trades (route A) and the exchange's official candles (route B), drawn one on top of the other — high-low band and close. Only one curve remains visible: they coincide."
+          }
+        },
+        {
+          "id": "correlation-historique-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-correlation-historique.svg",
+          "titre": {
+            "fr": "Le test sur tout l'historique : un seul pic, au décalage zéro",
+            "en": "The full-history test: a single spike, at lag zero"
+          },
+          "description": {
+            "fr": "Corrélation croisée des rendements 1 minute, la voie B décalée de −30 à +30 minutes : r = 1,000 00 au décalage 0, plus rien ailleurs. Les 57 600 minutes sont les mêmes des deux côtés.",
+            "en": "Cross-correlation of 1-minute returns, route B shifted from −30 to +30 minutes: r = 1.00000 at lag 0, nothing anywhere else. All 57,600 minutes are the same on both sides."
+          }
+        },
+        {
+          "id": "ecart-historique-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-ecart-historique.svg",
+          "titre": {
+            "fr": "L'écart entre les deux, minute par minute",
+            "en": "The gap between the two, minute by minute"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A sur chacune des 57 600 minutes : nul du premier au dernier point. Les chandelles officielles et les nôtres ferment sur le même prix, au centime. 27 927 chandelles sur 57 600 sont identiques sur les quatre prix (OHLC) ; les autres ne diffèrent que par l'ouverture.",
+            "en": "Route B close − route A close on each of the 57,600 minutes: zero from the first point to the last. The official candles and ours close on the same price, to the cent. 27,927 of 57,600 candles are identical on all four prices (OHLC); the others differ only in the open."
+          }
+        },
+        {
+          "id": "journee-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-journee-temoin.svg",
+          "titre": {
+            "fr": "La journée témoin, reconstruite des deux façons",
+            "en": "The reference day, rebuilt both ways"
+          },
+          "description": {
+            "fr": "Le 5 juin 2026 : en haut, 1 440 chandelles agrégées depuis les trades d'archives (voie A) ; en bas, les 1 440 chandelles 1 minute servies par l'API de Bitget (voie B). Bande high-low et clôture, minute par minute.",
+            "en": "June 5, 2026: on top, 1,440 candles aggregated from the archive trades (route A); below, the 1,440 1-minute candles served by Bitget's API (route B). High-low band and close, minute by minute."
+          }
+        },
+        {
+          "id": "correlation-journee-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-correlation-journee.svg",
+          "titre": {
+            "fr": "Le même test, sur la seule journée témoin",
+            "en": "The same test, on the reference day alone"
+          },
+          "description": {
+            "fr": "Corrélation croisée refaite sur les 1 440 minutes du 5 juin : r = 1,000 00 au décalage 0, plus rien ailleurs.",
+            "en": "Cross-correlation redone on June 5's 1,440 minutes: r = 1.00000 at lag 0, nothing anywhere else."
+          }
+        },
+        {
+          "id": "ecart-journee-bitget",
+          "type": "figure",
+          "url": "assets/crypto/historique/figures/bitget-ecart-journee.svg",
+          "titre": {
+            "fr": "L'écart sur la journée témoin",
+            "en": "The gap on the reference day"
+          },
+          "description": {
+            "fr": "Clôture voie B − clôture voie A au fil du 5 juin, minute par minute : nul du premier au dernier point.",
+            "en": "Route B close − route A close across June 5, minute by minute: zero from the first point to the last."
+          }
+        }
+      ],
       "texte": {
-        "fr": "## Ce que Bitget offre\n\nPas d'archives publiques. Le REST (fills-history) est paginable, mais borné : toute requête au-delà de 90 jours est refusée avec un message explicite — « startTime is not allowed to be earlier than 90 days ago », vérifié le 12 juillet 2026. La profondeur n'existe donc que sur une fenêtre glissante de trois mois.\n\nDocs officielles :\n\n- [REST — fills-history Futures](https://www.bitget.com/api-doc/contract/market/Get-Fills-History)\n- [REST — fills-history Spot](https://www.bitget.com/api-doc/spot/market/Get-Market-Trades)\n\n## Les voies d'extraction\n\n**Voie A — le REST, dans sa fenêtre.** Le connecteur écrit pour l'affichage couvre toute la fenêtre autorisée : `/api/v2/mix/market/fills-history` en Futures, `/api/v2/spot/market/fills-history` en Spot, pagination par `idLessThan`, 1 000 trades par page. Trois usages côté terminal : backfill initial (~30 min) au lancement, extension à la demande quand on navigue avant la plage chargée, archivage continu des trades WebSocket — clé SQLite (marché, symbole, tradeId), fiable car les ids REST et WebSocket vivent dans le même espace.\n\n**Voie B — Quantower.** Pas de connexion Bitget dans la plateforme. Ce n'est pas un oubli du projet : c'est précisément pourquoi l'automatisation parle à Bitget directement en Python, sans passer par Quantower. Conséquence pour l'historique : pas de contre-épreuve indépendante possible sur cet exchange.\n\n## Ce qu'on a obtenu\n\nLe collecteur de l'affichage archive déjà les trades Bitget en continu — c'est même le plancher commun du collecteur : aucun exchange ne descend sous le trade Bitget le plus ancien. La base dédiée du pilier, normalisée au schéma commun sur les 90 jours pleins, reste à construire.\n\n## Constatations, limites, alternatives\n\nLa constatation est nette : au-delà de 90 jours, la donnée Bitget n'existe plus nulle part publiquement. L'alternative n'est pas une autre source — il n'y en a pas — c'est le temps : collecter en continu dès maintenant, pour que l'historique profond de Bitget existe, construit par le projet puisque l'exchange ne le donne pas.",
-        "en": "## What Bitget offers\n\nNo public archives. The REST (fills-history) is paginable but capped: any request beyond 90 days is refused with an explicit message — \"startTime is not allowed to be earlier than 90 days ago\", verified on July 12, 2026. Depth therefore only exists over a rolling three-month window.\n\nOfficial docs:\n\n- [REST — Futures fills-history](https://www.bitget.com/api-doc/contract/market/Get-Fills-History)\n- [REST — Spot fills-history](https://www.bitget.com/api-doc/spot/market/Get-Market-Trades)\n\n## The extraction routes\n\n**Route A — the REST, within its window.** The connector written for the display covers the whole allowed window: `/api/v2/mix/market/fills-history` on Futures, `/api/v2/spot/market/fills-history` on Spot, paginated by `idLessThan`, 1,000 trades per page. Three uses on the terminal side: initial backfill (~30 min) at startup, on-demand extension when navigating before the loaded range, continuous archiving of the WebSocket trades — SQLite key (market, symbol, tradeId), reliable because REST and WebSocket ids live in the same space.\n\n**Route B — Quantower.** No Bitget connection in the platform. That is not an oversight of the project: it is precisely why the automation talks to Bitget directly in Python, without going through Quantower. Consequence for the history: no independent cross-check is possible on this exchange.\n\n## What we got\n\nThe display's collector already archives Bitget trades continuously — it is even the collector's common floor: no exchange goes below the oldest Bitget trade. The pillar's dedicated database, normalized to the shared schema over the full 90 days, remains to be built.\n\n## Findings, limits, alternatives\n\nThe finding is clear-cut: beyond 90 days, Bitget data no longer exists anywhere publicly. The alternative is not another source — there is none — it is time: collect continuously starting now, so that Bitget's deep history exists, built by the project since the exchange doesn't provide it."
+        "fr": "## Ce que Bitget offre\n\nDeux portes, longtemps confondues. Le REST en direct (`fills-history`) est borné à 90 jours — toute requête au-delà est refusée (« startTime is not allowed to be earlier than 90 days ago », vérifié le 12 juillet 2026). Mais l'exchange publie aussi un portail d'archives officiel (« History data download ») : des fichiers quotidiens de trades, en libre accès, dont la profondeur est vérifiée jusqu'en 2023. La donnée profonde existe donc bel et bien — contrairement à ce que la seule limite du REST laissait croire.\n\nDocs officielles :\n\n- [Portail d'archives — History data download](https://www.bitget.com/data-download)\n- [REST — fills-history Futures (borné à 90 j)](https://www.bitget.com/api-doc/contract/market/Get-Fills-History)\n\n## Les voies d'extraction\n\n**Voie A — les archives officielles.** Le portail expose un endpoint public (`getPublicDataV2`) qui liste les fichiers réellement publiés ; un script télécharge les zips quotidiens, vérifie chaque membre par CRC32 et range les trades dans une base au schéma commun. Piège mesuré : le fichier « JJ » couvre en réalité [JJ−1 16:00, JJ 16:00) UTC — le décalage UTC+8 de Bitget, le même qu'OKX — corrigé au filtrage. Sur la fenêtre commune : 70,3 millions de trades sur 40 jours.\n\n**Voie B — les chandelles officielles de l'exchange.** Bitget n'est pas offert dans Quantower (c'est justement pourquoi l'automatisation lui parle en Python) : il n'y a donc pas de second chemin indépendant. La voie B est alors les chandelles 1 minute que Bitget calcule lui-même et sert par son API. Ce n'est pas un témoin indépendant — elles dérivent des mêmes transactions. Mais les confronter à notre reconstruction répond à une autre question, tout aussi utile : notre agrégation trade par trade reproduit-elle exactement l'agrégation officielle ?\n\n## Ce qu'on a obtenu\n\nSur la fenêtre commune — 40 jours (1er juin → 10 juillet 2026), 57 600 minutes, 70,3 millions de trades :\n\n- **clôtures identiques au centime sur les 57 600 minutes** : l'écart clôture voie B − voie A est nul du premier au dernier point ; corrélation des clôtures r = 1,000 000 00, des rendements 1,000 000 ;\n- 27 927 chandelles sur 57 600 sont strictement identiques (OHLC). Les autres ne diffèrent que par l'ouverture — l'exchange ouvre sa chandelle sur la clôture précédente là où nous l'ouvrons sur le premier trade — jamais par la clôture ;\n- la journée témoin du 5 juin (1 440 minutes) donne le même verdict : r = 1,0, écart nul.\n\n## Constatations, limites, alternatives\n\nLa correction est double. Un fait, d'abord : au-delà de 90 jours, la donnée Bitget existe — dans les archives, pas dans le REST direct. Une honnêteté de méthode, ensuite : cette page ne prouve pas l'indépendance comme celles de Binance ou d'OKX, faute d'un second flux indépendant chez Bitget. Ce qu'elle certifie, c'est la reconstruction — que nos chandelles collent au centime à celles de l'exchange — la brique sur laquelle repose tout le reste du pilier, Bitget étant sa référence de prix.",
+        "en": "## What Bitget offers\n\nTwo doors, long conflated. The live REST (`fills-history`) is capped at 90 days — any request beyond is refused (\"startTime is not allowed to be earlier than 90 days ago\", verified July 12, 2026). But the exchange also publishes an official archive portal (\"History data download\"): daily trade files, freely accessible, with depth verified back to 2023. The deep data does exist after all — contrary to what the REST limit alone suggested.\n\nOfficial docs:\n\n- [Archive portal — History data download](https://www.bitget.com/data-download)\n- [REST — Futures fills-history (capped at 90 d)](https://www.bitget.com/api-doc/contract/market/Get-Fills-History)\n\n## The extraction routes\n\n**Route A — the official archives.** The portal exposes a public endpoint (`getPublicDataV2`) that lists the files actually published; a script downloads the daily zips, checks each member by CRC32 and loads the trades into a database on the shared schema. Measured trap: the \"DD\" file actually covers [DD−1 16:00, DD 16:00) UTC — Bitget's UTC+8 offset, the same as OKX — corrected at filtering. Over the common window: 70.3 million trades across 40 days.\n\n**Route B — the exchange's official candles.** Bitget isn't available in Quantower (which is precisely why the automation talks to it in Python): there is no independent second path. Route B is therefore the 1-minute candles Bitget computes itself and serves over its API. It is not an independent witness — they derive from the same trades. But confronting them with our reconstruction answers another, equally useful question: does our trade-by-trade aggregation reproduce the official aggregation exactly?\n\n## What we got\n\nOver the common window — 40 days (June 1 → July 10, 2026), 57,600 minutes, 70.3 million trades:\n\n- **closes identical to the cent on all 57,600 minutes**: the route B − route A close gap is zero from the first point to the last; correlation of closes r = 1.00000000, of returns 1.000000;\n- 27,927 of 57,600 candles are strictly identical (OHLC). The others differ only in the open — the exchange opens its candle on the previous close where we open on the first trade — never in the close;\n- the June 5 reference day (1,440 minutes) gives the same verdict: r = 1.0, zero gap.\n\n## Findings, limits, alternatives\n\nThe correction is twofold. A fact, first: beyond 90 days, Bitget data exists — in the archives, not in the live REST. A methodological honesty, next: this page does not prove independence the way Binance's or OKX's do, for lack of a second independent feed on Bitget. What it certifies is the reconstruction — that our candles match the exchange's to the cent — the building block the rest of the pillar rests on, Bitget being its price reference."
       },
       "pastille": "bitget"
     },
