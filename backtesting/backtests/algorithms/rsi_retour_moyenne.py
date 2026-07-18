@@ -1,20 +1,25 @@
-# RSI : retour à la moyenne (contre-tendance) sur BTCUSDT.
-# Le MIROIR du croisement SMA : au lieu de SUIVRE la tendance (acheter la force),
-# on PARIE CONTRE (acheter la faiblesse = survente, vendre la force = surachat).
-#   Règle : long/flat -> directement comparable au croisement SMA et au Buy & Hold.
+# RSI : retour à la moyenne — SCALPING 1 m, multi-TF, long/short.
+# Contre-tendance FILTRÉE : on ne fade QUE dans le sens du régime 5 m
+#   - régime haussier + survente 1 m  -> LONG  (acheter le repli d'une tendance haussière)
+#   - régime baissier + surachat 1 m  -> SHORT (vendre le rebond d'une tendance baissière)
+# Sortie = retour à la moyenne (RSI ~50) OU take (~0,4 %) OU stop (~0,5 %). Long ET short.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
-FRAIS_TAKER = 0.0004      # 0,04 % Binance USDⓈ-M — LA constante de frais de la formation
+FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_RSI = 14          # période classique du RSI (14 barres)
-SURVENTE = 30             # RSI < 30 = survente -> on ACHÈTE (pari de rebond)
-SURACHAT = 70             # RSI > 70 = surachat -> on VEND (pari de repli)
+PERIODE_RSI = 9           # RSI plus court qu'en horaire (14) -> plus réactif en 1 m
+SURVENTE = 25            # RSI < 25 = survente
+SURACHAT = 75            # RSI > 75 = surachat
+MOYENNE = 50            # retour à la moyenne = sortie
+REGIME_5M = 50          # SMA de régime sur barres 5 m (≈ 4 h)
+STOP_PCT = 0.005        # stop 0,5 %
+TAKE_PCT = 0.004        # cible 0,4 % (horizon modéré)
 
 
 class BtcUsdt1m(PythonData):
-    """Lecteur custom validé (donnees.py), inchangé : une ligne du CSV -> une barre LEAN."""
+    """Lecteur custom validé (donnees.py), inchangé."""
 
     def get_source(self, config, date, is_live):
         return SubscriptionDataSource(DATA_FILE, SubscriptionTransportMedium.LOCAL_FILE)
@@ -65,56 +70,76 @@ class RsiRetourMoyenne(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # ── NOUVEAU : un RSI (oscillateur BORNÉ 0-100), nourri à la main.
-        # Lissage de Wilder (le classique du RSI). On mémorise la valeur précédente
-        # pour détecter le FRANCHISSEMENT d'un seuil (comme diff_prec dans sma_croisement.py).
         self.rsi = RelativeStrengthIndex(PERIODE_RSI, MovingAverageType.WILDERS)
         self.rsi_prec = None
+        self.sma_regime = SimpleMovingAverage(REGIME_5M)
+        self.dernier_close_5m = None
 
+        self.prix_entree = None
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
         self.dernier_close = None
 
+    def _regime(self):
+        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+            return 0
+        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+
     def on_data(self, data: Slice):
         if self.btc not in data:
             return
-        close = float(data[self.btc].value)
+        bar = data[self.btc]
+        close = float(bar.value)
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
 
-        self.rsi.update(data[self.btc].end_time, close)
+        if bar.end_time.minute % 5 == 0:
+            self.dernier_close_5m = close
+            self.sma_regime.update(bar.end_time, close)
+
+        self.rsi.update(bar.end_time, close)
         if not self.rsi.is_ready:
             return
-
         rsi = float(self.rsi.current.value)
-        if self.rsi_prec is not None:
-            # Franchissement DESCENDANT de 30 = on entre en survente -> ACHAT (rebond attendu)
+        pos = self.portfolio[self.btc]
+        bas, haut = float(bar["low"]), float(bar["high"])
+
+        if pos.invested and self.prix_entree is not None:
+            # ── EN POSITION : gérer les sorties (stop / take / retour à la moyenne)
+            e = self.prix_entree
+            if pos.is_long:
+                if bas <= e * (1 - STOP_PCT) or haut >= e * (1 + TAKE_PCT) or rsi >= MOYENNE:
+                    self.liquidate(self.btc); self.prix_entree = None
+            elif pos.is_short:
+                if haut >= e * (1 + STOP_PCT) or bas <= e * (1 - TAKE_PCT) or rsi <= MOYENNE:
+                    self.liquidate(self.btc); self.prix_entree = None
+        elif self.rsi_prec is not None:
+            # ── À PLAT : chercher une entrée (fade dans le sens du régime 5 m)
             entre_survente = self.rsi_prec >= SURVENTE and rsi < SURVENTE
-            # Franchissement ASCENDANT de 70 = on entre en surachat -> VENTE (repli attendu)
             entre_surachat = self.rsi_prec <= SURACHAT and rsi > SURACHAT
-            if entre_survente and not self.portfolio[self.btc].invested:
-                self.set_holdings(self.btc, 1.0)
-            elif entre_surachat and self.portfolio[self.btc].invested:
-                self.liquidate(self.btc)
+            regime = self._regime()
+            if entre_survente and regime > 0:
+                self.set_holdings(self.btc, 1.0)     # long : repli en tendance haussière
+            elif entre_surachat and regime < 0:
+                self.set_holdings(self.btc, -1.0)    # short : rebond en tendance baissière
         self.rsi_prec = rsi
 
     def on_order_event(self, event: OrderEvent):
         if event.status == OrderStatus.FILLED:
             self.nb_trades += 1
             self.frais_totaux += float(event.order_fee.value.amount)
+            if self.portfolio[self.btc].invested:
+                self.prix_entree = float(event.fill_price)
             sens = "ACHAT " if event.fill_quantity > 0 else "VENTE "
-            self.log(f"TRADE {self.nb_trades:>2} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
+            self.log(f"TRADE {self.nb_trades:>3} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
                      f"RSI={self.rsi.current.value:.1f} | qté={event.fill_quantity:+.8f} @ "
                      f"{event.fill_price} | frais={event.order_fee.value.amount:.2f} $")
 
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        rendement_bh = self.dernier_close / self.premier_close - 1
-        self.log(f"--- BILAN RSI {PERIODE_RSI} ({SURVENTE}/{SURACHAT}) ---")
+        self.log(f"--- BILAN RSI {PERIODE_RSI} ({SURVENTE}/{SURACHAT}) 1 m, régime 5 m, long/short ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")
-        self.log(f"Buy & Hold (close/close) : {rendement_bh:+.4%} | "
-                 f"écart stratégie - B&H : {rendement_strat - rendement_bh:+.4%}")
