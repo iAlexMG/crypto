@@ -1,25 +1,28 @@
-# Stratégie avancée (capstone) — réunir TOUT le cours dans un seul algorithme :
-# régime + momentum + sizing au risque + stop suiveur + take-profit.
-#   - RÉGIME  : close > SMA 200 -> on n'achète JAMAIS sous la moyenne de fond.
-#   - ENTRÉE  : MACD(12,26,9) au-dessus de son signal ET RSI(14) > 50.
-#   - TAILLE  : on risque 1 % du capital par trade ; la distance au stop (2xATR)
+# Stratégie avancée (capstone) — SCALPING 1 m, multi-TF, long/short.
+# Réunir TOUT le cours dans un seul algorithme : régime + momentum + sizing au
+# risque + stop suiveur + take-profit, version scalping :
+#   - RÉGIME  : filtre de fond en 5 m (SMA 100 ≈ 8 h) — on ne prend une position que
+#               DANS le sens du régime (long si régime haussier, short si baissier).
+#   - ENTRÉE  : le MACD(12,26,9) CROISE son signal dans le sens du régime ET le RSI
+#               confirme (RSI > 50 pour un long, < 50 pour un short).
+#   - TAILLE  : on risque 0,5 % du capital par trade ; la distance au stop (1,5xATR)
 #               fixe la quantité — plus le marché est nerveux, plus la position est petite.
-#   - SORTIES : stop suiveur 2xATR sous le plus haut close depuis l'entrée,
-#               take-profit à l'entrée + 4xATR (ratio 2:1), sortie si le régime casse.
-#   Long/flat -> comparable aux autres stratégies du cours.
+#   - SORTIES : stop SUIVEUR 1,5xATR (sous le plus haut close en long, au-dessus du
+#               plus bas close en short), take-profit à 2,5xATR (R:R ≈ 1,67), sortie
+#               si le régime 5 m casse. Long/short -> plus comparable au Buy & Hold.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_TENDANCE = 200      # SMA de régime (~8 jours en barres 1 h)
-PERIODE_RSI = 14
+REGIME_5M = 100            # SMA de régime de fond sur barres 5 m (≈ 8 h) — filtre multi-TF
+PERIODE_RSI = 9            # RSI court (aligné sur les autres stratégies scalping)
 SEUIL_RSI = 50
 PERIODE_ATR = 14
-STOP_MULT = 2.0             # stop suiveur : 2 x ATR sous le plus haut close
-TAKE_MULT = 4.0             # take-profit : entrée + 4 x ATR (risque/rendement 2:1)
-RISQUE_PAR_TRADE = 0.01     # 1 % du capital risqué par position
+STOP_MULT = 1.5            # stop suiveur : 1,5 x ATR de l'extrême close depuis l'entrée
+TAKE_MULT = 2.5            # take-profit : entrée ± 2,5 x ATR (R:R ≈ 1,67)
+RISQUE_PAR_TRADE = 0.005   # 0,5 % du capital risqué par position
 
 
 class BtcUsdt1m(PythonData):
@@ -74,8 +77,10 @@ class StrategieAvancee(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # Quatre indicateurs, nourris à la main (transparence maximale).
-        self.tendance = SimpleMovingAverage(PERIODE_TENDANCE)
+        # Indicateurs, nourris à la main (transparence maximale).
+        # Le régime est un filtre 5 m : SMA nourrie du close aux bornes de 5 min.
+        self.regime = SimpleMovingAverage(REGIME_5M)
+        self.dernier_close_5m = None
         self.rsi = RelativeStrengthIndex(PERIODE_RSI, MovingAverageType.WILDERS)
         self.macd = MovingAverageConvergenceDivergence(12, 26, 9,
                                                        MovingAverageType.EXPONENTIAL)
@@ -83,15 +88,15 @@ class StrategieAvancee(QCAlgorithm):
 
         # Mémoire du signe MACD-signal : l'entrée exige un CROISEMENT (événement),
         # pas un simple état « au-dessus » — sinon on ré-entre à la barre suivant
-        # chaque stop et les frais explosent (mesuré : 174 ordres / 5 060 $ de frais
-        # en version « état », contre 90 ordres / 2 679 $ en version « croisement »).
+        # chaque stop et les frais explosent.
         self.diff_prec = None
 
         # État de la position (None / réinitialisé quand on est à plat).
         self.entry_prix = None
         self.stop_prix = None
         self.take_prix = None
-        self.plus_haut = None
+        self.plus_haut = None     # extrême close depuis l'entrée (long -> plus haut)
+        self.plus_bas = None      # extrême close depuis l'entrée (short -> plus bas)
         self.raison = ""
 
         # Journal & mesure d'exposition.
@@ -103,6 +108,11 @@ class StrategieAvancee(QCAlgorithm):
         self.premier_close = None
         self.dernier_close = None
 
+    def _regime(self):
+        if not self.regime.is_ready or self.dernier_close_5m is None:
+            return 0
+        return 1 if self.dernier_close_5m > self.regime.current.value else -1
+
     def on_data(self, data: Slice):
         if self.btc not in data:
             return
@@ -111,104 +121,126 @@ class StrategieAvancee(QCAlgorithm):
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
+        bas, haut = float(bar["low"]), float(bar["high"])
 
         # 1) Nourrir les indicateurs avec la barre qui vient de CLÔTURER.
-        #    L'ATR a besoin du high/low -> on lui reconstruit une TradeBar complète.
+        #    Régime 5 m aux bornes de 5 min ; l'ATR a besoin du high/low (TradeBar).
         t = bar.end_time
-        self.tendance.update(t, close)
+        if t.minute % 5 == 0:
+            self.dernier_close_5m = close
+            self.regime.update(t, close)
         self.rsi.update(t, close)
         self.macd.update(t, close)
-        tb = TradeBar(bar.time, self.btc, float(bar["open"]), float(bar["high"]),
-                      float(bar["low"]), close, float(bar["volume"]), timedelta(minutes=1))
+        tb = TradeBar(bar.time, self.btc, float(bar["open"]), haut,
+                      bas, close, float(bar["volume"]), timedelta(minutes=1))
         self.atr.update(tb)
-        if not (self.tendance.is_ready and self.rsi.is_ready
+        if not (self.regime.is_ready and self.rsi.is_ready
                 and self.macd.is_ready and self.atr.is_ready):
             return                                     # warmup : aucun signal
 
         atr = float(self.atr.current.value)
-        regime_haussier = close > float(self.tendance.current.value)
+        regime = self._regime()
         # Croisement MACD détecté sur TOUTES les barres prêtes (même en position),
         # sinon le signe mémorisé devient obsolète.
         diff = float(self.macd.current.value) - float(self.macd.signal.current.value)
         croise_haut = self.diff_prec is not None and self.diff_prec <= 0 and diff > 0
+        croise_bas = self.diff_prec is not None and self.diff_prec >= 0 and diff < 0
         self.diff_prec = diff
-        investi = self.portfolio[self.btc].invested
+        rsi = float(self.rsi.current.value)
+        pos = self.portfolio[self.btc]
         self.barres_total += 1
-        if investi:
+        if pos.invested:
             self.barres_investi += 1
 
-        # 2) SORTIES d'abord — le risque prime sur le signal.
-        if investi:
-            self.plus_haut = max(self.plus_haut, close)
-            nouveau_stop = self.plus_haut - STOP_MULT * atr   # suiveur : ne fait que monter
-            if nouveau_stop > self.stop_prix:
-                self.stop_prix = nouveau_stop
-            if close <= self.stop_prix:
-                self.raison = "STOP"
-            elif close >= self.take_prix:
-                self.raison = "TAKE"
-            elif not regime_haussier:
-                self.raison = "REGIME"
-            else:
-                return                                 # en position et rien à signaler
+        # 2) SORTIES d'abord — le risque prime sur le signal (intra-barre, stop suiveur).
+        if pos.invested:
+            if pos.is_long:
+                if bas <= self.stop_prix:
+                    self.raison = "STOP"
+                elif haut >= self.take_prix:
+                    self.raison = "TAKE"
+                elif regime < 0:
+                    self.raison = "REGIME"
+                else:                                  # rien à couper : on ratchet le stop
+                    self.plus_haut = max(self.plus_haut, close)
+                    self.stop_prix = max(self.stop_prix, self.plus_haut - STOP_MULT * atr)
+                    return
+            else:                                      # short
+                if haut >= self.stop_prix:
+                    self.raison = "STOP"
+                elif bas <= self.take_prix:
+                    self.raison = "TAKE"
+                elif regime > 0:
+                    self.raison = "REGIME"
+                else:
+                    self.plus_bas = min(self.plus_bas, close)
+                    self.stop_prix = min(self.stop_prix, self.plus_bas + STOP_MULT * atr)
+                    return
             self.sorties[self.raison] += 1
             self.liquidate(self.btc)
             return
 
-        # 3) ENTRÉE : régime haussier ET momentum confirmé — le MACD vient de
-        #    CROISER au-dessus de son signal (événement) et le RSI valide (> 50).
-        if not (regime_haussier and croise_haut
-                and float(self.rsi.current.value) > SEUIL_RSI):
-            return
-
-        # 4) TAILLE : risquer 1 % du capital ; la distance au stop fixe la quantité.
-        equite = float(self.portfolio.total_portfolio_value)
+        # 3) ENTRÉE : régime 5 m + le MACD croise DANS le sens du régime + RSI confirme.
         distance_stop = STOP_MULT * atr
+        if distance_stop <= 0:
+            return
+        equite = float(self.portfolio.total_portfolio_value)
+        # 4) TAILLE : risquer 0,5 % du capital ; la distance au stop fixe la quantité.
         quantite = (equite * RISQUE_PAR_TRADE) / distance_stop
-        # Garde-fou : jamais plus que ~95 % du cash disponible (le risque théorique
-        # peut réclamer plus de notionnel que le compte n'en a).
-        quantite = min(quantite, 0.95 * float(self.portfolio.cash) / close)
+        quantite = min(quantite, 0.95 * equite / close)   # garde-fou notionnel
         if quantite <= 0:
             return
-        # Fixer stop/take AVANT market_order : le fill est synchrone, on_order_event
-        # se déclenche pendant l'appel et journalise ces niveaux.
-        self.plus_haut = close
-        self.stop_prix = close - distance_stop
-        self.take_prix = close + TAKE_MULT * atr
-        self.market_order(self.btc, quantite)
+
+        if regime > 0 and croise_haut and rsi > SEUIL_RSI:
+            # LONG : stop/take posés AVANT l'ordre (fill synchrone -> on_order_event journalise).
+            self.plus_haut = close
+            self.stop_prix = close - distance_stop
+            self.take_prix = close + TAKE_MULT * atr
+            self.market_order(self.btc, quantite)
+        elif regime < 0 and croise_bas and rsi < SEUIL_RSI:
+            # SHORT : symétrique (stop au-dessus, take en dessous).
+            self.plus_bas = close
+            self.stop_prix = close + distance_stop
+            self.take_prix = close - TAKE_MULT * atr
+            self.market_order(self.btc, -quantite)
 
     def on_order_event(self, event: OrderEvent):
         if event.status != OrderStatus.FILLED:
             return
         self.nb_trades += 1
         self.frais_totaux += float(event.order_fee.value.amount)
-        if event.fill_quantity > 0:
+        pos = self.portfolio[self.btc]
+        if pos.invested:
             self.entry_prix = float(event.fill_price)
-            self.log(f"TRADE {self.nb_trades:>2} ACHAT  {event.utc_time:%Y-%m-%d %H:%M} UTC | "
-                     f"{float(event.fill_quantity):.6f} BTC @ {event.fill_price} | "
+            sens = "LONG " if event.fill_quantity > 0 else "SHORT"
+            self.log(f"TRADE {self.nb_trades:>3} {sens} {event.utc_time:%Y-%m-%d %H:%M} UTC | "
+                     f"{float(event.fill_quantity):+.6f} BTC @ {event.fill_price} | "
                      f"stop {self.stop_prix:,.0f} / take {self.take_prix:,.0f} | "
                      f"frais={event.order_fee.value.amount:.2f} $")
         else:
-            gain = (float(event.fill_price) / self.entry_prix - 1) if self.entry_prix else 0.0
-            self.log(f"TRADE {self.nb_trades:>2} VENTE  {event.utc_time:%Y-%m-%d %H:%M} UTC | "
+            sortie = float(event.fill_price)
+            if self.entry_prix:
+                etait_long = event.fill_quantity < 0   # on VEND pour clôturer un long
+                gain = (sortie / self.entry_prix - 1) if etait_long else (self.entry_prix / sortie - 1)
+            else:
+                gain = 0.0
+            self.log(f"TRADE {self.nb_trades:>3} SORTIE {event.utc_time:%Y-%m-%d %H:%M} UTC | "
                      f"[{self.raison:<6}] @ {event.fill_price} | P&L={gain:+.2%} | "
                      f"frais={event.order_fee.value.amount:.2f} $")
             self.entry_prix = None
             self.stop_prix = None
             self.take_prix = None
             self.plus_haut = None
+            self.plus_bas = None
 
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        rendement_bh = self.dernier_close / self.premier_close - 1
         exposition = self.barres_investi / self.barres_total if self.barres_total else 0.0
-        self.log(f"--- BILAN STRATÉGIE AVANCÉE (régime + momentum + risque) ---")
+        self.log(f"--- BILAN STRATÉGIE AVANCÉE 1 m (régime 5 m + momentum + risque ATR), long/short ---")
         self.log(f"Trades : {self.nb_trades} | sorties : {self.sorties['STOP']} stop, "
                  f"{self.sorties['TAKE']} take, {self.sorties['REGIME']} régime | "
                  f"frais : {self.frais_totaux:.2f} $")
         self.log(f"Exposition : {exposition:.1%} des barres en position "
                  f"({self.barres_investi}/{self.barres_total})")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")
-        self.log(f"Buy & Hold (close/close) : {rendement_bh:+.4%} | "
-                 f"écart stratégie - B&H : {rendement_strat - rendement_bh:+.4%}")
