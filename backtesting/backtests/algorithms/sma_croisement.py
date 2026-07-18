@@ -1,10 +1,12 @@
 # Croisement de moyennes mobiles — SCALPING 1 m, multi-TF, long/short.
-# PATRON de la refonte scalping (2026-07 : re-calibrage validé par l'utilisateur).
-#   - Entrée : croisement SMA 9/21 sur les barres 1 m.
-#   - Filtre de régime : SMA 5 m (échantillonnée aux bornes de 5 min) — on n'entre
-#     QUE dans le sens de la tendance supérieure (long si régime haussier, short si baissier).
-#   - Sortie : croisement inverse OU stop protecteur (~0,5 %).
-#   - Long ET short autorisés -> N'EST PLUS directement comparable au Buy & Hold.
+# PATRON de la refonte scalping. RE-CALIBRAGE anti-frais (2026-07-17) : la v1 (signal
+# 1 m) sur-tradait (2 804 ordres, 65 k$ de frais). Leviers appliqués ici :
+#   - SIGNAL sur barres 15 m (le croisement se lit aux bornes de 15 min, ~15x moins
+#     d'événements qu'en 1 m) ; exécution/stop restent en 1 m.
+#   - RÉGIME de fond 15 m (SMA 48 ≈ 12 h) : on n'entre que dans le sens de la tendance.
+#   - COOLDOWN de 60 min après chaque sortie (bride la fréquence de ré-entrée).
+#   - STOP élargi à 1,5 % (les trades respirent -> moins de stops -> moins de churn).
+#   - Sortie : croisement inverse OU stop. Long ET short -> plus comparable au Buy & Hold.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
@@ -14,10 +16,12 @@ FRAIS_TAKER = 0.0004      # 0,04 % Binance USDⓈ-M — LA constante de frais de
 CAPITAL = 100_000
 
 # ── Paramètres scalping (choisis A PRIORI — leçon 07 : jamais après la courbe)
-SMA_RAPIDE = 9            # SMA courte, barres 1 m
-SMA_LENTE = 21           # SMA longue, barres 1 m
-REGIME_5M = 50           # SMA de régime sur barres 5 m (50 × 5 min ≈ 4 h de tendance)
-STOP_PCT = 0.005         # stop protecteur : 0,5 % contre la position
+TF_SIGNAL = 15           # cadence du signal (minutes) : croisement lu sur barres 15 m
+SMA_RAPIDE = 9           # SMA courte, barres 15 m (≈ 2,25 h)
+SMA_LENTE = 21           # SMA longue, barres 15 m (≈ 5,25 h)
+REGIME_N = 48            # SMA de régime sur barres 15 m (48 × 15 min ≈ 12 h de fond)
+STOP_PCT = 0.015         # stop protecteur : 1,5 % contre la position
+COOLDOWN_MIN = 60        # pas de nouvelle entrée dans les 60 min suivant une sortie
 
 
 class BtcUsdt1m(PythonData):
@@ -73,19 +77,17 @@ class SmaCroisement(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # ── Indicateurs 1 m : croisement rapide/lent (mis à jour à la main sur close clôturé)
+        # ── Indicateurs de SIGNAL sur barres 15 m (nourris à la main aux bornes de 15 min).
         self.sma_rapide = SimpleMovingAverage(SMA_RAPIDE)
         self.sma_lente = SimpleMovingAverage(SMA_LENTE)
         self.diff_prec = None
+        # ── Filtre de RÉGIME 15 m : SMA de fond nourrie des mêmes closes 15 m.
+        self.sma_regime = SimpleMovingAverage(REGIME_N)
+        self.dernier_close_sig = None
 
-        # ── Filtre de régime 5 m : SMA nourrie du close des barres 1 m qui TOMBENT sur
-        #    une borne de 5 min (00,05,10…). C'est la version « manuelle » d'un
-        #    consolidateur — transparente, causale (barre 1 m déjà clôturée).
-        self.sma_regime = SimpleMovingAverage(REGIME_5M)
-        self.dernier_close_5m = None
-
-        # ── Gestion de position (long/short) + stop
+        # ── Gestion de position (long/short) + stop + cooldown
         self.prix_entree = None    # prix du dernier fill d'entrée (pour le stop)
+        self.temps_sortie = None   # horodatage de la dernière sortie (pour le cooldown)
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
@@ -93,9 +95,13 @@ class SmaCroisement(QCAlgorithm):
 
     def _regime(self):
         """+1 régime haussier, -1 baissier, 0 pas encore prêt."""
-        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+        if not self.sma_regime.is_ready or self.dernier_close_sig is None:
             return 0
-        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+        return 1 if self.dernier_close_sig > self.sma_regime.current.value else -1
+
+    def _cooldown_ok(self, maintenant):
+        return (self.temps_sortie is None
+                or (maintenant - self.temps_sortie).total_seconds() >= COOLDOWN_MIN * 60)
 
     def on_data(self, data: Slice):
         if self.btc not in data:
@@ -105,46 +111,43 @@ class SmaCroisement(QCAlgorithm):
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
+        t = bar.end_time
 
-        # 1) Régime 5 m : n'échantillonner qu'aux bornes de 5 min (end_time = ouverture+1min ;
-        #    une barre 1 m [10:04,10:05) clôture à 10:05 -> minute 5 -> échantillon 5 m).
-        if bar.end_time.minute % 5 == 0:
-            self.dernier_close_5m = close
-            self.sma_regime.update(bar.end_time, close)
-
-        # 2) Indicateurs 1 m
-        self.sma_rapide.update(bar.end_time, close)
-        self.sma_lente.update(bar.end_time, close)
-        if not (self.sma_rapide.is_ready and self.sma_lente.is_ready):
-            return
-
-        # 3) Stop protecteur AVANT le signal (prioritaire) : coupe si la position saigne.
-        #    Déclenché sur l'EXTRÊME intra-barre (low si long, high si short) — plus honnête
-        #    que le seul close ; le fill reste au close (convention de la formation).
+        # 1) Stop protecteur — vérifié à CHAQUE barre 1 m (extrême intra-barre), prioritaire.
         pos = self.portfolio[self.btc]
         if pos.invested and self.prix_entree is not None:
             bas, haut = float(bar["low"]), float(bar["high"])
             if pos.is_long and bas <= self.prix_entree * (1 - STOP_PCT):
-                self.liquidate(self.btc); self.prix_entree = None
+                self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
             elif pos.is_short and haut >= self.prix_entree * (1 + STOP_PCT):
-                self.liquidate(self.btc); self.prix_entree = None
+                self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
 
-        # 4) Signal de croisement 1 m, filtré par le régime 5 m
+        # 2) SIGNAL : uniquement aux bornes de 15 min (barres 15 m « manuelles », causales).
+        if t.minute % TF_SIGNAL != 0:
+            return
+        self.dernier_close_sig = close
+        self.sma_rapide.update(t, close)
+        self.sma_lente.update(t, close)
+        self.sma_regime.update(t, close)
+        if not (self.sma_rapide.is_ready and self.sma_lente.is_ready):
+            return
+
         diff = self.sma_rapide.current.value - self.sma_lente.current.value
         regime = self._regime()
+        pos = self.portfolio[self.btc]           # relire (le stop a pu liquider)
         if self.diff_prec is not None:
             croise_haut = self.diff_prec <= 0 and diff > 0
             croise_bas = self.diff_prec >= 0 and diff < 0
             if croise_haut:
-                if regime > 0 and not pos.is_long:
+                if regime > 0 and not pos.is_long and self._cooldown_ok(t):
                     self.set_holdings(self.btc, 1.0)          # long : croisement + régime haussier
                 elif pos.is_short:
-                    self.liquidate(self.btc); self.prix_entree = None   # au moins couper le short
+                    self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
             elif croise_bas:
-                if regime < 0 and not pos.is_short:
+                if regime < 0 and not pos.is_short and self._cooldown_ok(t):
                     self.set_holdings(self.btc, -1.0)         # short : croisement + régime baissier
                 elif pos.is_long:
-                    self.liquidate(self.btc); self.prix_entree = None
+                    self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
         self.diff_prec = diff
 
     def on_order_event(self, event: OrderEvent):
@@ -162,6 +165,7 @@ class SmaCroisement(QCAlgorithm):
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        self.log(f"--- BILAN Croisement SMA {SMA_RAPIDE}/{SMA_LENTE} (1 m, régime 5 m, long/short) ---")
+        self.log(f"--- BILAN Croisement SMA {SMA_RAPIDE}/{SMA_LENTE} (signal 15 m, régime 12 h, "
+                 f"long/short, cooldown {COOLDOWN_MIN}m) ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")

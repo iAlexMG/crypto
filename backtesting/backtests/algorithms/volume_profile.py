@@ -21,13 +21,16 @@ FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
 
 # ── Paramètres de la stratégie (choisis A PRIORI — leçon 07 : jamais après la courbe)
+# RE-CALIBRAGE anti-frais (2026-07-17) : la v1 sur-tradait (726 ordres, 25 k$). Leviers :
+# edge exigé doublé (0,4 %), profil moins embryonnaire (15 min), cooldown 45 min.
 FILTRE_DELTA = True      # n'entrer que si l'EMA du delta va dans le sens du trade
 DELTA_SPAN = 60          # période de l'EMA du delta (60 barres = 60 min en cadence 1 m)
 TP_FRAC = 1.0            # cible : fraction du chemin niveau->projection (1.0 = chemin entier)
 STOP_FRAC = 0.5          # stop : fraction du chemin AU-DELÀ du niveau (retour = hypothèse morte)
-MIN_EDGE = 0.002         # edge minimal 0,2 % du chemin niveau->cible (mesuré du niveau franchi,
+MIN_EDGE = 0.004         # edge minimal 0,4 % du chemin niveau->cible (mesuré du niveau franchi,
                          # pas du fill au close — qui, déjà au-delà, en mange une partie)
-MIN_BARRES = 3           # pas d'entrée avant la 3e MINUTE d'une session (profil embryonnaire)
+MIN_BARRES = 15          # pas d'entrée avant la 15e MINUTE d'une session (profil embryonnaire)
+COOLDOWN_MIN = 45        # pas de nouvelle entrée dans les 45 min après une sortie
 TRICHE_LOOKAHEAD = False # ⚠️ falsification leçon 09 : livrer le profil 1 min TROP TOT
 
 
@@ -136,10 +139,15 @@ class VolumeProfile(QCAlgorithm):
         self.close_prec = None
         self.vah_prec = None
         self.val_prec = None
+        self.temps_sortie = None     # horodatage de la dernière sortie (pour le cooldown)
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
         self.dernier_close = None
+
+    def _cooldown_ok(self, maintenant):
+        return (self.temps_sortie is None
+                or (maintenant - self.temps_sortie).total_seconds() >= COOLDOWN_MIN * 60)
 
     def on_data(self, data: Slice):
         # 1) Le profil d'abord : rafraîchir session, niveaux et EMA du delta.
@@ -174,7 +182,8 @@ class VolumeProfile(QCAlgorithm):
             # Entrée : le close FRANCHIT un bord de la value area (événement), DANS une
             # session dont le profil a au moins MIN_BARRES minutes, l'edge du chemin
             # couvre les frais, et les agresseurs vont dans le sens du trade.
-            session_ok = self.session != "hors" and self.barres >= MIN_BARRES
+            session_ok = (self.session != "hors" and self.barres >= MIN_BARRES
+                          and self._cooldown_ok(self.time))
             if session_ok and self.close_prec is not None:
                 # LONG : cassure de VAH par le haut (acceptation au-dessus de la valeur).
                 if (self.vah_prec is not None and self.close_prec <= self.vah_prec
@@ -210,20 +219,20 @@ class VolumeProfile(QCAlgorithm):
                 cible = vah + TP_FRAC * amp
                 stop = vah - STOP_FRAC * amp
                 if close >= cible:
-                    self.liquidate(self.btc)
+                    self.liquidate(self.btc); self.temps_sortie = self.time
                     self.log(f"SORTIE cible {self.time:%Y-%m-%d %H:%M} | close={close} >= {cible:.0f}")
                 elif close <= stop:
-                    self.liquidate(self.btc)
+                    self.liquidate(self.btc); self.temps_sortie = self.time
                     self.log(f"SORTIE stop  {self.time:%Y-%m-%d %H:%M} | close={close} <= {stop:.0f}")
             else:                                          # short
                 amp = poc - val
                 cible = val - TP_FRAC * amp
                 stop = val + STOP_FRAC * amp
                 if close <= cible:
-                    self.liquidate(self.btc)
+                    self.liquidate(self.btc); self.temps_sortie = self.time
                     self.log(f"SORTIE cible {self.time:%Y-%m-%d %H:%M} | close={close} <= {cible:.0f}")
                 elif close >= stop:
-                    self.liquidate(self.btc)
+                    self.liquidate(self.btc); self.temps_sortie = self.time
                     self.log(f"SORTIE stop  {self.time:%Y-%m-%d %H:%M} | close={close} >= {stop:.0f}")
 
         self.close_prec, self.vah_prec, self.val_prec = close, vah, val

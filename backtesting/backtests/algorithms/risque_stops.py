@@ -1,25 +1,29 @@
 # Gestion du risque — SCALPING 1 m, multi-TF, long/short.
 # MÊME signal que rsi_retour_moyenne.py, mais on SÉPARE la logique de signal (RSI)
-# de la logique de risque. La leçon reste la même qu'en horaire : couper le trade
-# catastrophe AVANT qu'il ne saigne (le fameux achat tenu jusqu'à -27 000 $).
-# Ce qui change en 1 m : les stops en % FIXE (8 %/10 %) n'ont plus de sens à cette
-# échelle. On les remplace par des stops DIMENSIONNÉS À LA VOLATILITÉ (ATR 14) :
-#   stop = entrée ∓ ATR×1   |   take = entrée ± ATR×1,5   (R:R ≈ 1,5).
-# Sortie possible : STOP (risque) · TAKE (risque) · SIGNAL (RSI revenu à la moyenne).
+# de la logique de risque : stops DIMENSIONNÉS À LA VOLATILITÉ (ATR).
+# RE-CALIBRAGE anti-frais (2026-07-17) : la v1 (ATR 1 m) sur-tradait (940 ordres, 32 k$).
+# Un ATR 1 m est minuscule -> stops tissus -> churn. Leviers :
+#   - SIGNAL RSI + ATR sur barres 5 m AGRÉGÉES (l'ATR a besoin de vraies barres OHLC :
+#     open/high/low/close reconstruits sur la fenêtre de 5 min) ; stop/take en 1 m.
+#   - stop = entrée ∓ ATR5m × 2 | take = entrée ± ATR5m × 3 (R:R ≈ 1,5).
+#   - COOLDOWN 45 min après sortie.
+# Sortie possible : STOP · TAKE · SIGNAL (RSI revenu à la moyenne). Long ET short.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_RSI = 9           # RSI court -> plus réactif en 1 m
+PERIODE_RSI = 9           # RSI court (sur barres 5 m ≈ 45 min)
 SURVENTE = 25            # RSI < 25 = survente
 SURACHAT = 75            # RSI > 75 = surachat
 MOYENNE = 50            # RSI revenu à ~50 = fin du retour à la moyenne (sortie SIGNAL)
-REGIME_5M = 50          # SMA de régime sur barres 5 m (≈ 4 h)
-PERIODE_ATR = 14          # ATR pour dimensionner les stops à la volatilité
-STOP_MULT = 1.0           # stop  = entrée ∓ ATR × 1,0
-TAKE_MULT = 1.5           # take  = entrée ± ATR × 1,5  (R:R ≈ 1,5)
+TF_SIGNAL = 5           # cadence du signal (minutes) : RSI + ATR sur barres 5 m
+REGIME_N = 50           # SMA de régime sur barres 5 m (≈ 4 h)
+PERIODE_ATR = 14          # ATR (barres 5 m) pour dimensionner les stops à la volatilité
+STOP_MULT = 2.0           # stop  = entrée ∓ ATR5m × 2,0
+TAKE_MULT = 3.0           # take  = entrée ± ATR5m × 3,0  (R:R ≈ 1,5)
+COOLDOWN_MIN = 45         # pas de nouvelle entrée dans les 45 min après une sortie
 
 
 class BtcUsdt1m(PythonData):
@@ -74,16 +78,18 @@ class RisqueStops(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # Le SIGNAL : identique à rsi_retour_moyenne.py (RSI + filtre de régime 5 m).
+        # Le SIGNAL : RSI + filtre de régime, sur barres 5 m.
         self.rsi = RelativeStrengthIndex(PERIODE_RSI, MovingAverageType.WILDERS)
         self.rsi_prec = None
-        self.sma_regime = SimpleMovingAverage(REGIME_5M)
-        self.dernier_close_5m = None
-        # Le RISQUE : ATR + niveaux stop/take posés à l'entrée + raison de la sortie.
+        self.sma_regime = SimpleMovingAverage(REGIME_N)
+        self.dernier_close_sig = None
+        # Le RISQUE : ATR sur barres 5 m agrégées + niveaux stop/take posés à l'entrée.
         self.atr = AverageTrueRange(PERIODE_ATR, MovingAverageType.WILDERS)
+        self.o5 = self.h5 = self.l5 = None    # accumulateur OHLC de la fenêtre 5 min
         self.prix_entree = None
         self.stop_prix = None
         self.take_prix = None
+        self.temps_sortie = None
         self.raison = ""
 
         self.nb_trades = 0
@@ -95,9 +101,13 @@ class RisqueStops(QCAlgorithm):
         self.dernier_close = None
 
     def _regime(self):
-        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+        if not self.sma_regime.is_ready or self.dernier_close_sig is None:
             return 0
-        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+        return 1 if self.dernier_close_sig > self.sma_regime.current.value else -1
+
+    def _cooldown_ok(self, maintenant):
+        return (self.temps_sortie is None
+                or (maintenant - self.temps_sortie).total_seconds() >= COOLDOWN_MIN * 60)
 
     def on_data(self, data: Slice):
         if self.btc not in data:
@@ -107,42 +117,54 @@ class RisqueStops(QCAlgorithm):
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
+        t = bar.end_time
+        bas, haut = float(bar["low"]), float(bar["high"])
 
-        # Régime 5 m : SMA nourrie du close aux bornes de 5 min (consolidateur manuel).
-        if bar.end_time.minute % 5 == 0:
-            self.dernier_close_5m = close
-            self.sma_regime.update(bar.end_time, close)
+        # Accumuler la barre 5 m (open du 1er 1 m, high/low étendus).
+        if self.o5 is None:
+            self.o5, self.h5, self.l5 = float(bar["open"]), haut, bas
+        else:
+            self.h5 = max(self.h5, haut)
+            self.l5 = min(self.l5, bas)
 
-        # Nourrir les indicateurs avec la barre qui vient de clôturer.
-        # L'ATR a besoin du high/low -> on lui reconstruit une TradeBar complète.
-        self.rsi.update(bar.end_time, close)
-        tb = TradeBar(bar.time, self.btc, float(bar["open"]), float(bar["high"]),
-                      float(bar["low"]), close, float(bar["volume"]), timedelta(minutes=1))
-        self.atr.update(tb)
+        # 1) EN POSITION : le RISQUE prioritaire (stop/take ATR, intra-barre, chaque minute).
+        pos = self.portfolio[self.btc]
+        if pos.invested and self.prix_entree is not None:
+            if pos.is_long:
+                if bas <= self.stop_prix:
+                    self.raison = "STOP  "; self.nb_stop += 1
+                    self.liquidate(self.btc); self.temps_sortie = t
+                elif haut >= self.take_prix:
+                    self.raison = "TAKE  "; self.nb_take += 1
+                    self.liquidate(self.btc); self.temps_sortie = t
+            elif pos.is_short:
+                if haut >= self.stop_prix:
+                    self.raison = "STOP  "; self.nb_stop += 1
+                    self.liquidate(self.btc); self.temps_sortie = t
+                elif bas <= self.take_prix:
+                    self.raison = "TAKE  "; self.nb_take += 1
+                    self.liquidate(self.btc); self.temps_sortie = t
+
+        # 2) SIGNAL : RSI + ATR (barre 5 m) + régime, aux bornes de 5 min.
+        if t.minute % TF_SIGNAL != 0:
+            return
+        tb5 = TradeBar(t, self.btc, self.o5, self.h5, self.l5, close, 0.0, timedelta(minutes=5))
+        self.atr.update(tb5)
+        self.rsi.update(t, close)
+        self.sma_regime.update(t, close)
+        self.dernier_close_sig = close
+        self.o5 = self.h5 = self.l5 = None     # reset de l'accumulateur 5 m
         if not (self.rsi.is_ready and self.atr.is_ready):
             return
         rsi = float(self.rsi.current.value)
-        pos = self.portfolio[self.btc]
-        bas, haut = float(bar["low"]), float(bar["high"])
+        pos = self.portfolio[self.btc]          # relire (le risque a pu liquider)
 
         if pos.invested and self.prix_entree is not None:
-            # ── EN POSITION : le RISQUE est prioritaire (stop/take ATR, intra-barre) ──
-            if pos.is_long:
-                if bas <= self.stop_prix:
-                    self.raison = "STOP  "; self.nb_stop += 1; self.liquidate(self.btc)
-                elif haut >= self.take_prix:
-                    self.raison = "TAKE  "; self.nb_take += 1; self.liquidate(self.btc)
-                elif rsi >= MOYENNE:
-                    self.raison = "SIGNAL"; self.nb_signal += 1; self.liquidate(self.btc)
-            elif pos.is_short:
-                if haut >= self.stop_prix:
-                    self.raison = "STOP  "; self.nb_stop += 1; self.liquidate(self.btc)
-                elif bas <= self.take_prix:
-                    self.raison = "TAKE  "; self.nb_take += 1; self.liquidate(self.btc)
-                elif rsi <= MOYENNE:
-                    self.raison = "SIGNAL"; self.nb_signal += 1; self.liquidate(self.btc)
-        elif self.rsi_prec is not None:
-            # ── À PLAT : chercher une entrée (fade dans le sens du régime 5 m) ──
+            # sortie SIGNAL : RSI revenu à la moyenne
+            if (pos.is_long and rsi >= MOYENNE) or (pos.is_short and rsi <= MOYENNE):
+                self.raison = "SIGNAL"; self.nb_signal += 1
+                self.liquidate(self.btc); self.temps_sortie = t
+        elif self.rsi_prec is not None and self._cooldown_ok(t):
             entre_survente = self.rsi_prec >= SURVENTE and rsi < SURVENTE
             entre_surachat = self.rsi_prec <= SURACHAT and rsi > SURACHAT
             regime = self._regime()
@@ -159,7 +181,7 @@ class RisqueStops(QCAlgorithm):
         self.frais_totaux += float(event.order_fee.value.amount)
         pos = self.portfolio[self.btc]
         if pos.invested:
-            # Entrée : on pose les niveaux stop/take à partir de l'ATR courant.
+            # Entrée : on pose les niveaux stop/take à partir de l'ATR 5 m courant.
             e = float(event.fill_price)
             self.prix_entree = e
             atr = float(self.atr.current.value)
@@ -175,7 +197,6 @@ class RisqueStops(QCAlgorithm):
                      f"stop={self.stop_prix:.1f} take={self.take_prix:.1f} | "
                      f"frais={event.order_fee.value.amount:.2f} $")
         else:
-            # Sortie : P&L selon le sens (long: sortie/entrée ; short: entrée/sortie).
             sortie = float(event.fill_price)
             if self.prix_entree:
                 etait_long = event.fill_quantity < 0    # on VEND pour clôturer un long
@@ -190,8 +211,8 @@ class RisqueStops(QCAlgorithm):
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        self.log(f"--- BILAN RSI {PERIODE_RSI} + RISQUE ATR{PERIODE_ATR} "
-                 f"(stop ×{STOP_MULT} / take ×{TAKE_MULT}) 1 m, régime 5 m, long/short ---")
+        self.log(f"--- BILAN RSI {PERIODE_RSI} + RISQUE ATR{PERIODE_ATR} (5 m, stop ×{STOP_MULT} / "
+                 f"take ×{TAKE_MULT}), régime 4 h, long/short, cooldown {COOLDOWN_MIN}m ---")
         self.log(f"Trades : {self.nb_trades} | sorties : {self.nb_stop} stop, "
                  f"{self.nb_take} take, {self.nb_signal} signal | frais : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")

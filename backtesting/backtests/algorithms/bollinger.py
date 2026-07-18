@@ -1,20 +1,26 @@
 # Bandes de Bollinger : retour à la moyenne ADAPTATIF — SCALPING 1 m, multi-TF, long/short.
 # Comme le RSI mais avec une enveloppe qui respire avec la VOLATILITÉ (± 2σ). Fade FILTRÉ
-# par le régime 5 m :
+# par le régime :
 #   - régime haussier + close SOUS la bande basse  -> LONG  (repli en tendance haussière)
 #   - régime baissier + close AU-DESSUS bande haute -> SHORT (rebond en tendance baissière)
-# Sortie = retour à la bande médiane (moyenne) OU take (~0,4 %) OU stop (~0,5 %). Long ET short.
+# RE-CALIBRAGE anti-frais (2026-07-17) : la v1 (signal 1 m) sur-tradait (2 042 ordres,
+# 57 k$ de frais). Leviers mean-reversion :
+#   - BANDES sur barres 5 m (signal lu aux bornes de 5 min) ; stop/take en 1 m.
+#   - COOLDOWN 45 min après sortie ; TAKE 0,8 % / STOP 1,0 % (les trades respirent).
+# Sortie = retour à la bande médiane OU take OU stop. Long ET short.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_BB = 20           # fenêtre de la moyenne et de l'écart-type
+PERIODE_BB = 20           # fenêtre de la moyenne et de l'écart-type (barres 5 m ≈ 100 min)
 K_ECARTS = 2.0            # largeur des bandes = 2 écarts-types (le classique)
-REGIME_5M = 50            # SMA de régime sur barres 5 m (≈ 4 h)
-STOP_PCT = 0.005          # stop 0,5 %
-TAKE_PCT = 0.004          # cible 0,4 % (horizon modéré)
+TF_SIGNAL = 5             # cadence du signal (minutes) : bandes lues sur barres 5 m
+REGIME_N = 50             # SMA de régime sur barres 5 m (≈ 4 h)
+STOP_PCT = 0.010          # stop 1,0 %
+TAKE_PCT = 0.008          # cible 0,8 %
+COOLDOWN_MIN = 45         # pas de nouvelle entrée dans les 45 min après une sortie
 
 
 class BtcUsdt1m(PythonData):
@@ -70,19 +76,25 @@ class Bollinger(QCAlgorithm):
         self.btc = securite.symbol
 
         self.bb = BollingerBands(PERIODE_BB, K_ECARTS, MovingAverageType.SIMPLE)
-        self.sma_regime = SimpleMovingAverage(REGIME_5M)
-        self.dernier_close_5m = None
+        self.sma_regime = SimpleMovingAverage(REGIME_N)
+        self.dernier_close_sig = None
+        self.mediane = None       # bande médiane courante (pour la sortie, vérifiée chaque min)
 
         self.prix_entree = None
+        self.temps_sortie = None
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
         self.dernier_close = None
 
     def _regime(self):
-        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+        if not self.sma_regime.is_ready or self.dernier_close_sig is None:
             return 0
-        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+        return 1 if self.dernier_close_sig > self.sma_regime.current.value else -1
+
+    def _cooldown_ok(self, maintenant):
+        return (self.temps_sortie is None
+                or (maintenant - self.temps_sortie).total_seconds() >= COOLDOWN_MIN * 60)
 
     def on_data(self, data: Slice):
         if self.btc not in data:
@@ -92,32 +104,36 @@ class Bollinger(QCAlgorithm):
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
-
-        if bar.end_time.minute % 5 == 0:
-            self.dernier_close_5m = close
-            self.sma_regime.update(bar.end_time, close)
-
-        self.bb.update(bar.end_time, close)
-        if not self.bb.is_ready:
-            return
-
-        basse = float(self.bb.lower_band.current.value)
-        haute = float(self.bb.upper_band.current.value)
-        mediane = float(self.bb.middle_band.current.value)
-        pos = self.portfolio[self.btc]
+        t = bar.end_time
         bas, haut = float(bar["low"]), float(bar["high"])
+        pos = self.portfolio[self.btc]
 
+        # 1) EN POSITION : sorties vérifiées CHAQUE minute (stop/take intra-barre, retour médiane).
         if pos.invested and self.prix_entree is not None:
-            # ── EN POSITION : sorties (stop / take / retour à la médiane)
             e = self.prix_entree
             if pos.is_long:
-                if bas <= e * (1 - STOP_PCT) or haut >= e * (1 + TAKE_PCT) or close >= mediane:
-                    self.liquidate(self.btc); self.prix_entree = None
+                if (bas <= e * (1 - STOP_PCT) or haut >= e * (1 + TAKE_PCT)
+                        or (self.mediane is not None and close >= self.mediane)):
+                    self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
             elif pos.is_short:
-                if haut >= e * (1 + STOP_PCT) or bas <= e * (1 - TAKE_PCT) or close <= mediane:
-                    self.liquidate(self.btc); self.prix_entree = None
-        else:
-            # ── À PLAT : entrée en fade, filtrée par le régime 5 m
+                if (haut >= e * (1 + STOP_PCT) or bas <= e * (1 - TAKE_PCT)
+                        or (self.mediane is not None and close <= self.mediane)):
+                    self.liquidate(self.btc); self.prix_entree = None; self.temps_sortie = t
+
+        # 2) SIGNAL : bandes + régime aux bornes de 5 min ; entrée en fade filtrée régime.
+        if t.minute % TF_SIGNAL != 0:
+            return
+        self.dernier_close_sig = close
+        self.sma_regime.update(t, close)
+        self.bb.update(t, close)
+        if not self.bb.is_ready:
+            return
+        basse = float(self.bb.lower_band.current.value)
+        haute = float(self.bb.upper_band.current.value)
+        self.mediane = float(self.bb.middle_band.current.value)
+
+        pos = self.portfolio[self.btc]           # relire (une sortie a pu liquider)
+        if not pos.invested and self._cooldown_ok(t):
             regime = self._regime()
             if close < basse and regime > 0:
                 self.set_holdings(self.btc, 1.0)     # long : repli en tendance haussière
@@ -139,6 +155,7 @@ class Bollinger(QCAlgorithm):
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        self.log(f"--- BILAN Bollinger {PERIODE_BB} / {K_ECARTS}σ (1 m, régime 5 m, long/short) ---")
+        self.log(f"--- BILAN Bollinger {PERIODE_BB} / {K_ECARTS}σ (signal 5 m, régime 4 h, "
+                 f"long/short, cooldown {COOLDOWN_MIN}m) ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")
