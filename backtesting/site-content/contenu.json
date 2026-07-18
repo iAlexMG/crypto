@@ -19,6 +19,7 @@
         "en": "8 strategies"
       },
       "renvois": ["walk-forward", "metriques"],
+      "noteResultats": true,
       "texte": {
         "fr": "## Le même banc pour toutes\n\nComparer deux stratégies n'a de sens que si rien d'autre ne change. Toutes tournent donc sur les mêmes données (BTC/USDT en barres d'une minute, issues du pilier Historiques), les mêmes frais (0,04 % au taker, le palier standard de Binance USDⓈ-M), le même capital de départ (100 000 $) et le même cadre : entrée à la minute, signaux filtrés par une échelle supérieure (5 à 15 minutes), long ET short. Le Buy & Hold reste le plancher — mais comme les stratégies vendent aussi à découvert, elles ne sont plus un simple sous-ensemble de son exposition : battre le plancher dans un marché qui baisse ne prouve aucun avantage, seulement qu'on n'a pas subi toute la baisse.\n\n## Le moteur, pas un proxy\n\nLEAN est événementiel : il rejoue le marché barre par barre et fait vivre le cycle complet — signal, ordre, exécution, portefeuille. Plus lent qu'un calcul vectorisé, mais c'est le prix de la fidélité : le fill, les frais et le capital disponible se comportent comme en réel. Les optimisations pilotent ce vrai moteur, pas une approximation.\n\n## Premier juge — l'optimisation\n\nOn balaye la grille complète des paramètres d'une stratégie, chaque point étant un backtest complet. Le piège est connu : sur des données passées, il existe toujours un réglage qui brille par pur hasard. La vraie question n'est donc pas « quel est le meilleur réglage ? » mais « tient-il sur des données qu'il n'a jamais vues ? ». D'où le [[walk-forward|walk-forward]] : on optimise sur la première moitié de l'historique (in-sample), on teste le champion sur la seconde (out-of-sample), et on le compare au réglage de référence, non optimisé.\n\n## Second juge — la lecture order-flow\n\nUne bougie ne connaît que le volume TOTAL de sa période : elle écrase qui a acheté, qui a vendu, et à quel prix. En revenant aux transactions tick par tick, on reconstruit cette dimension perdue — le [[volume-profile|volume profile]] (où le marché a échangé) et le footprint (l'agression acheteur/vendeur par niveau), à plusieurs échelles de temps. Ce n'est pas un générateur de signaux, c'est une façon de voir ce que la stratégie a traversé.\n\n## Les huit stratégies en un coup d'œil\n\nQuatre familles sur un même banc. **Référence** — Buy & Hold, le plancher à battre. **Suivi de tendance** — croisement SMA 9/21 et MACD, signaux lus sur une échelle de 15 minutes. **Retour à la moyenne** — RSI (seuils fixes) et bandes de Bollinger (seuils adaptatifs). **Gestion du risque** — le RSI doublé de stops. **Composite** — la stratégie avancée (régime + momentum + risque). **Order-flow** — le volume profile par session, la seule nourrie aux ticks.\n\n## Le scalping 1 m, et sa première leçon : les frais\n\nPasser de l'heure à la minute n'est pas un réglage, c'est un changement de nature. La première version, naïve — mêmes signaux qu'en horaire, position pleine, entrée et sortie à la minute — s'est fait dévorer par les frais : de 700 à 4 200 ordres par stratégie, 25 000 à 76 000 $ de frais sur 100 000 $ de capital, toutes perdantes. À 0,04 % le taker, multiplié par des milliers d'allers-retours pleine taille, les coûts de transaction suffisent à eux seuls à ruiner un compte. Ce n'est pas un bug : c'est l'arithmétique du scalping mal fait.\n\nLa correction n'a rien changé aux idées, seulement au rythme : signaux lus sur une échelle supérieure (5 à 15 minutes) plutôt qu'à chaque minute, un délai imposé entre deux trades, des stops assez larges pour laisser respirer la position. Les ordres ont chuté d'un facteur 10 à 400, les frais avec, et les rendements sont revenus près du seuil.\n\n## Le seul juge : hors échantillon\n\nUn bon rendement sur une fenêtre passée ne prouve rien — il faut vérifier qu'il tient sur des données jamais vues. On coupe donc les quarante jours en deux : on lit le rendement des vingt premiers jours, puis celui des vingt suivants, sans jamais s'être calé dessus. Le verdict est net : aucune stratégie n'a d'avantage positif qui persiste. Les pertes sont cohérentes d'une moitié à l'autre — robustes, mais robustement sans edge — et les rares rendements positifs (le RSI, à +0,3 %) tiennent dans le bruit de quelques trades. Plusieurs battent le plancher Buy & Hold, mais seulement parce que le marché baissait : rester à l'écart ou vendre à découvert « gagne » sans rien prédire.\n\nC'est le résultat qui compte le plus. Le vrai problème du scalping 1 m — les frais — se règle par la discipline. L'avantage, lui, ne se décrète pas : sur des stratégies de manuel, un seul actif et une seule fenêtre, il n'y en a pas. Le reconnaître vaut mieux que de triturer les paramètres jusqu'à ce que la courbe passée finisse par sourire.\n\n## Une chaîne, pas une prédiction\n\nUn mot sur la portée. Ces chiffres reposent sur un historique court — une seule fenêtre de quarante jours, un seul actif — et ne prétendent à aucune crédibilité statistique : quarante jours ne suffisent pas à établir qu'une stratégie a un avantage. Ce n'est pas l'objectif. L'objectif est de bâtir une chaîne complète et réutilisable — données, moteur, exécution, jugement hors échantillon — sur laquelle brancher ensuite plus d'historique, d'autres actifs, d'autres marchés. La plomberie est le livrable ; les résultats n'en sont qu'un premier passage.",
         "en": "## The same bench for all\n\nComparing two strategies only means something if nothing else changes. So they all run on the same data (BTC/USDT one-minute bars, from the Histories pillar), the same fees (0.04% taker, Binance USDⓈ-M's standard tier), the same starting capital ($100,000) and the same frame: entry on the minute, signals filtered by a higher scale (5 to 15 minutes), long AND short. Buy & Hold remains the floor — but since the strategies also sell short, they are no longer a simple subset of its exposure: beating the floor in a falling market proves no edge, only that you didn't take the full drop.\n\n## The engine, not a proxy\n\nLEAN is event-driven: it replays the market bar by bar and runs the full cycle — signal, order, fill, portfolio. Slower than a vectorized computation, but that's the price of fidelity: fills, fees and available capital behave as they would live. The optimizations drive that real engine, not an approximation.\n\n## First judge — optimization\n\nWe sweep a strategy's full parameter grid, each point being a complete backtest. The trap is well known: on past data, there is always a setting that shines by pure chance. So the real question isn't \"what's the best setting?\" but \"does it hold on data it has never seen?\". Hence the [[walk-forward|walk-forward]]: we optimize on the first half of the history (in-sample), test the champion on the second (out-of-sample), and compare it to the reference, un-optimized setting.\n\n## Second judge — the order-flow reading\n\nA candle only knows the TOTAL volume of its period: it crushes who bought, who sold, and at what price. Going back to tick-by-tick trades rebuilds that lost dimension — the [[volume-profile|volume profile]] (where the market traded) and the footprint (buyer/seller aggression per level), at several time scales. It isn't a signal generator, it's a way of seeing what the strategy went through.\n\n## The eight strategies at a glance\n\nFour families on one bench. **Benchmark** — Buy & Hold, the floor to beat. **Trend following** — SMA 9/21 crossover and MACD, signals read on a 15-minute scale. **Mean reversion** — RSI (fixed thresholds) and Bollinger Bands (adaptive thresholds). **Risk management** — the RSI paired with stops. **Composite** — the advanced strategy (regime + momentum + risk). **Order-flow** — the per-session volume profile, the only one fed by ticks.\n\n## 1-minute scalping, and its first lesson: fees\n\nGoing from the hour to the minute isn't a setting, it's a change of nature. The first, naive version — same signals as hourly, full-size positions, entry and exit on the minute — got devoured by fees: 700 to 4,200 orders per strategy, $25,000 to $76,000 in fees on $100,000 of capital, every one a loser. At 0.04% taker, multiplied by thousands of full-size round trips, transaction costs alone are enough to ruin an account. It isn't a bug: it's the arithmetic of scalping done wrong.\n\nThe fix changed none of the ideas, only the tempo: signals read on a higher scale (5 to 15 minutes) rather than every minute, an enforced delay between two trades, stops wide enough to let the position breathe. Orders dropped by a factor of 10 to 400, fees with them, and returns came back near breakeven.\n\n## The only judge: out-of-sample\n\nA good return on a past window proves nothing — you have to check it holds on data never seen. So we cut the forty days in two: we read the return of the first twenty days, then of the next twenty, without ever fitting to them. The verdict is clean: no strategy has a positive edge that persists. Losses are consistent from one half to the other — robust, but robustly edgeless — and the rare positive returns (the RSI, at +0.3%) sit within the noise of a handful of trades. Several beat the Buy & Hold floor, but only because the market was falling: staying out or selling short \"wins\" without predicting anything.\n\nThis is the result that matters most. The real problem of 1-minute scalping — fees — is solved by discipline. An edge, though, can't be willed into being: on textbook strategies, a single asset and a single window, there isn't one. Admitting it beats torturing the parameters until the past curve finally smiles.\n\n## A pipeline, not a prediction\n\nA word on scope. These figures rest on a short history — a single forty-day window, a single asset — and claim no statistical credibility: forty days aren't enough to establish that a strategy has an edge. That isn't the goal. The goal is to build a complete, reusable pipeline — data, engine, execution, out-of-sample judgment — onto which more history, other assets, other markets can later be plugged. The plumbing is the deliverable; the results are only a first pass."
@@ -83,6 +84,18 @@
         "en": "Benchmark"
       },
       "renvois": ["plancher-buyhold"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−12,9 %", "en": "−12.9%" } },
+          { "libelle": { "fr": "Drawdown", "en": "Drawdown" }, "valeur": { "fr": "21 %", "en": "21%" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "40 $", "en": "$40" } }
+        ],
+        "verdict": {
+          "fr": "Le plancher à battre — le seul backtest validé à la main.",
+          "en": "The floor to beat — the only backtest validated by hand."
+        }
+      },
       "famille": "reference",
       "carteNom": { "fr": "Buy & Hold", "en": "Buy & Hold" },
       "texte": {
@@ -122,6 +135,20 @@
         "en": "1m: −19.6%"
       },
       "renvois": ["suivi-tendance", "walk-forward"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−19,6 %", "en": "−19.6%" } },
+          { "libelle": { "fr": "Ordres", "en": "Orders" }, "valeur": { "fr": "183", "en": "183" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "8 400 $", "en": "$8,400" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "−7,8 %", "en": "−7.8%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−12,9 %", "en": "−12.9%" } }
+        ],
+        "verdict": {
+          "fr": "Sous le plancher : robuste, et robustement mauvais.",
+          "en": "Below the floor: robust, and robustly bad."
+        }
+      },
       "famille": "tendance",
       "carteNom": { "fr": "SMA 9/21", "en": "SMA 9/21" },
       "items": [
@@ -174,6 +201,20 @@
         "en": "1m: −9.4%"
       },
       "renvois": ["suivi-tendance"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−9,4 %", "en": "−9.4%" } },
+          { "libelle": { "fr": "Ordres", "en": "Orders" }, "valeur": { "fr": "243", "en": "243" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "10 700 $", "en": "$10,700" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "−2,7 %", "en": "−2.7%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−6,9 %", "en": "−6.9%" } }
+        ],
+        "verdict": {
+          "fr": "Frais domptés par la re-calibration ; aucun avantage qui persiste.",
+          "en": "Fees tamed by the re-calibration; no edge that persists."
+        }
+      },
       "famille": "tendance",
       "carteNom": { "fr": "MACD", "en": "MACD" },
       "texte": {
@@ -213,6 +254,20 @@
         "en": "1m: ~breakeven"
       },
       "renvois": ["retour-moyenne", "walk-forward"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "+0,3 %", "en": "+0.3%" } },
+          { "libelle": { "fr": "Trades", "en": "Trades" }, "valeur": { "fr": "8", "en": "8" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "320 $", "en": "$320" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "+0,6 %", "en": "+0.6%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−0,3 %", "en": "−0.3%" } }
+        ],
+        "verdict": {
+          "fr": "Au-dessus du plancher, mais huit trades ne prouvent rien.",
+          "en": "Above the floor, but eight trades prove nothing."
+        }
+      },
       "famille": "retour",
       "carteNom": { "fr": "RSI", "en": "RSI" },
       "texte": {
@@ -252,6 +307,20 @@
         "en": "1m: −2.6%"
       },
       "renvois": ["retour-moyenne"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−2,6 %", "en": "−2.6%" } },
+          { "libelle": { "fr": "Ordres", "en": "Orders" }, "valeur": { "fr": "70", "en": "70" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "2 750 $", "en": "$2,750" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "−1,0 %", "en": "−1.0%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−1,6 %", "en": "−1.6%" } }
+        ],
+        "verdict": {
+          "fr": "Propre, sobre en frais — et sans edge hors échantillon.",
+          "en": "Clean, fee-frugal — and edgeless out of sample."
+        }
+      },
       "famille": "retour",
       "carteNom": { "fr": "Bollinger", "en": "Bollinger" },
       "texte": {
@@ -291,6 +360,19 @@
         "en": "1m: −0.4%"
       },
       "renvois": ["gestion-risque"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−0,4 %", "en": "−0.4%" } },
+          { "libelle": { "fr": "Trades", "en": "Trades" }, "valeur": { "fr": "8", "en": "8" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "+0,6 %", "en": "+0.6%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−1,0 %", "en": "−1.0%" } }
+        ],
+        "verdict": {
+          "fr": "Quasi à l'équilibre — l'écart avec le RSI nu tient au hasard des sorties.",
+          "en": "Near breakeven — the gap with the bare RSI comes down to the luck of the exits."
+        }
+      },
       "famille": "risque",
       "carteNom": { "fr": "RSI + stops", "en": "RSI + stops" },
       "arete": {
@@ -334,6 +416,20 @@
         "en": "1m: −3.0%"
       },
       "renvois": ["strategie-composite", "gestion-risque"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−3,0 %", "en": "−3.0%" } },
+          { "libelle": { "fr": "Ordres", "en": "Orders" }, "valeur": { "fr": "190", "en": "190" } },
+          { "libelle": { "fr": "Frais", "en": "Fees" }, "valeur": { "fr": "4 100 $", "en": "$4,100" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "+1,0 %", "en": "+1.0%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−3,9 %", "en": "−3.9%" } }
+        ],
+        "verdict": {
+          "fr": "Empiler les briques ne crée pas d'avantage là où aucune n'en avait.",
+          "en": "Stacking the blocks creates no edge where none of them had one."
+        }
+      },
       "famille": "composite",
       "carteNom": { "fr": "Stratégie avancée", "en": "Advanced strategy" },
       "arete": {
@@ -377,6 +473,19 @@
         "en": "1m: −17.8%"
       },
       "renvois": ["volume-profile"],
+      "noteResultats": true,
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 40 j", "en": "40-day return" }, "valeur": { "fr": "−17,8 %", "en": "−17.8%" } },
+          { "libelle": { "fr": "Ordres", "en": "Orders" }, "valeur": { "fr": "270", "en": "270" } },
+          { "libelle": { "fr": "Hors échantillon 1", "en": "Out-of-sample 1" }, "valeur": { "fr": "−7,2 %", "en": "−7.2%" } },
+          { "libelle": { "fr": "Hors échantillon 2", "en": "Out-of-sample 2" }, "valeur": { "fr": "−11,4 %", "en": "−11.4%" } }
+        ],
+        "verdict": {
+          "fr": "Le profil éclaire le contexte ; il ne fait pas un signal d'entrée.",
+          "en": "The profile lights up the context; it doesn't make an entry signal."
+        }
+      },
       "famille": "volume",
       "carteNom": { "fr": "Volume profile", "en": "Volume profile" },
       "items": [
