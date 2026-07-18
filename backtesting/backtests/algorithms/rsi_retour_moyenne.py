@@ -13,12 +13,12 @@ from datetime import datetime, timedelta
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_RSI = 9           # RSI court (sur barres 5 m ≈ 45 min)
-SURVENTE = 25            # RSI < 25 = survente
-SURACHAT = 75            # RSI > 75 = surachat
+PERIODE_RSI = 9           # RSI court (sur barres 3 m ≈ 27 min)
+SURVENTE = 30            # RSI < 30 = survente (desserré : la v2 25/75 sous-tradait)
+SURACHAT = 70            # RSI > 70 = surachat
 MOYENNE = 50            # retour à la moyenne = sortie
-TF_SIGNAL = 5            # cadence du signal (minutes) : RSI lu sur barres 5 m
-REGIME_N = 50           # SMA de régime sur barres 5 m (≈ 4 h)
+TF_SIGNAL = 3            # cadence du signal (minutes) : RSI lu sur barres 3 m
+REGIME_N = 50           # SMA de régime sur barres 3 m (≈ 2,5 h)
 STOP_PCT = 0.010        # stop 1,0 %
 TAKE_PCT = 0.008        # cible 0,8 %
 COOLDOWN_MIN = 45       # pas de nouvelle entrée dans les 45 min après une sortie

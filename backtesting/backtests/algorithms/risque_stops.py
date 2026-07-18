@@ -14,15 +14,15 @@ from datetime import datetime, timedelta
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-PERIODE_RSI = 9           # RSI court (sur barres 5 m ≈ 45 min)
-SURVENTE = 25            # RSI < 25 = survente
-SURACHAT = 75            # RSI > 75 = surachat
+PERIODE_RSI = 9           # RSI court (sur barres 3 m ≈ 27 min)
+SURVENTE = 30            # RSI < 30 = survente (desserré : la v2 25/75 sous-tradait)
+SURACHAT = 70            # RSI > 70 = surachat
 MOYENNE = 50            # RSI revenu à ~50 = fin du retour à la moyenne (sortie SIGNAL)
-TF_SIGNAL = 5           # cadence du signal (minutes) : RSI + ATR sur barres 5 m
-REGIME_N = 50           # SMA de régime sur barres 5 m (≈ 4 h)
-PERIODE_ATR = 14          # ATR (barres 5 m) pour dimensionner les stops à la volatilité
-STOP_MULT = 2.0           # stop  = entrée ∓ ATR5m × 2,0
-TAKE_MULT = 3.0           # take  = entrée ± ATR5m × 3,0  (R:R ≈ 1,5)
+TF_SIGNAL = 3           # cadence du signal (minutes) : RSI + ATR sur barres 3 m
+REGIME_N = 50           # SMA de régime sur barres 3 m (≈ 2,5 h)
+PERIODE_ATR = 14          # ATR (barres 3 m) pour dimensionner les stops à la volatilité
+STOP_MULT = 2.0           # stop  = entrée ∓ ATR3m × 2,0
+TAKE_MULT = 3.0           # take  = entrée ± ATR3m × 3,0  (R:R ≈ 1,5)
 COOLDOWN_MIN = 45         # pas de nouvelle entrée dans les 45 min après une sortie
 
 
@@ -148,7 +148,7 @@ class RisqueStops(QCAlgorithm):
         # 2) SIGNAL : RSI + ATR (barre 5 m) + régime, aux bornes de 5 min.
         if t.minute % TF_SIGNAL != 0:
             return
-        tb5 = TradeBar(t, self.btc, self.o5, self.h5, self.l5, close, 0.0, timedelta(minutes=5))
+        tb5 = TradeBar(t, self.btc, self.o5, self.h5, self.l5, close, 0.0, timedelta(minutes=TF_SIGNAL))
         self.atr.update(tb5)
         self.rsi.update(t, close)
         self.sma_regime.update(t, close)
