@@ -29,7 +29,43 @@
         "monogramme": "LN",
         "couleur": "#17A2A2"
       },
-      "cartesEnTete": true
+      "cartesEnTete": true,
+      "carteCentre": {
+        "fr": "BTC/USDT 1 m",
+        "en": "BTC/USDT 1m"
+      },
+      "familles": [
+        {
+          "id": "reference",
+          "titre": { "fr": "Référence", "en": "Benchmark" },
+          "liaison": { "fr": "le plancher à battre", "en": "the floor to beat" }
+        },
+        {
+          "id": "tendance",
+          "titre": { "fr": "Suivi de tendance", "en": "Trend following" },
+          "liaison": { "fr": "suivre le marché", "en": "follow the market" }
+        },
+        {
+          "id": "retour",
+          "titre": { "fr": "Retour à la moyenne", "en": "Mean reversion" },
+          "liaison": { "fr": "parier contre l'excès", "en": "bet against the excess" }
+        },
+        {
+          "id": "risque",
+          "titre": { "fr": "Gestion du risque", "en": "Risk management" },
+          "liaison": { "fr": "encadrer le signal", "en": "frame the signal" }
+        },
+        {
+          "id": "composite",
+          "titre": { "fr": "Composite", "en": "Composite" },
+          "liaison": { "fr": "tout assembler", "en": "put it all together" }
+        },
+        {
+          "id": "volume",
+          "titre": { "fr": "Order-flow", "en": "Order-flow" },
+          "liaison": { "fr": "lire les ticks", "en": "read the ticks" }
+        }
+      ]
     },
     {
       "id": "strat-buyhold",
@@ -47,6 +83,8 @@
         "en": "Benchmark"
       },
       "renvois": ["plancher-buyhold"],
+      "famille": "reference",
+      "carteNom": { "fr": "Buy & Hold", "en": "Buy & Hold" },
       "texte": {
         "fr": "## La stratégie\n\nAcheter au premier prix de l'historique, ne plus jamais toucher à rien. Aucun paramètre, aucun signal, un seul aller-retour de frais.\n\n## Pourquoi elle est là\n\nDeux rôles. D'abord le sol de vérité : c'est le seul backtest dont le résultat se recalcule à la main, ce qui permet de vérifier que le moteur, les données et les frais racontent bien la même chose avant de lui faire confiance sur des stratégies plus complexes. Ensuite le plancher : une stratégie qui multiplie les ordres, les paramètres et les frais sans battre l'achat-conservation ne justifie pas son existence.\n\n## Résultat — mesuré en 1 minute\n\nSur les quarante jours du banc, l'achat-conservation rend −12,9 % : le BTC a simplement baissé, et le rendement final ne dit rien du chemin (drawdown de 21 %). Un seul aller-retour de frais, 40 $. C'est le plancher que les autres doivent battre — et il a été validé à la main, le seul backtest dont le résultat se recalcule sur un coin de table.\n\n## Optimisation\n\nSans objet — il n'y a rien à optimiser. C'est précisément ce qui en fait un point de comparaison honnête : le Buy & Hold ne peut pas sur-apprendre.",
         "en": "## The strategy\n\nBuy at the first price in the history, then never touch anything again. No parameters, no signals, a single round trip of fees.\n\n## Why it's here\n\nTwo roles. First, the ground truth: it's the only backtest whose result can be recomputed by hand, which is how you check that the engine, the data and the fees all tell the same story before trusting them on anything more complex. Second, the floor: a strategy that piles on orders, parameters and fees without beating buy-and-hold doesn't justify its existence.\n\n## Result — measured on one-minute bars\n\nOver the bench's forty days, buy-and-hold returns −12.9%: BTC simply fell, and the final return says nothing about the path (21% drawdown). A single round trip of fees, $40. It's the floor the others must beat — and it was validated by hand, the only backtest whose result recomputes on the back of an envelope.\n\n## Optimization\n\nNot applicable — there's nothing to optimize. That's exactly what makes it an honest benchmark: Buy & Hold cannot overfit."
@@ -84,6 +122,8 @@
         "en": "1m: −19.6%"
       },
       "renvois": ["suivi-tendance", "walk-forward"],
+      "famille": "tendance",
+      "carteNom": { "fr": "SMA 9/21", "en": "SMA 9/21" },
       "items": [
         {
           "id": "fig-signal",
@@ -134,6 +174,8 @@
         "en": "1m: −9.4%"
       },
       "renvois": ["suivi-tendance"],
+      "famille": "tendance",
+      "carteNom": { "fr": "MACD", "en": "MACD" },
       "texte": {
         "fr": "## La stratégie\n\nMême famille que le croisement de moyennes, mais un cran plus réactif. Le MACD est l'écart entre deux moyennes exponentielles (12 et 26) — la vitesse de la tendance, pas sa direction. Sa ligne de signal en est la moyenne exponentielle sur 9 périodes, et l'histogramme, l'écart entre les deux, change de signe exactement au croisement. On achète quand le MACD passe au-dessus de son signal, on sort quand il repasse dessous. Long/flat, comme les autres.\n\n## Résultat — mesuré en 1 minute\n\nEn 1 m, le MACD sur signal 15 minutes fait 243 ordres pour −9,4 % — mieux que le plancher Buy & Hold, mais sans avantage réel : hors échantillon il perd dans les deux moitiés (−2,7 % puis −6,9 %). C'est surtout la démonstration que la re-calibration a marché. La version naïve, signal à la minute, faisait 4 200 ordres et −85 % (76 000 $ de frais, le pire du banc) ; en lisant le MACD sur une échelle plus lente et en imposant un délai entre deux trades, les frais tombent à 10 700 $.\n\n## Optimisation\n\nNon menée pour cette stratégie. Les deux démonstrations du banc — le plateau du croisement de moyennes, le mirage du RSI — montrent déjà ce qu'un balayage de grille peut et ne peut pas certifier. Le juge qui tranche vraiment reste l'out-of-sample, rapporté ci-dessus.",
         "en": "## The strategy\n\nSame family as the moving-average crossover, but a notch more reactive. The MACD is the gap between two exponential moving averages (12 and 26) — the trend's speed, not its direction. Its signal line is the MACD's 9-period exponential average, and the histogram, the gap between the two, flips sign exactly at the crossover. We buy when the MACD moves above its signal, we exit when it drops back below. Long/flat, like the others.\n\n## Result — measured on one-minute bars\n\nOn 1m, the MACD on a 15-minute signal makes 243 orders for −9.4% — better than the Buy & Hold floor, but with no real edge: out of sample it loses in both halves (−2.7% then −6.9%). It's mostly the proof that re-calibration worked. The naive version, signal on the minute, made 4,200 orders and −85% ($76,000 in fees, the worst on the bench); reading the MACD on a slower scale and enforcing a delay between two trades cuts fees to $10,700.\n\n## Optimization\n\nNot run for this strategy. The bench's two demonstrations — the moving-average plateau, the RSI mirage — already show what a grid sweep can and cannot certify. The judge that actually decides remains the out-of-sample, reported above."
@@ -171,6 +213,8 @@
         "en": "1m: ~breakeven"
       },
       "renvois": ["retour-moyenne", "walk-forward"],
+      "famille": "retour",
+      "carteNom": { "fr": "RSI", "en": "RSI" },
       "texte": {
         "fr": "## La stratégie\n\nLe miroir du croisement de moyennes. Au lieu de suivre la tendance, on parie contre : le RSI sur 9 barres mesure la force relative des hausses face aux baisses ; sous 30 le marché est dit survendu, on achète en pariant sur le rebond ; au-dessus de 70 il est suracheté, on vend. Depuis la refonte 1 m, un filtre de régime encadre le pari — on n'achète la survente que si l'échelle supérieure est haussière, on ne vend le surachat que si elle est baissière — et les positions vont long ET short.\n\n## Résultat — mesuré en 1 minute\n\nEn 1 m (RSI sur barres 3 minutes, seuils 30/70), le fade filtré par le régime déclenche rarement dans un marché en tendance : 8 trades seulement sur quarante jours, pour +0,3 %. Techniquement au-dessus du plancher, mais le chiffre tient dans le bruit — huit trades ne prouvent rien. Hors échantillon : +0,6 % puis −0,3 %, du bruit des deux côtés. Son vrai mérite est ailleurs : c'est la stratégie la plus sobre en frais du banc, 320 $.\n\n## Optimisation (démonstration menée en 1 H)\n\nCette étude de grille date de la version horaire du banc ; elle n'a pas été refaite en 1 m, mais son enseignement — le revers exact du croisement de moyennes — reste valable. Même méthode, verdict opposé : le champion in-sample perd déjà — −3 % — et s'effondre en out-of-sample : −19 %, battu par le réglage de référence, celui qu'on n'avait pas optimisé. Optimiser n'a pas seulement été inutile : ça a activement nui.\n\nC'est l'enseignement le plus utile des deux. Même moteur, même grille, même walk-forward : sur une stratégie, l'optimisation révèle un plateau solide, sur l'autre elle fabrique un mirage. L'optimisation mesure l'espace des paramètres ; elle ne certifie rien. Le seul juge, c'est l'out-of-sample.",
         "en": "## The strategy\n\nThe mirror image of the moving-average crossover. Instead of following the trend, we bet against it: the 9-bar RSI measures the relative strength of gains against losses; below 30 the market is called oversold, we buy on the bounce; above 70 it's overbought, we sell. Since the 1m rebuild, a regime filter frames the bet — we only buy the oversold if the higher scale is rising, only sell the overbought if it's falling — and positions go long AND short.\n\n## Result — measured on one-minute bars\n\nOn 1m (RSI on 3-minute bars, 30/70 thresholds), the regime-filtered fade rarely triggers in a trending market: just 8 trades over forty days, for +0.3%. Technically above the floor, but the figure sits within the noise — eight trades prove nothing. Out of sample: +0.6% then −0.3%, noise on both sides. Its real merit is elsewhere: it's the bench's most fee-frugal strategy, $320.\n\n## Optimization (demonstration run on hourly bars)\n\nThis grid study dates from the bench's hourly version; it hasn't been redone at 1m, but its lesson — the exact reverse of the moving-average crossover — still holds. Same method, opposite verdict: the in-sample champion already loses — −3% — and collapses out of sample: −19%, beaten by the reference setting, the one we hadn't optimized. Optimizing wasn't merely useless: it actively hurt.\n\nThis is the more useful lesson of the two. Same engine, same grid, same walk-forward: on one strategy the optimization reveals a solid plateau, on the other it manufactures a mirage. Optimization measures the parameter space; it certifies nothing. The only judge is the out-of-sample."
@@ -208,6 +252,8 @@
         "en": "1m: −2.6%"
       },
       "renvois": ["retour-moyenne"],
+      "famille": "retour",
+      "carteNom": { "fr": "Bollinger", "en": "Bollinger" },
       "texte": {
         "fr": "## La stratégie\n\nLa suite logique du RSI. Le reproche fait au RSI : ses seuils sont FIXES (30 et 70), quel que soit le régime du marché. Les bandes de Bollinger remplacent le seuil fixe par une enveloppe qui se resserre et s'élargit avec la volatilité : on achète sous la bande basse — une faiblesse excessive relativement au régime courant, pas dans l'absolu — et on sort au retour à la bande médiane, sans attendre un surachat lointain. Long/flat.\n\n## Résultat — mesuré en 1 minute\n\nEn 1 m (bandes sur barres 5 minutes, take 0,8 % / stop 1,0 %, délai imposé entre trades), Bollinger fait 70 ordres pour −2,6 % — un des meilleurs du banc, bien au-dessus du plancher. L'enveloppe adaptative aide : la cassure « relative au régime » sélectionne mieux que le seuil fixe du RSI nu. Mais l'avantage ne persiste pas hors échantillon — −1,0 % puis −1,6 %, négatif des deux côtés. C'est propre, sobre en frais (2 750 $), et sans edge.\n\n## Optimisation\n\nNon menée pour cette stratégie. Les deux démonstrations du banc — le plateau du croisement de moyennes, le mirage du RSI — montrent déjà ce qu'un balayage de grille peut et ne peut pas certifier. Le juge qui tranche vraiment reste l'out-of-sample, rapporté ci-dessus.",
         "en": "## The strategy\n\nThe logical follow-up to the RSI. The complaint against the RSI: its thresholds are FIXED (30 and 70), whatever the market regime. Bollinger Bands replace the fixed threshold with an envelope that tightens and widens with volatility: we buy below the lower band — an excess of weakness relative to the current regime, not in absolute terms — and we exit on the return to the middle band, without waiting for a distant overbought reading. Long/flat.\n\n## Result — measured on one-minute bars\n\nOn 1m (bands on 5-minute bars, 0.8% take / 1.0% stop, an enforced delay between trades), Bollinger makes 70 orders for −2.6% — one of the bench's best, well above the floor. The adaptive envelope helps: the \"relative to regime\" break selects better than the bare RSI's fixed threshold. But the edge doesn't persist out of sample — −1.0% then −1.6%, negative on both sides. Clean, fee-frugal ($2,750), and edgeless.\n\n## Optimization\n\nNot run for this strategy. The bench's two demonstrations — the moving-average plateau, the RSI mirage — already show what a grid sweep can and cannot certify. The judge that actually decides remains the out-of-sample, reported above."
@@ -245,6 +291,12 @@
         "en": "1m: −0.4%"
       },
       "renvois": ["gestion-risque"],
+      "famille": "risque",
+      "carteNom": { "fr": "RSI + stops", "en": "RSI + stops" },
+      "arete": {
+        "vers": "strat-rsi",
+        "libelle": { "fr": "ajoute des stops à", "en": "adds stops to" }
+      },
       "texte": {
         "fr": "## La stratégie\n\nLe même signal RSI 30/70, à une chose près : la logique de signal et la logique de risque sont séparées. Le RSI dit quand entrer ; un stop-loss et un take-profit disent quand sortir, indépendamment de lui.\n\nLa cible est précise. Le RSI nu encaisse un trade catastrophe : acheté à 93 614 $ sur un signal de survente, tenu jusqu'à 68 652 $ parce qu'aucun surachat n'est jamais venu déclencher la sortie — 27 000 $ perdus sur un seul trade. Un stop coupe ça avant que ça saigne. La question que pose la page : à quel prix ? Un stop coupe aussi les trades qui seraient revenus.\n\n## Résultat — mesuré en 1 minute\n\nEn 1 m, la gestion du risque devient concrète : même signal RSI que la stratégie nue, mais des stops dimensionnés à la volatilité (l'ATR sur barres 3 minutes) plutôt qu'un pourcentage fixe. 8 trades, −0,4 %, quasi à l'équilibre. À ce nombre de trades, l'écart avec le RSI nu (+0,3 %) tient au hasard des sorties, pas à un effet mesurable. Hors échantillon : +0,6 % puis −1,0 %. Comme le RSI, la stratégie sous-trade — le fade filtré par le régime attend un alignement qui vient peu en tendance.\n\n## Optimisation\n\nNon menée pour cette stratégie. Les deux démonstrations du banc — le plateau du croisement de moyennes, le mirage du RSI — montrent déjà ce qu'un balayage de grille peut et ne peut pas certifier. Le juge qui tranche vraiment reste l'out-of-sample, rapporté ci-dessus.",
         "en": "## The strategy\n\nThe same RSI 30/70 signal, with one difference: the signal logic and the risk logic are separated. The RSI says when to enter; a stop-loss and a take-profit say when to exit, independently of it.\n\nThe target is specific. The bare RSI takes one catastrophic trade: bought at $93,614 on an oversold signal, held down to $68,652 because no overbought reading ever came to trigger the exit — $27,000 lost on a single trade. A stop cuts that before it bleeds. The question the page raises: at what cost? A stop also cuts the trades that would have come back.\n\n## Result — measured on one-minute bars\n\nOn 1m, risk management becomes concrete: the same RSI signal as the bare strategy, but stops sized to volatility (the ATR on 3-minute bars) rather than a fixed percentage. 8 trades, −0.4%, near breakeven. At that trade count, the gap with the bare RSI (+0.3%) comes down to the luck of the exits, not a measurable effect. Out of sample: +0.6% then −1.0%. Like the RSI, it under-trades — the regime-filtered fade waits for an alignment that rarely comes in a trend.\n\n## Optimization\n\nNot run for this strategy. The bench's two demonstrations — the moving-average plateau, the RSI mirage — already show what a grid sweep can and cannot certify. The judge that actually decides remains the out-of-sample, reported above."
@@ -282,6 +334,12 @@
         "en": "1m: −3.0%"
       },
       "renvois": ["strategie-composite", "gestion-risque"],
+      "famille": "composite",
+      "carteNom": { "fr": "Stratégie avancée", "en": "Advanced strategy" },
+      "arete": {
+        "vers": "strat-risque",
+        "libelle": { "fr": "reprend les garde-fous de", "en": "borrows the safeguards of" }
+      },
       "texte": {
         "fr": "## La stratégie\n\nCelle qui réunit les briques des précédentes en un seul algorithme.\n\nLe régime d'abord : tant que le prix est sous sa moyenne de fond (SMA 200), on n'achète jamais — un filtre, pas un signal. L'entrée ensuite : le MACD au-dessus de son signal ET le RSI au-dessus de 50, soit deux confirmations de momentum plutôt qu'une. La taille enfin, et c'est là que ça devient intéressant : on ne mise pas une somme fixe, on risque 1 % du capital par trade. C'est la distance au stop — deux fois l'ATR — qui fixe la quantité : plus le marché est nerveux, plus la position est petite.\n\nLes sorties sont triples : un stop suiveur à 2×ATR sous le plus haut atteint depuis l'entrée, un take-profit à 4×ATR (un ratio de 2 pour 1), et une sortie sèche si le régime casse.\n\n## Résultat — mesuré en 1 minute\n\nEn 1 m (tout le signal sur barres 15 minutes, régime de fond de 12 heures, stop suiveur et take dimensionnés à l'ATR), la composite fait 190 ordres pour −3,0 % — au-dessus du plancher, frais contenus à 4 100 $. C'est aussi l'exemple le plus net de non-généralisation : légèrement positive sur la première moitié (+1,0 %), franchement négative sur la seconde (−3,9 %). Le sizing au risque et le stop suiveur limitent la casse, mais empiler les briques ne crée pas d'avantage là où aucune n'en avait.\n\n## Optimisation\n\nNon menée — et c'est la stratégie où elle serait la plus périlleuse : plus il y a de paramètres, plus la grille est large, et plus il devient facile de trouver le réglage qui brille par hasard. Le seul juge fiable resterait l'out-of-sample, déjà sévère ici : +1,0 % sur la première moitié, −3,9 % sur la seconde.",
         "en": "## The strategy\n\nThe one that brings the previous building blocks together into a single algorithm.\n\nRegime first: as long as price sits below its baseline average (SMA 200), we never buy — a filter, not a signal. Entry next: the MACD above its signal AND the RSI above 50, two momentum confirmations rather than one. Sizing last, and this is where it gets interesting: we don't bet a fixed amount, we risk 1% of capital per trade. The distance to the stop — twice the ATR — sets the quantity: the jumpier the market, the smaller the position.\n\nExits are threefold: a trailing stop at 2×ATR below the highest close since entry, a take-profit at 4×ATR (a 2-to-1 ratio), and a hard exit if the regime breaks.\n\n## Result — measured on one-minute bars\n\nOn 1m (all signals on 15-minute bars, a 12-hour baseline regime, trailing stop and take sized to the ATR), the composite makes 190 orders for −3.0% — above the floor, fees held to $4,100. It's also the clearest case of non-generalization: mildly positive on the first half (+1.0%), plainly negative on the second (−3.9%). Risk-based sizing and the trailing stop limit the damage, but stacking the building blocks creates no edge where none of them had one.\n\n## Optimization\n\nNot run — and this is the strategy where it would be most perilous: the more parameters, the wider the grid, and the easier it becomes to find the setting that shines by chance. The only reliable judge would still be the out-of-sample, already harsh here: +1.0% on the first half, −3.9% on the second."
@@ -319,6 +377,8 @@
         "en": "1m: −17.8%"
       },
       "renvois": ["volume-profile"],
+      "famille": "volume",
+      "carteNom": { "fr": "Volume profile", "en": "Volume profile" },
       "items": [
         {
           "id": "fig-signal",
