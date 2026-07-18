@@ -18,18 +18,17 @@
 # ⚠️ Les bornes NY tombent en MILIEU de barre 1H UTC (09:30 NY = 13:30 ou 14:30 UTC) :
 # les ticks sont agrégés en sous-briques de 30 min -> frontières de session EXACTES.
 #
-# Produit H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv, UNE ligne par barre 1H :
-# ⚠️ CADENCE ENCORE HORAIRE (sous-briques 30 min -> 1 ligne/heure). Le passage au 1m
-#    scalping demande une REFONTE de la cadence (sous-briques 1 min, 1 ligne/minute) :
-#    sous-tâche VP dédiée, pas un simple swap de chemin. En attendant, la VP tourne avec
-#    des niveaux mis à jour à l'heure sur un prix lu à la minute (hybride assumé).
-#   time    = ouverture de barre (ISO UTC, même contrat que 1H.csv)
-#   session = asia | london | ny | hors (session active à la CLÔTURE de la barre)
-#   barres  = nombre de barres écoulées dans la session (1 = première clôture)
-#   delta   = volume acheteur - vendeur de LA barre (agresseurs)
+# Produit H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv, UNE ligne par barre 1 MIN
+# (cadence scalping 1 m : sous-briques 1 min -> 1 ligne/minute, alignée sur 1m.csv).
+# Le profil de session se DÉVELOPPE minute par minute (value_area recalculée à chaque
+# minute). L'ancien mode `rolling` reste en sous-briques 30 min (legacy, comparaison).
+#   time    = ouverture de barre 1 min (ISO UTC, même contrat que 1m.csv)
+#   session = asia | london | ny | hors (session active à la CLÔTURE de la minute)
+#   barres  = nombre de MINUTES écoulées dans la session (1 = première clôture)
+#   delta   = volume acheteur - vendeur de LA minute (agresseurs)
 #   poc/vah/val = profil de la session EN COURS, de son ouverture à la clôture de la
-#                 barre (gelés pendant « hors »)
-#   ⚠️ Causalité inchangée : la ligne t n'est connaissable qu'à t+1h (end_time côté LEAN).
+#                 minute (gelés pendant « hors »)
+#   ⚠️ Causalité : la ligne t n'est connaissable qu'à t+1min (end_time côté LEAN).
 #
 #   python backtests/volume_profile_features.py                      # tout l'historique
 #   python backtests/volume_profile_features.py --zone rolling:24    # ancien mode glissant
@@ -48,19 +47,21 @@ from backtests.sessions import bornes_sessions   # définition UNIQUE des sessio
 DB = "H:/Crypto/historique/BTCUSDT-binance-perp-api.db"
 SORTIE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv"
 TICK_PRIX = 25.0        # taille d'un niveau de prix (USDT)
-DEMI_MS = 1_800_000     # sous-brique de 30 min : la précision des bornes de session
+MINUTE_MS = 60_000      # sous-brique de 1 min : la cadence scalping (bornes de session exactes)
+DEMI_MS = 1_800_000     # sous-brique de 30 min : cadence de l'ancien mode rolling
 HEURE_MS = 3_600_000
 
 
-def footprints_30min(db: str, tick: float):
-    """Streaming ticks -> [(ts_ms_30min, {niveau: [vol_achat, vol_vente]}, delta)]."""
+def footprints(db: str, tick: float, pas_ms: int):
+    """Streaming ticks -> [(ts_ms_pas, {niveau: [vol_achat, vol_vente]}, delta)] agrégés
+    par pas_ms (1 min pour les sessions, 30 min pour le mode rolling)."""
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     # trade_id croissant = ordre chronologique (contrat de la base) : pas de tri par ts.
     cur = con.execute("SELECT ts, price, size, side='buy' FROM trades ORDER BY trade_id")
     briques: list[tuple[int, dict, float]] = []
     ts_brique, prof, delta = None, None, 0.0
     for ts, prix, taille, achat in cur:
-        b = ts // DEMI_MS * DEMI_MS
+        b = ts // pas_ms * pas_ms
         if b != ts_brique:
             if ts_brique is not None:
                 briques.append((ts_brique, prof, delta))
@@ -104,12 +105,14 @@ def _fusionner(run: dict, prof: dict) -> None:
 
 
 def ecrire_features_sessions(briques, sortie: str) -> None:
+    """Cadence 1 MINUTE : une ligne par sous-brique (= par minute). Le profil de la
+    session en cours se développe minute par minute et value_area est recalculée à
+    chaque minute (les « sous-VP » intra-session bougent à la minute). Delta par minute."""
     bornes = bornes_sessions(briques[0][0], briques[-1][0])
     i = 0
     session, run = "hors", {}
     geles = ("", "", "")                      # derniers niveaux connus (gel hors session)
     barres = 0
-    delta_heure = 0.0
     with open(sortie, "w", newline="") as f:
         f.write("time,session,barres,delta,poc,vah,val\n")
         for ts, prof, delta in briques:
@@ -122,18 +125,13 @@ def ecrire_features_sessions(briques, sortie: str) -> None:
                 i += 1
             if session != "hors":
                 _fusionner(run, prof)         # le profil de session SE DÉVELOPPE
-            delta_heure += delta
-            if ts % HEURE_MS == 0:            # 1re demi-heure de la barre -> on attend
-                continue
-            # 2e demi-heure : la barre 1H se clôture -> émettre la ligne
-            t = datetime.fromtimestamp((ts - DEMI_MS) / 1000, tz=timezone.utc)
-            if session != "hors" and run:
-                barres += 1
-                geles = value_area(run)
+                if run:
+                    barres += 1
+                    geles = value_area(run)   # POC/VAH/VAL recalculés à la minute
             poc, vah, val = geles
-            f.write(f"{t:%Y-%m-%d %H:%M:%S}+00:00,{session},{barres},{delta_heure},"
+            t = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+            f.write(f"{t:%Y-%m-%d %H:%M:%S}+00:00,{session},{barres},{delta},"
                     f"{poc},{vah},{val}\n")
-            delta_heure = 0.0
 
 
 def ecrire_features_rolling(briques, sortie: str, fenetre: int) -> None:
@@ -207,9 +205,11 @@ def main() -> None:
     ap.add_argument("--profil-jour", help="génère aussi le PNG concept de cette journée")
     args = ap.parse_args()
 
-    print("streaming des ticks (une passe, sous-briques de 30 min)…")
-    briques = footprints_30min(args.db, args.tick)
-    print(f"  {len(briques)} sous-briques de 30 min, "
+    # Sessions = cadence 1 min ; rolling (legacy) = sous-briques 30 min.
+    pas_ms = MINUTE_MS if args.zone == "sessions" else DEMI_MS
+    print(f"streaming des ticks (une passe, sous-briques de {pas_ms // 60000} min)…")
+    briques = footprints(args.db, args.tick, pas_ms)
+    print(f"  {len(briques)} sous-briques, "
           f"{sum(len(p) for _, p, _ in briques)} cellules (niveau, brique)")
 
     if args.zone == "sessions":

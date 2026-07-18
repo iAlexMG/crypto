@@ -1,15 +1,16 @@
-# Volume profile PAR SESSION + analyse des volumes sur BTCUSDT.
+# Volume profile PAR SESSION + analyse des volumes sur BTCUSDT — SCALPING 1 m, long/short.
 # DEUX flux de données custom dans le même algo :
 #   - le prix (1m.csv, lecteur validé des leçons précédentes) ;
 #   - les features de profil (features_vp.csv : session, barres, delta, POC/VAH/VAL du
 #     profil de la session EN COURS — Asia/London/NY, heure de New York — développé
-#     barre par barre), reconstruites par backtests/volume_profile_features.py.
-# Lecture retenue : `vah_break` — cassure du haut de la value area de LA SESSION = le
-# marché accepte des prix au-dessus de la valeur de l'enchère en cours, confirmée par
-# un delta acheteur. Le profil fournit lui-même la cible et le stop.
-# Règles de session (a priori) : pas d'entrée hors session ni dans les 2 premières
-# barres d'une session (profil embryonnaire) ; pas de croisement détecté À CHEVAL sur
-# deux enchères (les niveaux sautent au reset).
+#     MINUTE PAR MINUTE), reconstruites par backtests/volume_profile_features.py.
+# Lecture retenue : ACCEPTATION SYMÉTRIQUE de la value area de LA SESSION —
+#   - cassure du HAUT (VAH) par le haut + delta acheteur -> LONG  (prix acceptés au-dessus) ;
+#   - cassure du BAS (VAL) par le bas + delta vendeur    -> SHORT (prix acceptés en dessous).
+# Le profil fournit lui-même la cible et le stop (dérivés des niveaux, pas des % fixes).
+# Règles de session (a priori) : pas d'entrée hors session ni dans les MIN_BARRES premières
+# minutes d'une session (profil embryonnaire) ; pas de croisement détecté À CHEVAL sur deux
+# enchères (les niveaux sautent au reset). Long/short -> plus de face-à-face Buy & Hold.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
@@ -20,15 +21,14 @@ FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
 
 # ── Paramètres de la stratégie (choisis A PRIORI — leçon 07 : jamais après la courbe)
-LECTURE = "vah_break"    # "vah_break" (acceptance/tendance) ou "val_reclaim" (contre-tendance)
-FILTRE_DELTA = True      # n'entrer que si l'EMA du delta est acheteuse (> 0)
-DELTA_SPAN = 24          # période de l'EMA du delta (24 barres = 24 h)
-TP_FRAC = 1.0            # cible : fraction du chemin lo->hi (1.0 = le chemin entier)
-STOP_FRAC = 0.5          # stop : fraction du chemin SOUS lo (retour = hypothèse morte)
-MIN_EDGE = 0.002         # edge minimal 0,2 % du chemin lo->cible (mesuré du niveau franchi,
-                         # pas du fill au close — qui, déjà au-dessus de lo, en mange une partie)
-MIN_BARRES = 3           # pas d'entrée avant la 3e barre d'une session (profil embryonnaire)
-TRICHE_LOOKAHEAD = False # ⚠️ falsification leçon 09 : livrer le profil 1 h TROP TOT
+FILTRE_DELTA = True      # n'entrer que si l'EMA du delta va dans le sens du trade
+DELTA_SPAN = 60          # période de l'EMA du delta (60 barres = 60 min en cadence 1 m)
+TP_FRAC = 1.0            # cible : fraction du chemin niveau->projection (1.0 = chemin entier)
+STOP_FRAC = 0.5          # stop : fraction du chemin AU-DELÀ du niveau (retour = hypothèse morte)
+MIN_EDGE = 0.002         # edge minimal 0,2 % du chemin niveau->cible (mesuré du niveau franchi,
+                         # pas du fill au close — qui, déjà au-delà, en mange une partie)
+MIN_BARRES = 3           # pas d'entrée avant la 3e MINUTE d'une session (profil embryonnaire)
+TRICHE_LOOKAHEAD = False # ⚠️ falsification leçon 09 : livrer le profil 1 min TROP TOT
 
 
 class BtcUsdt1m(PythonData):
@@ -42,12 +42,6 @@ class BtcUsdt1m(PythonData):
             return None
         cols = line.split(",")
         bar = BtcUsdt1m()
-
-
-
-
-
-
         bar.symbol = config.symbol
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open
@@ -63,10 +57,10 @@ class BtcUsdt1m(PythonData):
 
 class VpFeatures(PythonData):
     """Second flux : la ligne t porte le profil de la session en cours, développé de
-    l'ouverture de session à la clôture de la barre t (incluse).
-    end_time = t+1h -> LEAN la livre à la clôture de la barre t, dans le MEME Slice
+    l'ouverture de session à la clôture de la MINUTE t (incluse).
+    end_time = t+1min -> LEAN la livre à la clôture de la barre t, dans le MEME Slice
     que la barre de prix t : causal par construction. (TRICHE_LOOKAHEAD la livre à
-    l'OUVERTURE t, une heure trop tôt -> biais de futur, mesuré dans la leçon.)
+    l'OUVERTURE t, une minute trop tôt -> biais de futur, mesuré dans la leçon.)
     Colonnes : time,session,barres,delta,poc,vah,val"""
 
     def get_source(self, config, date, is_live):
@@ -85,7 +79,7 @@ class VpFeatures(PythonData):
         bar.end_time = t_open if TRICHE_LOOKAHEAD else t_open + timedelta(minutes=1)
         bar.value = float(cols[4])        # POC (value obligatoire, jamais de NaN)
         bar["session"] = cols[1]          # asia | london | ny | hors
-        bar["barres"] = float(cols[2])    # ancienneté du profil dans la session
+        bar["barres"] = float(cols[2])    # ancienneté du profil dans la session (minutes)
         bar["delta"] = float(cols[3])
         bar["poc"] = float(cols[4])
         bar["vah"] = float(cols[5])
@@ -136,11 +130,12 @@ class VolumeProfile(QCAlgorithm):
         self.lissage = 2.0 / (DELTA_SPAN + 1)
         self.delta_ema = None
 
-        self.niveaux = None          # (lo, cible, stop) de la barre courante
+        self.poc = self.vah = self.val = None   # niveaux courants du profil de session
         self.session = None          # session active (asia | london | ny | hors)
-        self.barres = 0              # ancienneté du profil dans la session
+        self.barres = 0              # ancienneté du profil dans la session (minutes)
         self.close_prec = None
-        self.lo_prec = None
+        self.vah_prec = None
+        self.val_prec = None
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
@@ -155,56 +150,83 @@ class VolumeProfile(QCAlgorithm):
                 # détecte jamais un « franchissement » à cheval sur deux sessions.
                 self.session = str(f["session"])
                 self.close_prec = None
-                self.lo_prec = None
+                self.vah_prec = None
+                self.val_prec = None
             self.barres = int(float(f["barres"]))
-            poc, vah, val = float(f["poc"]), float(f["vah"]), float(f["val"])
+            self.poc, self.vah, self.val = float(f["poc"]), float(f["vah"]), float(f["val"])
             delta = float(f["delta"])
             self.delta_ema = delta if self.delta_ema is None else \
                 self.lissage * delta + (1 - self.lissage) * self.delta_ema
-            if LECTURE == "vah_break":        # chemin travaillé : vah -> vah + (vah - poc)
-                lo, hi = vah, vah + (vah - poc)
-            else:                             # val_reclaim : chemin val -> poc
-                lo, hi = val, poc
-            self.niveaux = (lo, lo + TP_FRAC * (hi - lo), lo - STOP_FRAC * (hi - lo))
 
         # 2) Puis le prix : signaux au close de la barre clôturée.
         if self.btc not in data:
             return
         close = float(data[self.btc].value)
         if self.premier_close is None:
-            self.premier_close = close        # AVANT le warmup : B&H comparable aux autres leçons
+            self.premier_close = close        # AVANT le warmup : trace de référence
         self.dernier_close = close
-        if self.niveaux is None:
-            return                            # warmup du profil glissant (23 barres)
-        lo, cible, stop = self.niveaux
+        if self.poc is None:
+            return                            # warmup du profil glissant
+        poc, vah, val = self.poc, self.vah, self.val
+        pos = self.portfolio[self.btc]
 
-        if not self.portfolio[self.btc].invested:
-            # Entrée : le close FRANCHIT lo par le bas (un événement, pas un état),
-            # DANS une session dont le profil a au moins MIN_BARRES barres, l'edge du
-            # chemin lo->cible couvre les frais (l'entrée réelle au close, déjà
-            # au-dessus de lo, en mange une partie), et les agresseurs sont acheteurs.
-            franchit = (self.close_prec is not None and self.lo_prec is not None
-                        and self.close_prec <= self.lo_prec and close > lo)
+        if not pos.invested:
+            # Entrée : le close FRANCHIT un bord de la value area (événement), DANS une
+            # session dont le profil a au moins MIN_BARRES minutes, l'edge du chemin
+            # couvre les frais, et les agresseurs vont dans le sens du trade.
             session_ok = self.session != "hors" and self.barres >= MIN_BARRES
-            edge_ok = (cible - lo) / lo >= MIN_EDGE
-            delta_ok = (not FILTRE_DELTA) or (self.delta_ema is not None
-                                              and self.delta_ema > 0)
-            if franchit and session_ok and edge_ok and delta_ok:
-                self.set_holdings(self.btc, 1.0)
-                self.log(f"ENTREE {self.time:%Y-%m-%d %H:%M} [{self.session} b{self.barres}] "
-                         f"| close={close} > lo={lo:.0f} | cible={cible:.0f} "
-                         f"stop={stop:.0f} | delta_ema={self.delta_ema:+.0f}")
+            if session_ok and self.close_prec is not None:
+                # LONG : cassure de VAH par le haut (acceptation au-dessus de la valeur).
+                if (self.vah_prec is not None and self.close_prec <= self.vah_prec
+                        and close > vah):
+                    amp = vah - poc                       # projection = demi-largeur haute
+                    cible = vah + TP_FRAC * amp
+                    edge_ok = amp > 0 and (cible - vah) / vah >= MIN_EDGE
+                    delta_ok = (not FILTRE_DELTA) or (self.delta_ema is not None
+                                                      and self.delta_ema > 0)
+                    if edge_ok and delta_ok:
+                        self.set_holdings(self.btc, 1.0)
+                        self.log(f"ENTREE LONG  {self.time:%Y-%m-%d %H:%M} [{self.session} "
+                                 f"m{self.barres}] | close={close} > vah={vah:.0f} | "
+                                 f"cible={cible:.0f} | delta_ema={self.delta_ema:+.0f}")
+                # SHORT : cassure de VAL par le bas (acceptation en dessous de la valeur).
+                elif (self.val_prec is not None and self.close_prec >= self.val_prec
+                        and close < val):
+                    amp = poc - val
+                    cible = val - TP_FRAC * amp
+                    edge_ok = amp > 0 and (val - cible) / val >= MIN_EDGE
+                    delta_ok = (not FILTRE_DELTA) or (self.delta_ema is not None
+                                                      and self.delta_ema < 0)
+                    if edge_ok and delta_ok:
+                        self.set_holdings(self.btc, -1.0)
+                        self.log(f"ENTREE SHORT {self.time:%Y-%m-%d %H:%M} [{self.session} "
+                                 f"m{self.barres}] | close={close} < val={val:.0f} | "
+                                 f"cible={cible:.0f} | delta_ema={self.delta_ema:+.0f}")
         else:
             # Sorties sur les niveaux COURANTS du profil (externes à la position) :
-            # cible atteinte, ou retour sous le niveau conquis (hypothèse invalidée).
-            if close >= cible:
-                self.liquidate(self.btc)
-                self.log(f"SORTIE cible {self.time:%Y-%m-%d %H:%M} | close={close} >= {cible:.0f}")
-            elif close <= stop:
-                self.liquidate(self.btc)
-                self.log(f"SORTIE stop  {self.time:%Y-%m-%d %H:%M} | close={close} <= {stop:.0f}")
+            # cible atteinte, ou retour au-delà du niveau conquis (hypothèse invalidée).
+            if pos.is_long:
+                amp = vah - poc
+                cible = vah + TP_FRAC * amp
+                stop = vah - STOP_FRAC * amp
+                if close >= cible:
+                    self.liquidate(self.btc)
+                    self.log(f"SORTIE cible {self.time:%Y-%m-%d %H:%M} | close={close} >= {cible:.0f}")
+                elif close <= stop:
+                    self.liquidate(self.btc)
+                    self.log(f"SORTIE stop  {self.time:%Y-%m-%d %H:%M} | close={close} <= {stop:.0f}")
+            else:                                          # short
+                amp = poc - val
+                cible = val - TP_FRAC * amp
+                stop = val + STOP_FRAC * amp
+                if close <= cible:
+                    self.liquidate(self.btc)
+                    self.log(f"SORTIE cible {self.time:%Y-%m-%d %H:%M} | close={close} <= {cible:.0f}")
+                elif close >= stop:
+                    self.liquidate(self.btc)
+                    self.log(f"SORTIE stop  {self.time:%Y-%m-%d %H:%M} | close={close} >= {stop:.0f}")
 
-        self.close_prec, self.lo_prec = close, lo
+        self.close_prec, self.vah_prec, self.val_prec = close, vah, val
 
     def on_order_event(self, event: OrderEvent):
         if event.status == OrderStatus.FILLED:
@@ -218,10 +240,7 @@ class VolumeProfile(QCAlgorithm):
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement = equite / CAPITAL - 1
-        rendement_bh = self.dernier_close / self.premier_close - 1
-        self.log(f"--- BILAN Volume profile ({LECTURE}, filtre delta={FILTRE_DELTA}, "
-                 f"triche={TRICHE_LOOKAHEAD}) ---")
+        self.log(f"--- BILAN Volume profile 1 m (acceptation VAH/VAL, filtre delta={FILTRE_DELTA}, "
+                 f"triche={TRICHE_LOOKAHEAD}), long/short ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement:+.4%}")
-        self.log(f"Buy & Hold (close/close) : {rendement_bh:+.4%} | "
-                 f"écart stratégie - B&H : {rendement - rendement_bh:+.4%}")
