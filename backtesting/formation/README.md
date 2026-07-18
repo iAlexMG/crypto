@@ -2,9 +2,8 @@
 
 Construire, **de zéro**, un backtesting de niveau professionnel sur **deux moteurs
 complémentaires**, appliqué à de **vraies données crypto** (futures perpétuels BTCUSDT,
-marge USDT), et
-apprendre à **réconcilier** leurs résultats — la compétence qui sépare un backtest fiable d'un
-joli graphique trompeur.
+marge USDT). Deux formations autonomes, une par moteur — les **résultats mesurés** des
+stratégies vivent, eux, dans le pilier **Backtesting** du hub crypto.
 
 ## Public visé & prérequis
 
@@ -17,18 +16,17 @@ Formation **niveau intermédiaire → avancé**. On suppose que tu es **déjà �
 
 Pas besoin de connaître LEAN ni vectorbt au départ : on les apprend ici.
 
-## Structure de la formation — trois sous-sections
+## Structure de la formation — deux sous-sections
 
 | Sous-section | Moteur | Statut |
 |---|---|---|
 | [**01 — LEAN**](01-lean/) | QuantConnect LEAN (événementiel), compilé **depuis les sources GitHub, sans Docker** | ✅ Complète (9/9) |
 | [**02 — vectorbt**](02-vbt/) | vectorbt Pro (vectorisé) | ⏸️ En attente (licence) |
-| [**03 — Conclusion & comparaison**](03-conclusion/) | Réconciliation des deux moteurs, parité, écarts expliqués | ⏳ À venir |
 
 > Deux moteurs, deux forces complémentaires : **LEAN** rejoue le marché barre par barre —
 > réaliste, débogable, orienté production ; **vectorbt** calcule sur toute la série d'un coup —
-> idéal pour explorer des milliers de variantes en quelques secondes. La compétence finale de
-> la formation : **réconcilier** leurs résultats sur les mêmes stratégies.
+> idéal pour explorer des milliers de variantes en quelques secondes. Deux lectures
+> complémentaires du même backtest — chacune une formation autonome.
 
 ## Résumé des leçons
 
@@ -58,15 +56,7 @@ Pas besoin de connaître LEAN ni vectorbt au départ : on les apprend ici.
 | 03 | Les mêmes stratégies, vectorisées | SMA, RSI, Bollinger, MACD via `from_signals` ; **écrire une fois la logique, l'exécuter en millisecondes**. |
 | 04 | L'optimisation massive | Grilles complètes, heatmaps, milliers de combinaisons ; **exploiter la vraie force du vectorisé**. |
 | 05 | Walk-forward | Fenêtres glissantes entraînement→test ; **valider qu'un paramètre survit hors échantillon**. |
-| 06 | Synthèse vectorbt | Bilan de la section ; **préparer la confrontation des deux moteurs**. |
-
-### Sous-section 03 — Conclusion & comparaison
-
-| # | Leçon | Sujet & objectif |
-|---|-------|------------------|
-| 01 | Le test « sol de vérité » | Le même Buy & Hold des deux côtés doit retomber sur l'arithmétique du prix ; **détecter une normalisation ou des frais faux**. |
-| 02 | Parité stratégie par stratégie | Mêmes signaux, mêmes fills, mêmes P&L ? Sémantique d'exécution, sizing, annualisation ; **expliquer chaque écart au lieu de le subir**. |
-| 03 | Verdict : quel moteur pour quoi | Tableau comparatif final, limites de chacun, flux de travail combiné ; **choisir son outil en connaissance de cause**. |
+| 06 | Synthèse vectorbt | Bilan de la section ; **consolider les résultats vectorisés**. |
 
 ## Les données
 
