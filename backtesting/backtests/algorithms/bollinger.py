@@ -1,9 +1,9 @@
-# Bandes de Bollinger : retour à la moyenne ADAPTATIF sur BTCUSDT.
-# La suite logique du RSI (rsi_retour_moyenne.py) : au lieu d'un seuil FIXE (RSI 30/70), une
-# enveloppe qui se resserre/s'élargit avec la VOLATILITÉ. On achète sous la bande
-# basse (excès de faiblesse relatif au régime courant) et on sort au RETOUR À LA
-# MOYENNE (bande médiane) -> pas besoin d'attendre un surachat lointain.
-#   Règle : long/flat -> comparable aux autres stratégies du cours.
+# Bandes de Bollinger : retour à la moyenne ADAPTATIF — SCALPING 1 m, multi-TF, long/short.
+# Comme le RSI mais avec une enveloppe qui respire avec la VOLATILITÉ (± 2σ). Fade FILTRÉ
+# par le régime 5 m :
+#   - régime haussier + close SOUS la bande basse  -> LONG  (repli en tendance haussière)
+#   - régime baissier + close AU-DESSUS bande haute -> SHORT (rebond en tendance baissière)
+# Sortie = retour à la bande médiane (moyenne) OU take (~0,4 %) OU stop (~0,5 %). Long ET short.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
@@ -12,6 +12,9 @@ FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
 PERIODE_BB = 20           # fenêtre de la moyenne et de l'écart-type
 K_ECARTS = 2.0            # largeur des bandes = 2 écarts-types (le classique)
+REGIME_5M = 50            # SMA de régime sur barres 5 m (≈ 4 h)
+STOP_PCT = 0.005          # stop 0,5 %
+TAKE_PCT = 0.004          # cible 0,4 % (horizon modéré)
 
 
 class BtcUsdt1m(PythonData):
@@ -66,54 +69,76 @@ class Bollinger(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # ── NOUVEAU : bandes de Bollinger, nourries à la main.
-        # bande médiane = SMA(20) ; bandes haute/basse = médiane ± 2 écarts-types.
-        # Les bandes s'ÉCARTENT quand la volatilité monte, se RESSERRENT quand elle baisse.
         self.bb = BollingerBands(PERIODE_BB, K_ECARTS, MovingAverageType.SIMPLE)
+        self.sma_regime = SimpleMovingAverage(REGIME_5M)
+        self.dernier_close_5m = None
 
+        self.prix_entree = None
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
         self.dernier_close = None
 
+    def _regime(self):
+        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+            return 0
+        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+
     def on_data(self, data: Slice):
         if self.btc not in data:
             return
-        close = float(data[self.btc].value)
+        bar = data[self.btc]
+        close = float(bar.value)
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
 
-        self.bb.update(data[self.btc].end_time, close)
+        if bar.end_time.minute % 5 == 0:
+            self.dernier_close_5m = close
+            self.sma_regime.update(bar.end_time, close)
+
+        self.bb.update(bar.end_time, close)
         if not self.bb.is_ready:
             return
 
         basse = float(self.bb.lower_band.current.value)
+        haute = float(self.bb.upper_band.current.value)
         mediane = float(self.bb.middle_band.current.value)
-        investi = self.portfolio[self.btc].invested
-        # Entrée : le prix casse SOUS la bande basse (faiblesse extrême vu la volatilité)
-        if not investi and close < basse:
-            self.set_holdings(self.btc, 1.0)
-        # Sortie : le prix est REVENU à la moyenne (bande médiane) -> objectif atteint
-        elif investi and close >= mediane:
-            self.liquidate(self.btc)
+        pos = self.portfolio[self.btc]
+        bas, haut = float(bar["low"]), float(bar["high"])
+
+        if pos.invested and self.prix_entree is not None:
+            # ── EN POSITION : sorties (stop / take / retour à la médiane)
+            e = self.prix_entree
+            if pos.is_long:
+                if bas <= e * (1 - STOP_PCT) or haut >= e * (1 + TAKE_PCT) or close >= mediane:
+                    self.liquidate(self.btc); self.prix_entree = None
+            elif pos.is_short:
+                if haut >= e * (1 + STOP_PCT) or bas <= e * (1 - TAKE_PCT) or close <= mediane:
+                    self.liquidate(self.btc); self.prix_entree = None
+        else:
+            # ── À PLAT : entrée en fade, filtrée par le régime 5 m
+            regime = self._regime()
+            if close < basse and regime > 0:
+                self.set_holdings(self.btc, 1.0)     # long : repli en tendance haussière
+            elif close > haute and regime < 0:
+                self.set_holdings(self.btc, -1.0)    # short : rebond en tendance baissière
 
     def on_order_event(self, event: OrderEvent):
         if event.status == OrderStatus.FILLED:
             self.nb_trades += 1
             self.frais_totaux += float(event.order_fee.value.amount)
+            if self.portfolio[self.btc].invested:
+                self.prix_entree = float(event.fill_price)
             sens = "ACHAT " if event.fill_quantity > 0 else "VENTE "
             largeur = float(self.bb.band_width.current.value)
-            self.log(f"TRADE {self.nb_trades:>2} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
+            self.log(f"TRADE {self.nb_trades:>3} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
                      f"largeur_bandes={largeur:.0f} | qté={event.fill_quantity:+.8f} @ "
                      f"{event.fill_price} | frais={event.order_fee.value.amount:.2f} $")
 
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        rendement_bh = self.dernier_close / self.premier_close - 1
-        self.log(f"--- BILAN Bollinger {PERIODE_BB} / {K_ECARTS}σ ---")
+        self.log(f"--- BILAN Bollinger {PERIODE_BB} / {K_ECARTS}σ (1 m, régime 5 m, long/short) ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")
-        self.log(f"Buy & Hold (close/close) : {rendement_bh:+.4%} | "
-                 f"écart stratégie - B&H : {rendement_strat - rendement_bh:+.4%}")
