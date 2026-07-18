@@ -1,17 +1,17 @@
-# MACD : momentum par convergence/divergence de deux EMA sur BTCUSDT.
-# Retour au SUIVI DE TENDANCE (comme sma_croisement.py), mais plus réactif :
-#   MACD = EMA(12) - EMA(26)          -> le momentum (vitesse de la tendance)
-#   signal = EMA(9) du MACD           -> lissage du MACD
-#   histogramme = MACD - signal       -> change de signe AU croisement
-# Achat quand le MACD passe AU-DESSUS de son signal (histogramme > 0),
-# vente quand il repasse en-dessous. Long/flat -> comparable aux autres stratégies du cours.
+# MACD — SCALPING 1 m, multi-TF, long/short (même patron que sma_croisement.py).
+#   MACD = EMA(12) - EMA(26) ; signal = EMA(9) du MACD ; croisement = changement de
+#   signe de l'histogramme (MACD - signal). Plus réactif que le croisement de SMA.
+#   - Entrée : croisement MACD 1 m, filtré par le régime 5 m (SMA échantillonnée à 5 min).
+#   - Sortie : croisement inverse OU stop protecteur (~0,5 %). Long ET short.
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
-RAPIDE, LENTE, SIGNAL = 12, 26, 9      # réglages classiques du MACD
+RAPIDE, LENTE, SIGNAL = 12, 26, 9      # MACD classique (option plus nerveuse : 5, 13, 9)
+REGIME_5M = 50                         # SMA de régime sur barres 5 m (≈ 4 h)
+STOP_PCT = 0.005                       # stop protecteur 0,5 %
 
 
 class BtcUsdt1m(PythonData):
@@ -66,56 +66,84 @@ class Macd(QCAlgorithm):
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
-        # ── NOUVEAU : le MACD, nourri à la main. On mémorise le signe précédent de
-        # l'histogramme (MACD - signal) pour détecter le CROISEMENT (comme diff_prec
-        # dans sma_croisement.py, mais entre le MACD et sa propre ligne de signal).
+        # MACD 1 m (croisement via signe de l'histogramme) + régime 5 m (comme SMA)
         self.macd = MovingAverageConvergenceDivergence(RAPIDE, LENTE, SIGNAL,
                                                         MovingAverageType.EXPONENTIAL)
         self.hist_prec = None
+        self.sma_regime = SimpleMovingAverage(REGIME_5M)
+        self.dernier_close_5m = None
 
+        self.prix_entree = None
         self.nb_trades = 0
         self.frais_totaux = 0.0
         self.premier_close = None
         self.dernier_close = None
 
+    def _regime(self):
+        """+1 haussier, -1 baissier, 0 pas prêt."""
+        if not self.sma_regime.is_ready or self.dernier_close_5m is None:
+            return 0
+        return 1 if self.dernier_close_5m > self.sma_regime.current.value else -1
+
     def on_data(self, data: Slice):
         if self.btc not in data:
             return
-        close = float(data[self.btc].value)
+        bar = data[self.btc]
+        close = float(bar.value)
         if self.premier_close is None:
             self.premier_close = close
         self.dernier_close = close
 
-        self.macd.update(data[self.btc].end_time, close)
+        # Régime 5 m : échantillon aux bornes de 5 min
+        if bar.end_time.minute % 5 == 0:
+            self.dernier_close_5m = close
+            self.sma_regime.update(bar.end_time, close)
+
+        self.macd.update(bar.end_time, close)
         if not self.macd.is_ready:
             return
 
+        # Stop protecteur d'abord (extrême intra-barre, fill au close)
+        pos = self.portfolio[self.btc]
+        if pos.invested and self.prix_entree is not None:
+            bas, haut = float(bar["low"]), float(bar["high"])
+            if pos.is_long and bas <= self.prix_entree * (1 - STOP_PCT):
+                self.liquidate(self.btc); self.prix_entree = None
+            elif pos.is_short and haut >= self.prix_entree * (1 + STOP_PCT):
+                self.liquidate(self.btc); self.prix_entree = None
+
+        # Croisement MACD (signe de l'histogramme), filtré par le régime 5 m
         hist = float(self.macd.current.value) - float(self.macd.signal.current.value)
+        regime = self._regime()
         if self.hist_prec is not None:
-            croise_haut = self.hist_prec <= 0 and hist > 0   # MACD passe AU-DESSUS du signal
-            croise_bas = self.hist_prec >= 0 and hist < 0    # MACD passe EN-DESSOUS
-            if croise_haut and not self.portfolio[self.btc].invested:
-                self.set_holdings(self.btc, 1.0)
-            elif croise_bas and self.portfolio[self.btc].invested:
-                self.liquidate(self.btc)
+            croise_haut = self.hist_prec <= 0 and hist > 0
+            croise_bas = self.hist_prec >= 0 and hist < 0
+            if croise_haut:
+                if regime > 0 and not pos.is_long:
+                    self.set_holdings(self.btc, 1.0)
+                elif pos.is_short:
+                    self.liquidate(self.btc); self.prix_entree = None
+            elif croise_bas:
+                if regime < 0 and not pos.is_short:
+                    self.set_holdings(self.btc, -1.0)
+                elif pos.is_long:
+                    self.liquidate(self.btc); self.prix_entree = None
         self.hist_prec = hist
 
     def on_order_event(self, event: OrderEvent):
         if event.status == OrderStatus.FILLED:
             self.nb_trades += 1
             self.frais_totaux += float(event.order_fee.value.amount)
+            if self.portfolio[self.btc].invested:
+                self.prix_entree = float(event.fill_price)
             sens = "ACHAT " if event.fill_quantity > 0 else "VENTE "
-            self.log(f"TRADE {self.nb_trades:>2} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
-                     f"MACD={self.macd.current.value:+.1f} signal={self.macd.signal.current.value:+.1f} | "
+            self.log(f"TRADE {self.nb_trades:>3} {sens}{event.utc_time:%Y-%m-%d %H:%M} UTC | "
                      f"qté={event.fill_quantity:+.8f} @ {event.fill_price} | "
                      f"frais={event.order_fee.value.amount:.2f} $")
 
     def on_end_of_algorithm(self):
         equite = float(self.portfolio.total_portfolio_value)
         rendement_strat = equite / CAPITAL - 1
-        rendement_bh = self.dernier_close / self.premier_close - 1
-        self.log(f"--- BILAN MACD ({RAPIDE},{LENTE},{SIGNAL}) ---")
+        self.log(f"--- BILAN MACD ({RAPIDE},{LENTE},{SIGNAL}) 1 m, régime 5 m, long/short ---")
         self.log(f"Trades exécutés : {self.nb_trades} | frais totaux : {self.frais_totaux:.2f} $")
         self.log(f"Équité finale : {equite:.2f} $ | rendement stratégie : {rendement_strat:+.4%}")
-        self.log(f"Buy & Hold (close/close) : {rendement_bh:+.4%} | "
-                 f"écart stratégie - B&H : {rendement_strat - rendement_bh:+.4%}")
