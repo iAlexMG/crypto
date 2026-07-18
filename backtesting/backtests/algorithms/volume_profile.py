@@ -1,6 +1,6 @@
 # Volume profile PAR SESSION + analyse des volumes sur BTCUSDT.
 # DEUX flux de données custom dans le même algo :
-#   - le prix (1H.csv, lecteur validé des leçons précédentes) ;
+#   - le prix (1m.csv, lecteur validé des leçons précédentes) ;
 #   - les features de profil (features_vp.csv : session, barres, delta, POC/VAH/VAL du
 #     profil de la session EN COURS — Asia/London/NY, heure de New York — développé
 #     barre par barre), reconstruites par backtests/volume_profile_features.py.
@@ -14,8 +14,8 @@ from AlgorithmImports import *
 from datetime import datetime, timedelta
 
 # ── Mêmes constantes / même source de vérité que les autres leçons
-DATA_FILE = "F:/data/ohlcv/BTCUSDT-um/1H.csv"
-VP_FILE = "F:/data/ohlcv/BTCUSDT-um/features_vp.csv"
+DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
+VP_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
 
@@ -31,7 +31,7 @@ MIN_BARRES = 3           # pas d'entrée avant la 3e barre d'une session (profil
 TRICHE_LOOKAHEAD = False # ⚠️ falsification leçon 09 : livrer le profil 1 h TROP TOT
 
 
-class BtcUsdtHourly(PythonData):
+class BtcUsdt1m(PythonData):
     """Lecteur prix validé (donnees.py), inchangé."""
 
     def get_source(self, config, date, is_live):
@@ -41,7 +41,7 @@ class BtcUsdtHourly(PythonData):
         if not line or not line[0].isdigit():
             return None
         cols = line.split(",")
-        bar = BtcUsdtHourly()
+        bar = BtcUsdt1m()
 
 
 
@@ -51,7 +51,7 @@ class BtcUsdtHourly(PythonData):
         bar.symbol = config.symbol
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open
-        bar.end_time = t_open + timedelta(hours=1)
+        bar.end_time = t_open + timedelta(minutes=1)
         bar.value = float(cols[4])
         bar["open"] = float(cols[1])
         bar["high"] = float(cols[2])
@@ -82,7 +82,7 @@ class VpFeatures(PythonData):
         bar.symbol = config.symbol
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open
-        bar.end_time = t_open if TRICHE_LOOKAHEAD else t_open + timedelta(hours=1)
+        bar.end_time = t_open if TRICHE_LOOKAHEAD else t_open + timedelta(minutes=1)
         bar.value = float(cols[4])        # POC (value obligatoire, jamais de NaN)
         bar["session"] = cols[1]          # asia | london | ny | hors
         bar["barres"] = float(cols[2])    # ancienneté du profil dans la session
@@ -116,8 +116,8 @@ class VolumeProfile(QCAlgorithm):
         proprietes = SymbolProperties("BTCUSDT perpetuel USDS-M", "USD", 1,
                                       0.1, 0.00000001, "BTCUSDT")
         heures = SecurityExchangeHours.always_open(TimeZones.UTC)
-        securite = self.add_data(BtcUsdtHourly, "BTCUSDT", proprietes, heures,
-                                 Resolution.HOUR)
+        securite = self.add_data(BtcUsdt1m, "BTCUSDT", proprietes, heures,
+                                 Resolution.MINUTE)
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
@@ -128,7 +128,7 @@ class VolumeProfile(QCAlgorithm):
                                     0.1, 0.00000001, "BTCVP")
         self.vp = self.add_data(VpFeatures, "BTCVP", props_vp,
                                 SecurityExchangeHours.always_open(TimeZones.UTC),
-                                Resolution.HOUR).symbol
+                                Resolution.MINUTE).symbol
 
         # EMA du delta tenue à la main (lissage standard 2/(N+1)) : l'analyse des volumes.
         # ⚠️ ne PAS l'appeler self.alpha : `alpha` est une propriété .NET de QCAlgorithm

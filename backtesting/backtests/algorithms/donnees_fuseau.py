@@ -3,11 +3,11 @@
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
-# ── Adapte ce chemin à ta machine : la source de vérité OHLCV 1H du pipeline
-DATA_FILE = "F:/data/ohlcv/BTCUSDT-um/1H.csv"
+# ── Adapte ce chemin à ta machine : la source de vérité OHLCV 1m du pipeline
+DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 
 
-class BtcUsdtHourly(PythonData):
+class BtcUsdt1m(PythonData):
     """Lecteur custom : une ligne du CSV -> une barre LEAN.
 
     Contrat du CSV : time = OUVERTURE de la barre, ISO UTC (…+00:00) ;
@@ -24,13 +24,13 @@ class BtcUsdtHourly(PythonData):
             return None
         cols = line.split(",")
 
-        bar = BtcUsdtHourly()
+        bar = BtcUsdt1m()
         bar.symbol = config.symbol
         # '2026-01-01 00:00:00+00:00' -> datetime naïf ; add_data(..., TimeZones.UTC)
         # dira à LEAN de l'interpréter en UTC (PIÈGE : défaut = heure de New York !)
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open                          # ouverture de la barre
-        bar.end_time = t_open + timedelta(hours=1)  # clôture = moment où on_data la reçoit
+        bar.end_time = t_open + timedelta(minutes=1)  # clôture = moment où on_data la reçoit
         bar.value = float(cols[4])                  # close = valeur de référence
         bar["open"] = float(cols[1])
         bar["high"] = float(cols[2])
@@ -54,7 +54,7 @@ class DonneesFuseau(QCAlgorithm):
         self.set_cash(100_000)
 
         # LE point critique : TOUT en UTC — l'horloge de l'algo ET la donnée custom
-        self.btc = self.add_data(BtcUsdtHourly, "BTCUSDT", Resolution.HOUR,
+        self.btc = self.add_data(BtcUsdt1m, "BTCUSDT", Resolution.MINUTE,
                                  TimeZones.UTC).symbol
 
         self.attendu_premier = premier   # pour le bilan de fin
@@ -68,7 +68,7 @@ class DonneesFuseau(QCAlgorithm):
             return
         bar = data[self.btc]
         self.bars += 1
-        if self.derniere_barre is not None and (bar.time - self.derniere_barre) != timedelta(hours=1):
+        if self.derniere_barre is not None and (bar.time - self.derniere_barre) != timedelta(minutes=1):
             self.log(f"TROU ! saut de {self.derniere_barre:%Y-%m-%d %H:%M} "
                      f"a {bar.time:%Y-%m-%d %H:%M}")
         if self.bars <= 3:   # les 3 premières barres : inspection visuelle du contrat

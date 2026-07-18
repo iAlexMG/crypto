@@ -5,7 +5,7 @@
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
-DATA_FILE = "F:/data/ohlcv/BTCUSDT-um/1H.csv"
+DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004      # 0,04 % Binance USDⓈ-M — LA constante de frais de la formation
 CAPITAL = 100_000
 PERIODE_RSI = 14          # période classique du RSI (14 barres)
@@ -13,7 +13,7 @@ SURVENTE = 30             # RSI < 30 = survente -> on ACHÈTE (pari de rebond)
 SURACHAT = 70             # RSI > 70 = surachat -> on VEND (pari de repli)
 
 
-class BtcUsdtHourly(PythonData):
+class BtcUsdt1m(PythonData):
     """Lecteur custom validé (donnees.py), inchangé : une ligne du CSV -> une barre LEAN."""
 
     def get_source(self, config, date, is_live):
@@ -23,11 +23,11 @@ class BtcUsdtHourly(PythonData):
         if not line or not line[0].isdigit():
             return None
         cols = line.split(",")
-        bar = BtcUsdtHourly()
+        bar = BtcUsdt1m()
         bar.symbol = config.symbol
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open
-        bar.end_time = t_open + timedelta(hours=1)
+        bar.end_time = t_open + timedelta(minutes=1)
         bar.value = float(cols[4])
         bar["open"] = float(cols[1])
         bar["high"] = float(cols[2])
@@ -60,8 +60,8 @@ class RsiRetourMoyenne(QCAlgorithm):
         proprietes = SymbolProperties("BTCUSDT perpetuel USDS-M", "USD", 1,
                                       0.1, 0.00000001, "BTCUSDT")
         heures = SecurityExchangeHours.always_open(TimeZones.UTC)
-        securite = self.add_data(BtcUsdtHourly, "BTCUSDT", proprietes, heures,
-                                 Resolution.HOUR)
+        securite = self.add_data(BtcUsdt1m, "BTCUSDT", proprietes, heures,
+                                 Resolution.MINUTE)
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 

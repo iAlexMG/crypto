@@ -2,7 +2,7 @@
 # et l'ancrer sur les VRAIES enchères.
 #
 # Une barre OHLCV ne connaît que le volume TOTAL de l'heure -> retour aux ticks
-# (F:/data/BTCUSDT-um.db, streaming, jamais ~328 M de lignes en RAM). Et un profil
+# (H:/Crypto/historique/BTCUSDT-binance-perp-api.db, streaming, jamais tout en RAM). Et un profil
 # « journalier » 00:00-23:59 UTC serait un ancrage ARBITRAIRE : il mélange des enchères
 # distinctes. Les ancres qui comptent sont les SESSIONS (définies en heure de New York,
 # donc SENSIBLES au passage à l'heure d'été — zoneinfo s'en charge) :
@@ -18,7 +18,11 @@
 # ⚠️ Les bornes NY tombent en MILIEU de barre 1H UTC (09:30 NY = 13:30 ou 14:30 UTC) :
 # les ticks sont agrégés en sous-briques de 30 min -> frontières de session EXACTES.
 #
-# Produit F:/data/ohlcv/BTCUSDT-um/features_vp.csv, UNE ligne par barre 1H :
+# Produit H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv, UNE ligne par barre 1H :
+# ⚠️ CADENCE ENCORE HORAIRE (sous-briques 30 min -> 1 ligne/heure). Le passage au 1m
+#    scalping demande une REFONTE de la cadence (sous-briques 1 min, 1 ligne/minute) :
+#    sous-tâche VP dédiée, pas un simple swap de chemin. En attendant, la VP tourne avec
+#    des niveaux mis à jour à l'heure sur un prix lu à la minute (hybride assumé).
 #   time    = ouverture de barre (ISO UTC, même contrat que 1H.csv)
 #   session = asia | london | ny | hors (session active à la CLÔTURE de la barre)
 #   barres  = nombre de barres écoulées dans la session (1 = première clôture)
@@ -41,8 +45,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backtests.sessions import bornes_sessions   # définition UNIQUE des sessions (heure NY)
 
-DB = "F:/data/BTCUSDT-um.db"
-SORTIE = "F:/data/ohlcv/BTCUSDT-um/features_vp.csv"
+DB = "H:/Crypto/historique/BTCUSDT-binance-perp-api.db"
+SORTIE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/features_vp.csv"
 TICK_PRIX = 25.0        # taille d'un niveau de prix (USDT)
 DEMI_MS = 1_800_000     # sous-brique de 30 min : la précision des bornes de session
 HEURE_MS = 3_600_000

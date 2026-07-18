@@ -10,7 +10,7 @@
 from AlgorithmImports import *
 from datetime import datetime, timedelta
 
-DATA_FILE = "F:/data/ohlcv/BTCUSDT-um/1H.csv"
+DATA_FILE = "H:/Crypto/historique/ohlcv/BTCUSDT-um/1m.csv"
 FRAIS_TAKER = 0.0004
 CAPITAL = 100_000
 PERIODE_TENDANCE = 200      # SMA de régime (~8 jours en barres 1 h)
@@ -22,7 +22,7 @@ TAKE_MULT = 4.0             # take-profit : entrée + 4 x ATR (risque/rendement 
 RISQUE_PAR_TRADE = 0.01     # 1 % du capital risqué par position
 
 
-class BtcUsdtHourly(PythonData):
+class BtcUsdt1m(PythonData):
     """Lecteur custom validé (donnees.py), inchangé."""
 
     def get_source(self, config, date, is_live):
@@ -32,11 +32,11 @@ class BtcUsdtHourly(PythonData):
         if not line or not line[0].isdigit():
             return None
         cols = line.split(",")
-        bar = BtcUsdtHourly()
+        bar = BtcUsdt1m()
         bar.symbol = config.symbol
         t_open = datetime.strptime(cols[0][:19], "%Y-%m-%d %H:%M:%S")
         bar.time = t_open
-        bar.end_time = t_open + timedelta(hours=1)
+        bar.end_time = t_open + timedelta(minutes=1)
         bar.value = float(cols[4])
         bar["open"] = float(cols[1])
         bar["high"] = float(cols[2])
@@ -69,8 +69,8 @@ class StrategieAvancee(QCAlgorithm):
         proprietes = SymbolProperties("BTCUSDT perpetuel USDS-M", "USD", 1,
                                       0.1, 0.00000001, "BTCUSDT")
         heures = SecurityExchangeHours.always_open(TimeZones.UTC)
-        securite = self.add_data(BtcUsdtHourly, "BTCUSDT", proprietes, heures,
-                                 Resolution.HOUR)
+        securite = self.add_data(BtcUsdt1m, "BTCUSDT", proprietes, heures,
+                                 Resolution.MINUTE)
         securite.set_fee_model(FraisTakerBinance())
         self.btc = securite.symbol
 
@@ -119,7 +119,7 @@ class StrategieAvancee(QCAlgorithm):
         self.rsi.update(t, close)
         self.macd.update(t, close)
         tb = TradeBar(bar.time, self.btc, float(bar["open"]), float(bar["high"]),
-                      float(bar["low"]), close, float(bar["volume"]), timedelta(hours=1))
+                      float(bar["low"]), close, float(bar["volume"]), timedelta(minutes=1))
         self.atr.update(tb)
         if not (self.tendance.is_ready and self.rsi.is_ready
                 and self.macd.is_ready and self.atr.is_ready):
