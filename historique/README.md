@@ -168,20 +168,19 @@ extension de la base** :
 
 ```bash
 python historique\candles.py                       # 0) contrôle visuel de la base (ce dossier)
-python backtests\normalize.py                      # 1) source de vérité OHLCV -> ohlcv\BTCUSDT-um\{1H,4H,D}.csv
-python backtests\volume_profile.py --start 2026-01-01 --end 2026-07-01 --features --zone session:13:30-20:00
-                                                   # 2) features footprint/VP (si stratégies à features)
-python backtests\lean\sync_spec.py <strategie> ... # 3) rafraîchit le CSV monté par LEAN + config
-python backtests\check_causality.py                # 4) garde-fou parité (prefix-stability)
+python historique\candles.py --tf 1m --csv data\ohlcv\BTCUSDT-um
+                                                   # 1) OHLCV 1 min (les algos lisent ohlcv\BTCUSDT-um\1m.csv)
+python backtesting\backtests\volume_profile_features.py
+                                                   # 2) features VP cadence 1 min -> ohlcv\BTCUSDT-um\features_vp.csv
 ```
 
-> ⚠️ Les scripts de `backtesting/` référencent encore `F:/data` en dur (base de ticks et
-> sorties OHLCV). Depuis le rapatriement, la base de ticks est `historique\data\BTCUSDT-binance-perp-api.db` :
-> pointer ces constantes dessus (ou les migrer) à la prochaine régénération.
+> Toutes les constantes en aval (algos LEAN, features VP, scripts de figures de la
+> formation — déménagée dans `Portfolio/Formations/Trading`) pointent sur
+> `H:\Crypto\historique\` depuis le 2026-07-19 — le même contenu que
+> `historique\data\` (jonction NTFS vers H:).
 
-L'ordre compte : `normalize.py` lit la base de ticks, `volume_profile.py` aussi (ajuster
-`--start/--end` à la plage réellement extraite), `sync_spec.py` joint les deux dans le CSV
-que consomme le conteneur LEAN.
+L'ordre compte : les features VP lisent la base de ticks, les algos LEAN lisent le
+CSV 1 min.
 
 ## Validation visuelle des chandelles (`candles.py --chart`)
 
