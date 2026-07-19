@@ -5,15 +5,6 @@ backtests/lean/
 __pycache__/
 *.pyc
 
-# Sorties brutes des balayages de paramètres (reconstructibles via run_grid.py) :
-# un dossier LEAN complet par combinaison.
-formation/01-lean/scripts/runs/
-# Figures EXPLORATOIRES des outils (heatmaps/HTML par métrique, IS/OOS ad hoc) :
-# reconstructibles ; les CSV mesurés (results/*.csv) et les figures des leçons
-# (assets/images/lecon-*.png) sont, eux, versionnés.
-formation/01-lean/scripts/results/*.png
-formation/01-lean/scripts/results/*.html
-
 # Sorties de compilation .NET
 bin/
 obj/

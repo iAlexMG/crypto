@@ -189,8 +189,8 @@ def png_profil_jour(briques, jour: str, tick: float) -> None:
     ax.legend(loc="upper right", fontsize=9)
     ax.grid(alpha=0.2)
     fig.tight_layout()
-    out = Path(__file__).resolve().parents[1] / \
-        "formation/01-lean/assets/images/lecon-09-volume-profile-jour.png"
+    out = Path(__file__).resolve().parents[3] / \
+        "Formations/Trading/01-lean/assets/images/lecon-09-volume-profile-jour.png"
     fig.savefig(out, dpi=150, facecolor="white")
     print(f"PNG concept -> {out} (POC {poc:,.0f} · VAH {vah:,.0f} · VAL {val:,.0f})")
 
