@@ -1,0 +1,6 @@
+# Secrets : clés API démo/réel Bitget — JAMAIS committées (voir credentials.local.json)
+credentials*
+!credentials*.example.json
+
+# Journaux de décisions (NDJSON, régénérables) — comme le pilier indices
+journaux/
