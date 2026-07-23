@@ -34,8 +34,9 @@ Cadrage confirmé par l'utilisateur : **POC de la chaîne d'exécution** (pas la
 - 🔬 **`sonde/sonde_bitget.py`** — sonde SIGNÉE, **read-only** : a **figé le triplet démo**
   (voir ci-dessous).
 - 🧰 **`bitget_trading.py`** (étape B) — client de trading signé : compte/positions/specs/ticker,
-  levier/mode, **ordre market + SL/TP attachés**, `close_all` (kill switch), `cancel_all`,
-  `modify_tpsl`. **🔒 garde démo codée en dur** (refuse le réel sans `allow_real=True`).
+  levier/mode, **ordre market + SL/TP attachés**, `close_all` (kill switch), `cancel_all`, et le
+  **stop suiveur serveur** de H2 (`plan_sl_orderid` + `modify_position_sl` = `modify-tpsl-order`
+  sur le `loss_plan`). **🔒 garde démo codée en dur** (refuse le réel sans `allow_real=True`).
 - 🧪 **`placer_ordre_demo.py`** — test « 1 ordre + bracket » sur démo. ✅ **VALIDÉ live le
   2026-07-22** : ordre `filled`, bracket SL/TP attaché, position lisible puis refermée.
 - 🤖 **`runner_sma.py`** (étape C1) — le RUNNER : **SMA 9/21 cross sur données Binance →

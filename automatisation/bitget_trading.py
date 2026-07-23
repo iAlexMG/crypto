@@ -173,14 +173,31 @@ class BitgetTrading:
             body["clientOid"] = client_oid
         return self._request("POST", "/api/v2/mix/order/place-order", body=body)
 
-    def modify_tpsl(self, symbol, order_id, sl=None, tp=None):
-        """Ajuste le SL/TP d'un ordre attaché (pour le stop suiveur = H2 des indices)."""
-        body = {"symbol": symbol, "productType": self.product, "orderId": str(order_id)}
-        if sl is not None:
-            body["presetStopLossPrice"] = str(self.round_price(symbol, sl))
-        if tp is not None:
-            body["presetStopSurplusPrice"] = str(self.round_price(symbol, tp))
-        return self._request("POST", "/api/v2/mix/order/modify-order", body=body)
+    def plan_sl_orderid(self, symbol):
+        """orderId du plan STOP-LOSS de position (planType 'loss_plan') en attente — celui que
+        crée `presetStopLossPrice` à l'entrée. None s'il n'y en a pas. Sert le stop suiveur H2 :
+        on récupère l'orderId, puis on le DÉPLACE via modify_position_sl (l'orderId est stable
+        d'une modif à l'autre — mesuré sur la démo)."""
+        d = self._request("GET", "/api/v2/mix/order/orders-plan-pending",
+                         {"productType": self.product, "planType": "profit_loss", "symbol": symbol})
+        lst = ((d or {}).get("entrustedList") if isinstance(d, dict) else d) or []
+        for o in lst:
+            if o.get("planType") == "loss_plan":
+                return o.get("orderId")
+        return None
+
+    def modify_position_sl(self, symbol, order_id, trigger_price, size, trigger_type="mark_price"):
+        """DÉPLACE le stop-loss de position (loss_plan) CÔTÉ SERVEUR = le vrai stop suiveur H2.
+        En one-way (position NETTE), place-tpsl-order/pos_loss échoue en 43011 (pas de holdSide
+        sur une position nette, mesuré) → on MODIFIE le plan existant par son orderId. Bitget
+        EXIGE `size` et `executePrice` ici (0 = exécution au marché) — sinon 400172 « Order
+        quantity cannot be empty »."""
+        return self._request("POST", "/api/v2/mix/order/modify-tpsl-order",
+                             body={"orderId": str(order_id), "marginCoin": self.margin_coin,
+                                   "productType": self.product, "symbol": symbol,
+                                   "triggerType": trigger_type,
+                                   "triggerPrice": str(self.round_price(symbol, trigger_price)),
+                                   "size": str(self.round_size(symbol, size)), "executePrice": "0"})
 
     def close_all(self, symbol: str | None = None, hold_side: str | None = None):
         """Flat / kill switch : ferme la/les position(s) au marché."""

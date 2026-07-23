@@ -1,219 +1,201 @@
-# runner_sma.py — ÉTAPE C du POC : le RUNNER. Signal SMA cross sur données BINANCE →
-# exécution sur BITGET démo (ordre market + bracket SL/TP). Pendant crypto du H1 des indices
-# (SMA 9/21, bracket SL 1,5×ATR / TP 1R). Objectif = prouver la CHAÎNE (pas la rentabilité).
+# runner_sma.py — RUNNER LIVE des 3 hybrides (H1/H2/H3), via le moteur PARTAGÉ hybrides.py
+# (identique aux jumeaux des indices). Signal SMA cross sur données BINANCE → exécution sur
+# BITGET démo. Objectif = prouver la CHAÎNE des 3 stratégies (pas la rentabilité).
 #
-# Deux modes (comme les indices) :
-#   défaut = SHADOW : calcule les croisements + journalise, N'ENVOIE AUCUN ORDRE ;
-#   --go            = exécute sur la DÉMO Bitget (paptrading) via bitget_trading.
+# Modes (comme les indices) :
+#   défaut = SHADOW : le moteur SIMULE tout (SL/TP/suiveur/annulation), journalise, AUCUN ordre ;
+#   --go            = exécute sur la DÉMO Bitget : le bracket SL/TP est SERVEUR ; le moteur pilote
+#                     l'entrée, le stop suiveur (H2, modif serveur) et la sortie au croisement
+#                     inverse (H2/H3, close) ; la fermeture SL/TP est constatée via le compte.
 #
-# Garde-fous : DÉMO uniquement (le client refuse le réel) ; taille bornée ; cooldown ;
-# kill switch (Ctrl-C → flat + journal). Le pont basis / garde-fou dislocation viendront
-# en C2 (ici on prouve d'abord le squelette signal→ordre→bracket→gestion).
+# Garde-fous : DÉMO uniquement, garde-fou dislocation (refuse l'entrée), kill switch Ctrl-C.
 #
 # Usage :
-#   python runner_sma.py                 # SHADOW (aucun ordre), journalise les signaux
-#   python runner_sma.py --go            # exécute sur la démo Bitget
-#   python runner_sma.py --go --size 0.0002
+#   python runner_sma.py --strategie h1                 # SHADOW, H1
+#   python runner_sma.py --strategie h2 --go            # exécute H2 (suiveur) sur la démo
+#   python runner_sma.py --strategie h3 --go --rapide 3 --lente 9   # démo rapide
 from __future__ import annotations
 
 import argparse
 import json
 import time
-import urllib.request
 import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 import basis_dislocation
+from hybrides import MoteurHybride, CONFIGS, SMA_RAPIDE, SMA_LENTE
 
-BINANCE = "https://fapi.binance.com/fapi/v1/klines"   # USDT-M perp, données de RÉFÉRENCE
-SYMBOL_BINANCE = "BTCUSDT"
-SYMBOL_BITGET = "BTCUSDT"
-SMA_RAPIDE, SMA_LENTE, ATR_N = 3, 9, 14   # 3/9 = croisements plus fréquents (démo « pour voir »)
-STOP_MULT, TP_R = 1.5, 1.0          # SL = 1,5×ATR (=R) ; TP = 1R  (identiques au H1 indices)
-COOLDOWN_S = 120
-JOURNAL_DIR = Path(__file__).resolve().parent / "journaux" / "sma_bitget"
+BINANCE = "https://fapi.binance.com/fapi/v1/klines"
+SYMBOL_BINANCE = SYMBOL_BITGET = "BTCUSDT"
+JOURNAL_BASE = Path(__file__).resolve().parent / "journaux"
 
 
 def klines_binance(limit=60):
-    """Bougies 1 m CLÔTURÉES (on retire la bougie en cours = dernière)."""
     url = f"{BINANCE}?" + urllib.parse.urlencode(
         {"symbol": SYMBOL_BINANCE, "interval": "1m", "limit": limit})
     with urllib.request.urlopen(url, timeout=10) as r:
-        rows = json.load(r)
-    return rows[:-1]     # la dernière est en cours de formation
-
-
-def sma(vals, n):
-    return sum(vals[-n:]) / n if len(vals) >= n else None
-
-
-def atr(highs, lows, closes, n):
-    if len(closes) < n + 1:
-        return None
-    trs = [max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
-           for i in range(1, len(closes))]
-    return sum(trs[-n:]) / n
+        return json.load(r)[:-1]        # retire la bougie en cours
 
 
 class Journal:
-    def __init__(self, mode):
-        JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
-        self.mode = mode
-        self._f = None
-        self._jour = None
+    def __init__(self, slug, mode):
+        self.dir = JOURNAL_BASE / slug
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.slug, self.mode = slug, mode
+        self._f = self._jour = None
 
-    def ecrire(self, evenement, **champs):
-        t = datetime.now(timezone.utc)
-        jour = t.date()
-        if jour != self._jour:
+    def ecrire(self, evenement, ts_ms, **champs):
+        t = datetime.fromtimestamp(ts_ms / 1000, timezone.utc)
+        if t.date() != self._jour:
             if self._f:
                 self._f.close()
-            self._jour = jour
-            self._f = open(JOURNAL_DIR / f"{jour:%Y-%m-%d}.ndjson", "a", encoding="utf-8")
-        rec = {"ts": t.isoformat(), "strategie": "sma_bitget", "symbole": SYMBOL_BITGET,
+            self._jour = t.date()
+            self._f = open(self.dir / f"{t.date():%Y-%m-%d}.ndjson", "a", encoding="utf-8")
+        rec = {"ts": t.isoformat(), "strategie": self.slug, "symbole": SYMBOL_BITGET,
                "mode": self.mode, "evenement": evenement, **champs}
         self._f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         self._f.flush()
-        detail = " ".join(f"{k}={v}" for k, v in champs.items()
-                          if k in ("raison", "prix", "sens", "sl", "tp"))
-        print(f"  [{t:%H:%M:%S}] {evenement} {detail}")
+        det = " ".join(f"{k}={v}" for k, v in champs.items()
+                       if k in ("raison", "prix", "sens", "sl", "tp", "code"))
+        print(f"  [{t:%H:%M:%S}Z] {evenement} {det}")
 
 
-def boucle(client, journal, size, go):
-    dernier_close = None
-    diff_prec = None
-    en_position = False
-    cooldown_jusqu = 0.0
-    print(f"Runner SMA {SMA_RAPIDE}/{SMA_LENTE} 1m — signal Binance → "
+def _position_ouverte(client):
+    return any(float(p.get("total", 0)) for p in client.positions(SYMBOL_BITGET))
+
+
+def lancer(strat, go, size, lever, rapide, lente):
+    from bitget_trading import BitgetTrading, BitgetError
+    cfg = CONFIGS[strat]
+    journal = Journal(cfg["slug"], "go" if go else "shadow")
+    client = None
+    if go:
+        client = BitgetTrading(demo=True)          # 🔒 démo
+        for lbl, fn in (("mode position", lambda: client.set_position_mode(True)),
+                        ("mode marge", lambda: client.set_margin_mode(SYMBOL_BITGET)),
+                        ("levier", lambda: client.set_leverage(SYMBOL_BITGET, lever))):
+            try:
+                fn()
+            except BitgetError as e:
+                print(f"  ({lbl}: {e})")
+
+    ref = {}   # accès au moteur depuis le callback
+
+    def emit(evenement, ts, **c):
+        moteur = ref["m"]
+        # garde-fou dislocation : à l'entrée, on peut refuser (shadow ET go).
+        if evenement == "entree":
+            try:
+                disloque, info = basis_dislocation.evaluer(SYMBOL_BITGET, SYMBOL_BINANCE)
+            except Exception as e:
+                disloque, info = False, {"raison": f"éval KO: {e}", "net_bps": None}
+            if disloque:
+                journal.ecrire("refuse", ts, raison=f"dislocation ({info['raison']})",
+                               net_bps=info.get("net_bps"))
+                moteur.annuler_entree(ts)
+                return
+        journal.ecrire(evenement, ts, **c)
+        if not go:
+            return
+        try:
+            if evenement == "entree":
+                side = "buy" if c["sens"] == "long" else "sell"
+                client.place_market(SYMBOL_BITGET, side, size, sl=c["sl"], tp=c.get("tp"),
+                                    client_oid=f"{strat}{int(time.time())}")
+                ref["sl_id"] = None            # orderId du loss_plan, résolu à la 1re modif (H2)
+            elif evenement == "stop_modifie" and strat == "h2":
+                # stop suiveur H2 : on DÉPLACE le SL de position (loss_plan) CÔTÉ SERVEUR
+                # (modify-tpsl-order sur son orderId — cf. bitget_trading.modify_position_sl).
+                if ref.get("sl_id") is None:
+                    ref["sl_id"] = client.plan_sl_orderid(SYMBOL_BITGET)
+                if ref.get("sl_id"):
+                    client.modify_position_sl(SYMBOL_BITGET, ref["sl_id"], c["prix"], size)
+                else:
+                    journal.ecrire("avert", ts, raison="loss_plan serveur introuvable — trailing sauté")
+            elif evenement == "sortie" and c.get("code") != "SLTP":
+                # croisement inverse (H2/H3) : le serveur ne l'a pas fait, on ferme au marché.
+                client.close_all(SYMBOL_BITGET)
+        except BitgetError as e:
+            if e.code == "22002":              # « No position to close » : le SL/TP serveur a déjà
+                journal.ecrire("info", ts, raison="déjà flat — SL/TP serveur a fermé avant le croisement")
+            else:
+                journal.ecrire("erreur", ts, raison=str(e))
+            if evenement == "entree":
+                moteur.annuler_entree(ts)
+            elif evenement == "stop_modifie":
+                ref["sl_id"] = None            # re-résoudre l'orderId au prochain coup
+
+    # En --go, les 3 stratégies laissent le SERVEUR gérer la touche SL/TP (le moteur ne la simule
+    # pas → fermeture_externe la constate). H2 : le moteur calcule le stop suiveur et le runner
+    # DÉPLACE le SL serveur (loss_plan) à chaque barre. En shadow : le moteur simule tout.
+    moteur = MoteurHybride(strat, rapide, lente, emit=emit, gerer_sl_tp=not go)
+    ref["m"] = moteur
+
+    print(f"Runner {strat.upper()} {cfg['nom']} — SMA {rapide}/{lente} 1m — Binance → "
           f"{'ORDRES démo Bitget' if go else 'SHADOW (aucun ordre)'}. Ctrl-C = flat + stop.\n")
-    journal.ecrire("demarrage", raison=f"SMA {SMA_RAPIDE}/{SMA_LENTE}, {'GO' if go else 'SHADOW'}")
+    journal.ecrire("demarrage", int(time.time() * 1000),
+                   raison=f"{cfg['nom']} SMA {rapide}/{lente}, {'GO' if go else 'SHADOW'}")
+
+    # amorçage : chauffer SMA + ATR sur l'historique fermé, SANS trader (amorce=True). Sinon l'ATR
+    # (14 barres) et la SMA lente ne sont prêts qu'après ~15 min de temps réel → les croisements du
+    # début sont ratés. On garde la dernière barre fermée pour la traiter en live juste après.
+    hist = klines_binance()
+    for k in hist[:-1]:
+        moteur.barre(int(k[0]) + 60_000, float(k[1]), float(k[2]), float(k[3]), float(k[4]), amorce=True)
+    dernier = hist[-2][6] if len(hist) >= 2 else None
+    d = moteur.dernier
+    print(f"  amorçage : {max(len(hist) - 1, 0)} barres chauffées — "
+          f"ATR={d and d['atr'] and round(d['atr'], 1)}, prêt à détecter les croisements.\n")
 
     while True:
         try:
             ks = klines_binance()
-            closes = [float(k[4]) for k in ks]
-            highs = [float(k[2]) for k in ks]
-            lows = [float(k[3]) for k in ks]
-            close_time = ks[-1][6]
-
-            # nouvelle bougie clôturée ?
-            if close_time != dernier_close and len(closes) >= SMA_LENTE + 1:
-                dernier_close = close_time
-                sr, sl_ = sma(closes, SMA_RAPIDE), sma(closes, SMA_LENTE)
-                diff = sr - sl_
-                a = atr(highs, lows, closes, ATR_N)
-                crois = 0
-                if diff_prec is not None:
-                    if diff_prec <= 0 < diff:
-                        crois = 1
-                    elif diff_prec >= 0 > diff:
-                        crois = -1
-                diff_prec = diff
-
-                # battement de cœur : l'état à chaque bougie (pour la regarder vivre).
-                etat = "EN POSITION" if en_position else "plat"
-                cote = "long" if diff >= 0 else "short"
-                proche = "  ← proche d'un croisement !" if a and abs(diff) < 0.3 * a else ""
-                print(f"  · {datetime.now(timezone.utc):%H:%M:%S}Z close={closes[-1]:.1f} "
-                      f"SMA{SMA_RAPIDE}={sr:.1f} SMA{SMA_LENTE}={sl_:.1f} écart={diff:+.1f} ({cote}) "
-                      f"ATR={a:.1f} | {etat}{proche}")
-
-                # si en position : le bracket gère (H1 ignore les croisements). On détecte le flat.
-                if en_position and go:
-                    if not any(float(p.get("total", 0)) for p in client.positions(SYMBOL_BITGET)):
-                        en_position = False
-                        cooldown_jusqu = time.time() + COOLDOWN_S
-                        journal.ecrire("sortie", raison="bracket refermé (SL/TP touché)")
-
-                if crois and not en_position and time.time() >= cooldown_jusqu and a:
-                    sens = "long" if crois > 0 else "short"
-                    try:
-                        disloque, info = basis_dislocation.evaluer(SYMBOL_BITGET, SYMBOL_BINANCE)
-                    except Exception as e:          # fail-open : un hoquet réseau ne masque pas le signal
-                        disloque, info = False, {"basis": None, "net_bps": None,
-                                                 "basis_bps": None, "raison": f"éval KO: {e}"}
-                    # niveaux qu'on POSERAIT (prix Bitget public → marche aussi en shadow).
-                    side, px, sl, tp = _niveaux(sens, a, closes[-1])
-                    journal.ecrire("signal", prix=round(closes[-1], 1), sens=sens,
-                                   raison=f"croisement {'haussier' if crois > 0 else 'baissier'} -> {sens}",
-                                   sma_rapide=round(sr, 1), sma_lente=round(sl_, 1), atr=round(a, 1),
-                                   basis=info["basis"])
-                    if disloque:                    # garde-fou : carnets croisés / basis anormal
-                        journal.ecrire("refuse", raison=f"dislocation ({info['raison']})",
-                                       net_bps=info["net_bps"], basis_bps=info["basis_bps"])
-                        cooldown_jusqu = time.time() + COOLDOWN_S
-                    elif go:
-                        _entrer(client, journal, side, sens, size, px, sl, tp)
-                        en_position = True
-                    else:                           # shadow : ordre SIMULÉ + bracket (dry-run fidèle)
-                        journal.ecrire("entree_shadow", prix=round(px, 1), sens=sens,
-                                       sl=round(sl, 1), tp=round(tp, 1),
-                                       raison=f"ordre simulé {side} + bracket (aucun ordre réel)")
-                        cooldown_jusqu = time.time() + COOLDOWN_S
-
+            # toutes les barres fermées postérieures à la dernière vue (en pratique 0 ou 1) : évite
+            # le trou possible à la frontière de minute entre l'amorçage et la 1re itération.
+            for k in [b for b in ks if dernier is None or b[6] > dernier]:
+                dernier = k[6]
+                ts_barre = int(k[0]) + 60_000
+                # --go : le SL/TP serveur a-t-il refermé la position depuis la dernière barre ? On
+                # resync le moteur AVANT sa logique — sinon il traillerait/fermerait une position
+                # fantôme (la sortie au croisement tenterait un close_all déjà fait -> 22002). Le
+                # cooldown post-sortie empêche une réentrée sur la barre même.
+                if go and moteur.pos != 0 and not _position_ouverte(client):
+                    moteur.fermeture_externe(ts_barre)
+                moteur.barre(ts_barre, float(k[1]), float(k[2]), float(k[3]), float(k[4]))
+                d = moteur.dernier
+                if d:
+                    etat = ("EN POSITION" if moteur.pos else "plat")
+                    proche = "  ← proche d'un croisement !" if d["atr"] and abs(d["diff"]) < 0.3 * d["atr"] else ""
+                    print(f"  · {datetime.now(timezone.utc):%H:%M:%S}Z close={d['close']:.1f} "
+                          f"SMA{rapide}={d['sr']:.1f} SMA{lente}={d['sl']:.1f} écart={d['diff']:+.1f} "
+                          f"ATR={d['atr'] and round(d['atr'],1)} | {etat}{proche}")
             time.sleep(10)
         except KeyboardInterrupt:
             print("\n⏹  Ctrl-C — kill switch.")
-            if go and en_position:
+            if go and moteur.pos != 0:
                 try:
                     client.close_all(SYMBOL_BITGET)
-                    journal.ecrire("kill", raison="Ctrl-C → flat")
                 except Exception as e:
                     print(f"  (close_all: {e})")
-            journal.ecrire("arret", raison="Ctrl-C")
+            journal.ecrire("arret", int(time.time() * 1000), raison="Ctrl-C")
             return
         except Exception as e:
             print(f"  ⚠ {type(e).__name__}: {e} — on réessaie dans 10 s")
             time.sleep(10)
 
 
-def _niveaux(sens, atr, close_repli):
-    """Prix d'entrée (mid Bitget public) + SL/TP (H1 : SL 1,5×ATR, TP 1R). Marche en shadow."""
-    try:
-        bid, ask = basis_dislocation.bitget_book(SYMBOL_BITGET)
-        px = (bid + ask) / 2
-    except Exception:
-        px = close_repli                       # repli : dernier close Binance
-    r = STOP_MULT * atr
-    if sens == "long":
-        return "buy", px, px - r, px + TP_R * r
-    return "sell", px, px + r, px - TP_R * r
-
-
-def _entrer(client, journal, side, sens, size, px, sl, tp):
-    from bitget_trading import BitgetError
-    try:
-        res = client.place_market(SYMBOL_BITGET, side, size, sl=sl, tp=tp,
-                                  client_oid=f"sma{int(time.time())}")
-        journal.ecrire("entree", prix=round(px, 1), sens=sens, sl=round(sl, 1), tp=round(tp, 1),
-                       raison=f"market {side} + bracket", order_id=res.get("orderId"))
-    except BitgetError as e:
-        journal.ecrire("erreur", raison=str(e))
-        print(f"  ⛔ ordre refusé : {e}")
-
-
 def main():
-    ap = argparse.ArgumentParser(description="Runner SMA cross Binance→Bitget démo (POC).")
+    ap = argparse.ArgumentParser(description="Runner live des 3 hybrides (Binance→Bitget démo).")
+    ap.add_argument("--strategie", choices=["h1", "h2", "h3"], default="h1")
     ap.add_argument("--go", action="store_true", help="exécuter sur la démo (sinon SHADOW)")
     ap.add_argument("--size", type=float, default=0.0001, help="taille en BTC (défaut 0,0001)")
-    ap.add_argument("--lever", type=int, default=5, help="levier (défaut 5)")
+    ap.add_argument("--lever", type=int, default=5)
+    ap.add_argument("--rapide", type=int, default=SMA_RAPIDE, help=f"SMA rapide (défaut {SMA_RAPIDE})")
+    ap.add_argument("--lente", type=int, default=SMA_LENTE, help=f"SMA lente (défaut {SMA_LENTE})")
     a = ap.parse_args()
-
-    client = None
-    if a.go:
-        from bitget_trading import BitgetTrading, BitgetError
-        client = BitgetTrading(demo=True)      # 🔒 démo
-        for label, fn in (("mode position", lambda: client.set_position_mode(True)),
-                          ("mode marge", lambda: client.set_margin_mode(SYMBOL_BITGET)),
-                          ("levier", lambda: client.set_leverage(SYMBOL_BITGET, a.lever))):
-            try:
-                fn()
-            except BitgetError as e:
-                print(f"  ({label}: {e})")
-
-    journal = Journal("go" if a.go else "shadow")
-    boucle(client, journal, a.size, a.go)
+    lancer(a.strategie, a.go, a.size, a.lever, a.rapide, a.lente)
 
 
 if __name__ == "__main__":
