@@ -1,26 +1,26 @@
 # hybrides.py — moteur PARTAGÉ des 3 stratégies hybrides, porté À L'IDENTIQUE des jumeaux
 # des indices (indicesBoursiers/backtesting/backtests/algorithms/sma_{bracket,suiveur,annule}_nq.py).
-# Déclencheur COMMUN : croisement SMA 9/21 sur closes 1 m. Les 3 ne diffèrent que par la GESTION :
+# Déclencheur COMMUN : croisement SMA 2/6 sur closes 1 m. Les 3 ne diffèrent que par la GESTION :
 #
-#   H1 SMA Bracket   : SL 1,5×ATR / TP 1R ; IGNORE les croisements en position (le bracket referme).
+#   H1 SMA Bracket   : SL 1,0×ATR / TP 1R ; IGNORE les croisements en position (le bracket referme).
 #   H2 SMA Suiveur   : SL 2×ATR, PAS de TP ; stop SUIVEUR (remonté chaque barre, ne recule jamais) ;
 #                      sortie sur stop OU croisement inverse.
-#   H3 SMA Annulation: SL 1,5×ATR / TP 2R ; sortie ANTICIPÉE au croisement inverse (annule le bracket).
+#   H3 SMA Annulation: SL 1,0×ATR / TP 2R ; sortie ANTICIPÉE au croisement inverse (annule le bracket).
 #
 # ATR = Wilder (comme LEAN), pour coller aux jumeaux des indices. Moteur PUR (aucun ordre) :
 # il émet des événements (signal/entree/stop_modifie/sortie) via un callback `emit`. Utilisé par
 # le backtest (jumeau_hybrides.py) ET par le runner live (shadow + go).
 from __future__ import annotations
 
-SMA_RAPIDE, SMA_LENTE, ATR_N = 9, 21, 14      # valeurs des indices
-COOLDOWN_S = 120
+SMA_RAPIDE, SMA_LENTE, ATR_N = 2, 6, 7        # recadrage 07-23 : SMA 2/6 + ATR 7 (plus d'action, vidéos courtes) ; identique aux indices
+COOLDOWN_S = 0                                # 0 = ré-entrée dès la barre suivante (décisions à la clôture 1 m : sous-minute impossible)
 
 # stop_mult ×ATR ; tp_r = multiple de R (=stop_mult×ATR), None si pas de TP ; suiveur ; sortie au
 # croisement inverse. (Repris tel quel des 3 jumeaux NQ.)
 CONFIGS = {
-    "h1": dict(slug="sma_bracket", nom="SMA Bracket",    stop_mult=1.5, tp_r=1.0,  suiveur=False, sortie_croix=False),
+    "h1": dict(slug="sma_bracket", nom="SMA Bracket",    stop_mult=1.0, tp_r=1.0,  suiveur=False, sortie_croix=False),
     "h2": dict(slug="sma_suiveur", nom="SMA Suiveur",    stop_mult=2.0, tp_r=None, suiveur=True,  sortie_croix=True),
-    "h3": dict(slug="sma_annule",  nom="SMA Annulation", stop_mult=1.5, tp_r=2.0,  suiveur=False, sortie_croix=True),
+    "h3": dict(slug="sma_annule",  nom="SMA Annulation", stop_mult=1.0, tp_r=2.0,  suiveur=False, sortie_croix=True),
 }
 
 
