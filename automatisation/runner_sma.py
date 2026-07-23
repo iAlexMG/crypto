@@ -29,7 +29,7 @@ import basis_dislocation
 BINANCE = "https://fapi.binance.com/fapi/v1/klines"   # USDT-M perp, données de RÉFÉRENCE
 SYMBOL_BINANCE = "BTCUSDT"
 SYMBOL_BITGET = "BTCUSDT"
-SMA_RAPIDE, SMA_LENTE, ATR_N = 9, 21, 14
+SMA_RAPIDE, SMA_LENTE, ATR_N = 3, 9, 14   # 3/9 = croisements plus fréquents (démo « pour voir »)
 STOP_MULT, TP_R = 1.5, 1.0          # SL = 1,5×ATR (=R) ; TP = 1R  (identiques au H1 indices)
 COOLDOWN_S = 120
 JOURNAL_DIR = Path(__file__).resolve().parent / "journaux" / "sma_bitget"
@@ -110,6 +110,14 @@ def boucle(client, journal, size, go):
                     elif diff_prec >= 0 > diff:
                         crois = -1
                 diff_prec = diff
+
+                # battement de cœur : l'état à chaque bougie (pour la regarder vivre).
+                etat = "EN POSITION" if en_position else "plat"
+                cote = "long" if diff >= 0 else "short"
+                proche = "  ← proche d'un croisement !" if a and abs(diff) < 0.3 * a else ""
+                print(f"  · {datetime.now(timezone.utc):%H:%M:%S}Z close={closes[-1]:.1f} "
+                      f"SMA{SMA_RAPIDE}={sr:.1f} SMA{SMA_LENTE}={sl_:.1f} écart={diff:+.1f} ({cote}) "
+                      f"ATR={a:.1f} | {etat}{proche}")
 
                 # si en position : le bracket gère (H1 ignore les croisements). On détecte le flat.
                 if en_position and go:
