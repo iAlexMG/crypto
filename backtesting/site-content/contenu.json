@@ -116,6 +116,13 @@
             "fr": "Le BTC baisse de 73 650 à 64 100 $ ; un seul aller-retour de frais.",
             "en": "BTC falls from $73,650 to $64,100; a single round trip of fees."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-buyhold.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "L'équité du contrat tenu 40 jours (−12,9 %), avec la frontière in / out-of-sample.", "en": "The equity of the contract held 40 days (−12.9%), with the in / out-of-sample boundary." }
         }
       ]
     },
@@ -164,6 +171,13 @@
             "fr": "Le croisement SMA 9/21 (barres 15 m) et les entrées long/short sur un zoom.",
             "en": "The SMA 9/21 crossover (15-minute bars) and long/short entries on a zoom."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-sma.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "−19,6 % : sous le plancher des deux côtés de la frontière — robuste, et robustement mauvais.", "en": "−19.6%: below the floor on both sides of the boundary — robust, and robustly bad." }
         },
         {
           "id": "fig-optim",
@@ -235,6 +249,13 @@
             "fr": "Le MACD face à son signal (barres 15 m) et les entrées sur un zoom.",
             "en": "The MACD against its signal (15-minute bars) and entries on a zoom."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-macd.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "−9,4 % : le gain de juin ne survit pas au hors-échantillon.", "en": "−9.4%: June's gain does not survive out-of-sample." }
         }
       ]
     },
@@ -288,6 +309,13 @@
             "fr": "Le RSI et ses seuils 30/70 (barres 3 m), fade filtré par le régime.",
             "en": "The RSI and its 30/70 thresholds (3-minute bars), regime-filtered fade."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-rsi.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "À l'équilibre (+0,3 %) : douze trades, une courbe presque plate.", "en": "Breakeven (+0.3%): twelve trades, a nearly flat curve." }
         }
       ]
     },
@@ -341,6 +369,13 @@
             "fr": "Les bandes ±2σ (barres 5 m) : un seuil qui respire avec la volatilité.",
             "en": "The ±2σ bands (5-minute bars): a threshold that breathes with volatility."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-bollinger.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "−2,6 % : proche du seuil, sans edge démontré.", "en": "−2.6%: near the threshold, no demonstrated edge." }
         }
       ]
     },
@@ -397,6 +432,13 @@
             "fr": "Même signal RSI, sorties dimensionnées à la volatilité (stops ATR).",
             "en": "Same RSI signal, exits sized to volatility (ATR stops)."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-risque.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "Quasi à plat (−0,4 %) : les stops ATR tiennent le drawdown.", "en": "Nearly flat (−0.4%): the ATR stops hold the drawdown." }
         }
       ]
     },
@@ -454,6 +496,13 @@
             "fr": "Régime, MACD et RSI concordants (barres 15 m) avant chaque entrée.",
             "en": "Regime, MACD and RSI in agreement (15-minute bars) before each entry."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-avancee.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "−3,0 % : le composite hérite de la signature du MACD, amortie par ses garde-fous.", "en": "−3.0%: the composite inherits the MACD's signature, dampened by its safeguards." }
         }
       ]
     },
@@ -501,6 +550,13 @@
             "fr": "Cassure de la value area (VAH/VAL) et faux breakouts, sur un zoom.",
             "en": "Value-area breaks (VAH/VAL) and false breakouts, on a zoom."
           }
+        },
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/equite-vp.png",
+          "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
+          "description": { "fr": "−17,8 % : la cassure de value area à la minute achète les faux breakouts.", "en": "−17.8%: minute-level value-area breaks buy the false breakouts." }
         },
         {
           "id": "fig-vp",
