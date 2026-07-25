@@ -161,6 +161,45 @@
             "fr": "En étoile autour du runner : Binance fournit les données 1 minute d'où naît le signal, le runner pilote la démo Bitget (ordre, bracket, stop suiveur) et écoute le compte en retour (position, fill, SL/TP touché), puis journalise chaque décision. Démo uniquement, garde codée en dur.",
             "en": "A star around the runner: Binance supplies the 1-minute data the signal is born from, the runner drives the Bitget demo (order, bracket, trailing stop) and listens back to the account (position, fill, SL/TP hit), then journals every decision. Demo only, hard-coded guard."
           }
+        },
+        {
+          "id": "fill-long",
+          "type": "figure",
+          "url": "assets/crypto/automatisation/img/fixe-a-fill-long.jpg",
+          "titre": {
+            "fr": "Fill long — la position et son stop",
+            "en": "Long fill — the position and its stop"
+          },
+          "description": {
+            "fr": "Entrée longue remplie sur la démo Bitget : position Long 5×, prix d'entrée 63 984,5, stop-loss attaché à 63 964,5 — sous l'entrée. La ligne de stop est visible sur le graphe.",
+            "en": "Long entry filled on the Bitget demo: Long 5× position, entry price 63,984.5, stop-loss attached at 63,964.5 — below the entry. The stop line shows on the chart."
+          }
+        },
+        {
+          "id": "fill-short",
+          "type": "figure",
+          "url": "assets/crypto/automatisation/img/fixe-b-fill-short.jpg",
+          "titre": {
+            "fr": "Fill short — le sens vendeur",
+            "en": "Short fill — the sell side"
+          },
+          "description": {
+            "fr": "Vente à découvert remplie : position Short 5×, entrée 63 952,5, stop-loss à 63 975,6 — au-dessus de l'entrée, comme attendu pour un short (le mode one-way ouvre un short depuis une position à plat).",
+            "en": "Short entry filled: Short 5× position, entry 63,952.5, stop-loss at 63,975.6 — above the entry, as expected for a short (one-way mode opens a short from flat)."
+          }
+        },
+        {
+          "id": "stop-suiveur",
+          "type": "figure",
+          "url": "assets/crypto/automatisation/img/fixe-c-stop-suiveur.jpg",
+          "titre": {
+            "fr": "Le stop suiveur retraîné",
+            "en": "The trailing stop, re-trailed"
+          },
+          "description": {
+            "fr": "Même short : le stop-loss, ouvert à 63 975,6 (image précédente), a été descendu marche par marche jusqu'à 63 957,2 par le suiveur — côté serveur, à chaque barre.",
+            "en": "Same short: the stop-loss, opened at 63,975.6 (previous image), was trailed step by step down to 63,957.2 by the follower — server-side, every bar."
+          }
         }
       ]
     },
