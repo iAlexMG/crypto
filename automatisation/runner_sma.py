@@ -31,6 +31,18 @@ BINANCE = "https://fapi.binance.com/fapi/v1/klines"
 SYMBOL_BINANCE = SYMBOL_BITGET = "BTCUSDT"
 JOURNAL_BASE = Path(__file__).resolve().parent / "journaux"
 
+# Cadence : on ne sonde plus toutes les 10 s (ça décalait la réaction de 0-10 s après la
+# clôture de la chandelle 1 m — stop suiveur qui « traînait »). On se CALE sur la frontière de
+# minute : réveil ~1 s après le close, avec une courte boucle de récupération si la barre fermée
+# tarde à être servie par Binance. Effet : le stop bouge ~1-2 s après la chandelle, pas 10-15 s.
+BUFFER_S = 1.0    # marge après :00 (le temps que la barre fermée soit servie)
+RETRIES = 6       # tentatives espacées de 1 s si la barre fermée tarde
+
+
+def secondes_avant_minute(buffer=BUFFER_S):
+    """Secondes jusqu'à la prochaine frontière de minute (+ marge)."""
+    return (60 - (time.time() % 60)) + buffer
+
 
 def klines_binance(limit=60):
     url = f"{BINANCE}?" + urllib.parse.urlencode(
@@ -59,7 +71,10 @@ class Journal:
         self._f.flush()
         det = " ".join(f"{k}={v}" for k, v in champs.items()
                        if k in ("raison", "prix", "sens", "sl", "tp", "code"))
-        print(f"  [{t:%H:%M:%S}Z] {evenement} {det}")
+        # journal en UTC (ci-dessus, non ambigu) ; AFFICHAGE en heure locale (Québec), pour coller
+        # à l'horloge de Bitget à l'écran. fromtimestamp() sans tz = heure locale de l'OS (DST géré).
+        t_local = datetime.fromtimestamp(ts_ms / 1000)
+        print(f"  [{t_local:%H:%M:%S}] {evenement} {det}")
 
 
 def _position_ouverte(client):
@@ -149,29 +164,47 @@ def lancer(strat, go, size, lever, rapide, lente):
     print(f"  amorçage : {max(len(hist) - 1, 0)} barres chauffées — "
           f"ATR={d and d['atr'] and round(d['atr'], 1)}, prêt à détecter les croisements.\n")
 
+    def traiter(ks):
+        """Traite toutes les barres fermées postérieures à la dernière vue (en pratique 0 ou 1) :
+        évite le trou possible à la frontière de minute. Renvoie le nombre de barres traitées
+        (0 = la barre fermée n'est pas encore servie par Binance)."""
+        nonlocal dernier
+        n = 0
+        for k in [b for b in ks if dernier is None or b[6] > dernier]:
+            dernier = k[6]
+            ts_barre = int(k[0]) + 60_000
+            # --go : le SL/TP serveur a-t-il refermé la position depuis la dernière barre ? On
+            # resync le moteur AVANT sa logique — sinon il traillerait/fermerait une position
+            # fantôme (la sortie au croisement tenterait un close_all déjà fait -> 22002). Le
+            # cooldown post-sortie empêche une réentrée sur la barre même.
+            if go and moteur.pos != 0 and not _position_ouverte(client):
+                moteur.fermeture_externe(ts_barre)
+            moteur.barre(ts_barre, float(k[1]), float(k[2]), float(k[3]), float(k[4]))
+            d = moteur.dernier
+            if d:
+                etat = ("EN POSITION" if moteur.pos else "plat")
+                proche = "  ← proche d'un croisement !" if d["atr"] and abs(d["diff"]) < 0.3 * d["atr"] else ""
+                # heure = clôture de la BARRE (locale), pas l'heure murale du traitement : la ligne
+                # s'aligne ainsi sur la chandelle du graphe (avant : now() en UTC → ~4 s de décalage
+                # apparent, l'illusion de « délai »).
+                print(f"  · {datetime.fromtimestamp(ts_barre / 1000):%H:%M:%S} close={d['close']:.1f} "
+                      f"SMA{rapide}={d['sr']:.1f} SMA{lente}={d['sl']:.1f} écart={d['diff']:+.1f} "
+                      f"ATR={d['atr'] and round(d['atr'],1)} | {etat}{proche}")
+            n += 1
+        return n
+
+    traiter(klines_binance())   # la dernière barre fermée depuis l'amorçage, traitée en direct
     while True:
         try:
-            ks = klines_binance()
-            # toutes les barres fermées postérieures à la dernière vue (en pratique 0 ou 1) : évite
-            # le trou possible à la frontière de minute entre l'amorçage et la 1re itération.
-            for k in [b for b in ks if dernier is None or b[6] > dernier]:
-                dernier = k[6]
-                ts_barre = int(k[0]) + 60_000
-                # --go : le SL/TP serveur a-t-il refermé la position depuis la dernière barre ? On
-                # resync le moteur AVANT sa logique — sinon il traillerait/fermerait une position
-                # fantôme (la sortie au croisement tenterait un close_all déjà fait -> 22002). Le
-                # cooldown post-sortie empêche une réentrée sur la barre même.
-                if go and moteur.pos != 0 and not _position_ouverte(client):
-                    moteur.fermeture_externe(ts_barre)
-                moteur.barre(ts_barre, float(k[1]), float(k[2]), float(k[3]), float(k[4]))
-                d = moteur.dernier
-                if d:
-                    etat = ("EN POSITION" if moteur.pos else "plat")
-                    proche = "  ← proche d'un croisement !" if d["atr"] and abs(d["diff"]) < 0.3 * d["atr"] else ""
-                    print(f"  · {datetime.now(timezone.utc):%H:%M:%S}Z close={d['close']:.1f} "
-                          f"SMA{rapide}={d['sr']:.1f} SMA{lente}={d['sl']:.1f} écart={d['diff']:+.1f} "
-                          f"ATR={d['atr'] and round(d['atr'],1)} | {etat}{proche}")
-            time.sleep(10)
+            # se caler sur la clôture de minute : réagir DÈS le close (au lieu d'un cycle fixe de
+            # 10 s qui décalait le stop suiveur de 10-15 s après la chandelle).
+            time.sleep(secondes_avant_minute())
+            # la barre fermée peut n'être servie que quelques centaines de ms après :00 → on
+            # réessaie brièvement plutôt que de la rater et d'attendre la minute suivante.
+            for _ in range(RETRIES):
+                if traiter(klines_binance()):
+                    break
+                time.sleep(1)
         except KeyboardInterrupt:
             print("\n⏹  Ctrl-C — kill switch.")
             if go and moteur.pos != 0:
