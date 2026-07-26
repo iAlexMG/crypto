@@ -24,6 +24,9 @@ logs/
 # Moteur LEAN cloné (reconstructible)
 backtesting/backtests/lean/
 
+# Notes de travail internes (jamais publiées)
+REPRISE*.md
+
 # Système
 Thumbs.db
 .DS_Store
