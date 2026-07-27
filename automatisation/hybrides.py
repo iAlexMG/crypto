@@ -1,6 +1,6 @@
 # hybrides.py — moteur PARTAGÉ des 3 stratégies hybrides, porté À L'IDENTIQUE des jumeaux
 # des indices (indicesBoursiers/backtesting/backtests/algorithms/sma_{bracket,suiveur,annule}_nq.py).
-# Déclencheur COMMUN : croisement SMA 2/6 sur closes 1 m. Les 3 ne diffèrent que par la GESTION :
+# Déclencheur COMMUN : croisement SMA 3/9 sur closes 1 m. Les 3 ne diffèrent que par la GESTION :
 #
 #   H1 SMA Bracket   : SL 1,0×ATR / TP 1R ; IGNORE les croisements en position (le bracket referme).
 #   H2 SMA Suiveur   : SL 2×ATR, PAS de TP ; stop SUIVEUR (remonté chaque barre, ne recule jamais) ;
@@ -12,7 +12,7 @@
 # le backtest (jumeau_hybrides.py) ET par le runner live (shadow + go).
 from __future__ import annotations
 
-SMA_RAPIDE, SMA_LENTE, ATR_N = 2, 6, 7        # recadrage 07-23 : SMA 2/6 + ATR 7 (plus d'action, vidéos courtes) ; identique aux indices
+SMA_RAPIDE, SMA_LENTE, ATR_N = 3, 9, 7        # SMA 3/9 + ATR 7 (croisements plus francs à l'écran, 07-26) ; identique aux indices
 COOLDOWN_S = 0                                # 0 = ré-entrée dès la barre suivante (décisions à la clôture 1 m : sous-minute impossible)
 
 # stop_mult ×ATR ; tp_r = multiple de R (=stop_mult×ATR), None si pas de TP ; suiveur ; sortie au

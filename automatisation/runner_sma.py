@@ -17,7 +17,9 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
+import os
 import time
 import urllib.parse
 import urllib.request
@@ -37,6 +39,58 @@ JOURNAL_BASE = Path(__file__).resolve().parent / "journaux"
 # tarde à être servie par Binance. Effet : le stop bouge ~1-2 s après la chandelle, pas 10-15 s.
 BUFFER_S = 1.0    # marge après :00 (le temps que la barre fermée soit servie)
 RETRIES = 6       # tentatives espacées de 1 s si la barre fermée tarde
+
+# Verrou « une seule instance --go » : les 3 stratégies tradent le MÊME compte + symbole démo en
+# one-way (position NETTE) → deux runners --go en parallèle EMPILENT les positions (bug constaté le
+# 07-27 : un 2e runner laissé ouvert a doublé un short). Le PID est déposé dans un fichier sous
+# journaux/ (donc hors git) ; un 2e runner refuse de démarrer tant que le 1er vit. Un verrou périmé
+# (process mort) ou --force le reprend. SHADOW n'est pas concerné (aucun ordre).
+VERROU = JOURNAL_BASE / ".runner-go.lock"
+
+
+def _pid_vivant(pid):
+    """Vrai si le process `pid` tourne encore (Windows via OpenProcess, repli POSIX os.kill)."""
+    if pid <= 0:
+        return False
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x1000, False, pid)      # QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        code = ctypes.c_ulong()
+        ok = k.GetExitCodeProcess(h, ctypes.byref(code))
+        k.CloseHandle(h)
+        return bool(ok) and code.value == 259      # STILL_ACTIVE (sinon = process déjà sorti)
+    except (AttributeError, OSError):
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+
+def acquerir_verrou(force=False):
+    """Prend le verrou instance-unique. Renvoie (ok, pid_de_l_autre_si_refus)."""
+    VERROU.parent.mkdir(parents=True, exist_ok=True)
+    if VERROU.exists():
+        try:
+            autre = int(VERROU.read_text(encoding="utf-8").strip() or 0)
+        except (ValueError, OSError):
+            autre = 0
+        if autre and autre != os.getpid() and _pid_vivant(autre) and not force:
+            return False, autre
+    VERROU.write_text(str(os.getpid()), encoding="utf-8")
+    return True, None
+
+
+def liberer_verrou():
+    """Retire le verrou s'il est le nôtre (appelé à la sortie via atexit)."""
+    try:
+        if VERROU.exists() and VERROU.read_text(encoding="utf-8").strip() == str(os.getpid()):
+            VERROU.unlink()
+    except OSError:
+        pass
 
 
 def secondes_avant_minute(buffer=BUFFER_S):
@@ -81,7 +135,15 @@ def _position_ouverte(client):
     return any(float(p.get("total", 0)) for p in client.positions(SYMBOL_BITGET))
 
 
-def lancer(strat, go, size, lever, rapide, lente):
+def lancer(strat, go, size, lever, rapide, lente, force=False):
+    if go:
+        ok, autre = acquerir_verrou(force)
+        if not ok:
+            print(f"⛔ Un runner --go tourne déjà (PID {autre}) — un seul à la fois, sinon les "
+                  f"positions s'empilent sur le compte démo.\n"
+                  f"   Ferme l'autre fenêtre (Ctrl-C) puis relance ; ou --force si le verrou est périmé.")
+            return
+        atexit.register(liberer_verrou)
     from bitget_trading import BitgetTrading, BitgetError
     cfg = CONFIGS[strat]
     journal = Journal(cfg["slug"], "go" if go else "shadow")
@@ -227,8 +289,10 @@ def main():
     ap.add_argument("--lever", type=int, default=5)
     ap.add_argument("--rapide", type=int, default=SMA_RAPIDE, help=f"SMA rapide (défaut {SMA_RAPIDE})")
     ap.add_argument("--lente", type=int, default=SMA_LENTE, help=f"SMA lente (défaut {SMA_LENTE})")
+    ap.add_argument("--force", action="store_true",
+                    help="reprend un verrou périmé (un runner --go planté sans nettoyer)")
     a = ap.parse_args()
-    lancer(a.strategie, a.go, a.size, a.lever, a.rapide, a.lente)
+    lancer(a.strategie, a.go, a.size, a.lever, a.rapide, a.lente, a.force)
 
 
 if __name__ == "__main__":

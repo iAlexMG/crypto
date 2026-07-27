@@ -21,6 +21,11 @@ logs/
 *.db-shm
 *.sqlite
 
+# Prises vidéo brutes de tournage (le montage web léger va sur le site, pas la source)
+*.mkv
+*.mov
+captures/*.mp4
+
 # Moteur LEAN cloné (reconstructible)
 backtesting/backtests/lean/
 
