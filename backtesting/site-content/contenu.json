@@ -315,7 +315,7 @@
           "type": "figure",
           "url": "assets/crypto/backtesting/figures/equite-rsi.png",
           "titre": { "fr": "La courbe d'équité", "en": "The equity curve" },
-          "description": { "fr": "À l'équilibre (+0,3 %) : douze trades, une courbe presque plate.", "en": "Breakeven (+0.3%): twelve trades, a nearly flat curve." }
+          "description": { "fr": "À l'équilibre (+0,3 %) : huit trades, une courbe presque plate.", "en": "Breakeven (+0.3%): eight trades, a nearly flat curve." }
         }
       ]
     },
