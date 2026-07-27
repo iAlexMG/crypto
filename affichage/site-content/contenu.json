@@ -284,8 +284,8 @@
         "en": "The trade tape, normalized and archived continuously — the aggressor's side in color."
       },
       "intro": {
-        "fr": "La bande des transactions en direct, point par point, colorée selon le côté de l'agresseur. Une même méthode pour les six exchanges.",
-        "en": "The live trade tape, point by point, colored by the aggressor's side. One method for all six exchanges."
+        "fr": "La bande des transactions en direct, point par point, colorée selon le côté de l'agresseur. Une même méthode pour les cinq exchanges.",
+        "en": "The live trade tape, point by point, colored by the aggressor's side. One method for all five exchanges."
       },
       "statut": {
         "fr": "Méthode",
@@ -293,8 +293,8 @@
       },
       "vignette": "assets/crypto/affichage/img/Trades.PNG",
       "texte": {
-        "fr": "## Ce que montre la vue\n\nLes transactions en direct, point par point, colorées selon le côté de l'agresseur. Les points ne sont tracés que sur la dernière heure — au-delà, l'information vit dans le footprint.\n\n## La méthode\n\nUne seule mécanique pour les six exchanges : chaque connecteur pousse ses trades au hub dans le schéma commun (prix, taille en actif de base, côté agresseur, horodatage exchange en millisecondes), et la vue les trace tels quels — aucun retraitement à l'affichage. Ce qui varie à l'écran vient du flux lui-même : la densité (~222 trades/30 s chez Binance contre ~17 chez Bitget) et la profondeur d'historique affichable, de « jusqu'au plancher commun » (Binance, OKX) à « vers l'avant seulement » (Bybit, KuCoin). La connexion, les conversions et l'archivage qui alimentent la vue sont documentés au pilier Temps réel, exchange par exchange.",
-        "en": "## What the view shows\n\nLive transactions, point by point, colored by the aggressor's side. Points are only drawn over the last hour — beyond that, the information lives in the footprint.\n\n## The method\n\nA single mechanism for all six exchanges: each connector pushes its trades to the hub in the shared schema (price, size in base asset, aggressor side, exchange timestamp in milliseconds), and the view draws them as they are — no reprocessing at display time. What varies on screen comes from the feed itself: density (~222 trades/30 s on Binance versus ~17 on Bitget) and the displayable history depth, from \"down to the common floor\" (Binance, OKX) to \"forward only\" (Bybit, KuCoin). The connection, conversions and archiving that feed the view are documented in the Real time pillar, exchange by exchange."
+        "fr": "## Ce que montre la vue\n\nLes transactions en direct, point par point, colorées selon le côté de l'agresseur. Les points ne sont tracés que sur la dernière heure — au-delà, l'information vit dans le footprint.\n\n## La méthode\n\nUne seule mécanique pour les cinq exchanges : chaque connecteur pousse ses trades au hub dans le schéma commun (prix, taille en actif de base, côté agresseur, horodatage exchange en millisecondes), et la vue les trace tels quels — aucun retraitement à l'affichage. Ce qui varie à l'écran vient du flux lui-même : la densité (~222 trades/30 s chez Binance contre ~17 chez Bitget) et la profondeur d'historique affichable, de « jusqu'au plancher commun » (Binance, OKX) à « vers l'avant seulement » (Bybit, KuCoin). La connexion, les conversions et l'archivage qui alimentent la vue sont documentés au pilier Temps réel, exchange par exchange.",
+        "en": "## What the view shows\n\nLive transactions, point by point, colored by the aggressor's side. Points are only drawn over the last hour — beyond that, the information lives in the footprint.\n\n## The method\n\nA single mechanism for all five exchanges: each connector pushes its trades to the hub in the shared schema (price, size in base asset, aggressor side, exchange timestamp in milliseconds), and the view draws them as they are — no reprocessing at display time. What varies on screen comes from the feed itself: density (~222 trades/30 s on Binance versus ~17 on Bitget) and the displayable history depth, from \"down to the common floor\" (Binance, OKX) to \"forward only\" (Bybit, KuCoin). The connection, conversions and archiving that feed the view are documented in the Real time pillar, exchange by exchange."
       },
       "items": [
         {
