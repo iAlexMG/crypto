@@ -352,8 +352,8 @@
         "en": "The project's central exchange has no independent second route: Quantower doesn't connect to it. But Bitget does publish trade archives (an official portal, depth verified back to 2023) and serves its own 1-minute candles. Lacking a second witness, we validate differently: our history rebuilt from the archive trades, confronted with the exchange's official candles. This is not a proof of independence — it's a self-consistency check, and it certifies the reconstruction the whole pillar rests on."
       },
       "statut": {
-        "fr": "2 voies (archives + klines officielles) — auto-cohérence, r = 1,0",
-        "en": "2 routes (archives + official klines) — self-consistency, r = 1.0"
+        "fr": "Auto-cohérence, r = 1,0 — pas de 2ᵉ source indépendante",
+        "en": "Self-consistency, r = 1.0 — no independent 2nd source"
       },
       "items": [
         {
@@ -552,16 +552,16 @@
         "en": "Kraken"
       },
       "accroche": {
-        "fr": "Pas de BTCUSDT chez Kraken — l'exchange est éliminé du projet.",
-        "en": "No BTCUSDT on Kraken — the exchange is eliminated from the project."
+        "fr": "Pas de BTCUSDT chez Kraken — l'exchange est écarté du projet.",
+        "en": "No BTCUSDT on Kraken — the exchange is set aside from the project."
       },
       "intro": {
-        "fr": "Le périmètre du banc est le même pour tous : le perpétuel BTCUSDT. Kraken ne l'offre pas — une élimination documentée vaut mieux qu'une absence inexpliquée, et elle tient en un paragraphe.",
-        "en": "The bench's scope is the same for everyone: the BTCUSDT perpetual. Kraken doesn't offer it — a documented elimination beats an unexplained absence, and it fits in one paragraph."
+        "fr": "Le périmètre du banc est le même pour tous : le perpétuel BTCUSDT. Kraken ne l'offre pas — une mise à l'écart documentée vaut mieux qu'une absence inexpliquée, et elle tient en un paragraphe.",
+        "en": "The bench's scope is the same for everyone: the BTCUSDT perpetual. Kraken doesn't offer it — a documented decision to set it aside beats an unexplained absence, and it fits in one paragraph."
       },
       "statut": {
-        "fr": "Éliminé — pas de BTCUSDT",
-        "en": "Eliminated — no BTCUSDT"
+        "fr": "Écarté — pas de BTCUSDT",
+        "en": "Set aside — no BTCUSDT"
       },
       "items": [],
       "texte": {

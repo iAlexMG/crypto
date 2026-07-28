@@ -164,8 +164,8 @@
         "en": "Kraken"
       },
       "accroche": {
-        "fr": "Évalué puis rejeté — un choix de jugement, pas un échec.",
-        "en": "Evaluated then rejected — a judgment call, not a failure."
+        "fr": "Évalué puis écarté — un choix de jugement, pas un échec.",
+        "en": "Evaluated then set aside — a judgment call, not a failure."
       },
       "intro": {
         "fr": "Kraken a été évalué comme septième exchange, puis écarté. Le documenter honnêtement rappelle qu'intégrer n'est pas toujours la bonne décision.",
@@ -173,13 +173,13 @@
       },
       "items": [],
       "texte": {
-        "fr": "## Résultats\n\nKraken a été évalué comme septième exchange, puis écarté — décision documentée dans le dossier de conception (§7).\n\nLe pipeline reste prêt à accueillir tout exchange au même format (un BaseConnector et sa fiche de documentation).\n\n## Embûche : Spot et Futures, deux API séparées\n\nSymptôme — aucune cohérence d'endpoints ni de conventions entre les deux marchés Kraken.\n\nCause — architecture historique de Kraken (Kraken Pro face à Kraken Futures).\n\nSolution — double effort d'intégration pour un apport marginal → rejet.\n\n## Embûche : futures non-USDT\n\nSymptôme — les perps Kraken ne s'alignent pas sur le périmètre USDT du projet.\n\nCause — libellés et quotités différents.\n\nSolution — hors du périmètre hybride-Futures USDT → écarté.",
-        "en": "## Results\n\nKraken was evaluated as a seventh exchange, then set aside — a decision documented in the design document (§7).\n\nThe pipeline remains ready to take in any exchange in the same format (a BaseConnector and its documentation sheet).\n\n## Pitfall: Spot and Futures, two separate APIs\n\nSymptom — no consistency of endpoints or conventions between Kraken's two markets.\n\nCause — Kraken's legacy architecture (Kraken Pro versus Kraken Futures).\n\nSolution — double the integration effort for a marginal gain → rejected.\n\n## Pitfall: non-USDT futures\n\nSymptom — Kraken perps don't line up with the project's USDT scope.\n\nCause — different tickers and contract sizes.\n\nSolution — outside the USDT Futures-hybrid scope → set aside."
+        "fr": "## Résultats\n\nKraken a été évalué comme septième exchange, puis écarté — décision documentée dans le dossier de conception (§7).\n\nLe pipeline reste prêt à accueillir tout exchange au même format (un BaseConnector et sa fiche de documentation).\n\n## Embûche : Spot et Futures, deux API séparées\n\nSymptôme — aucune cohérence d'endpoints ni de conventions entre les deux marchés Kraken.\n\nCause — architecture historique de Kraken (Kraken Pro face à Kraken Futures).\n\nSolution — double effort d'intégration pour un apport marginal → écarté.\n\n## Embûche : futures non-USDT\n\nSymptôme — les perps Kraken ne s'alignent pas sur le périmètre USDT du projet.\n\nCause — libellés et quotités différents.\n\nSolution — hors du périmètre hybride-Futures USDT → écarté.",
+        "en": "## Results\n\nKraken was evaluated as a seventh exchange, then set aside — a decision documented in the design document (§7).\n\nThe pipeline remains ready to take in any exchange in the same format (a BaseConnector and its documentation sheet).\n\n## Pitfall: Spot and Futures, two separate APIs\n\nSymptom — no consistency of endpoints or conventions between Kraken's two markets.\n\nCause — Kraken's legacy architecture (Kraken Pro versus Kraken Futures).\n\nSolution — double the integration effort for a marginal gain → set aside.\n\n## Pitfall: non-USDT futures\n\nSymptom — Kraken perps don't line up with the project's USDT scope.\n\nCause — different tickers and contract sizes.\n\nSolution — outside the USDT Futures-hybrid scope → set aside."
       },
       "pastille": "kraken",
       "statut": {
-        "fr": "Rejeté — pas de BTCUSDT",
-        "en": "Rejected — no BTCUSDT"
+        "fr": "Écarté — pas de BTCUSDT",
+        "en": "Set aside — no BTCUSDT"
       }
     },
     {
