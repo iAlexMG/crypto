@@ -147,7 +147,14 @@
           "description": {
             "fr": "Boucle muette, accélérée. À gauche, les données Binance qui portent le signal (croisement de moyennes mobiles 3/9) ; à droite, l'exécution sur la démo Bitget ; en bas, le journal des décisions en direct. Un short automatique : entrée au croisement baissier, puis le stop suiveur descend marche par marche à chaque barre (géré côté serveur) et verrouille le profit à mesure que le prix baisse, jusqu'à la sortie au croisement inverse. Ce que ça prouve, c'est que la chaîne se déroule sans main humaine — pas le rendement.",
             "en": "Muted, sped-up loop. Left: the Binance data carrying the signal (3/9 moving-average crossover); right: execution on the Bitget demo; bottom: the live decision journal. One automatic short: entry on the bearish crossover, then the trailing stop steps down bar by bar (managed server-side), locking in profit as price falls, until the exit on the reverse crossover. What it proves is that the chain runs with no human hand — not the return."
-          }
+          },
+          "annotations": [
+            { "type": "cercle", "x": 24, "y": 40, "r": 15, "t0": 2, "t1": 12,
+              "libelle": { "fr": "Signal (Binance)", "en": "Signal (Binance)" } },
+            { "type": "fleche", "x1": 39, "y1": 44, "x2": 63, "y2": 44, "t0": 6, "t1": 16 },
+            { "type": "cercle", "x": 76, "y": 42, "r": 15, "t0": 9, "t1": 18,
+              "libelle": { "fr": "Exécution (Bitget)", "en": "Execution (Bitget)" } }
+          ]
         },
         {
           "id": "chaine",
