@@ -175,7 +175,7 @@ python backtesting\backtests\volume_profile_features.py
 ```
 
 > Toutes les constantes en aval (algos LEAN, features VP, scripts de figures de la
-> formation — déménagée dans `Portfolio/Formations/Trading`) pointent sur
+> formation — déménagée dans `Portfolio/Formations/Backtesting`) pointent sur
 > `H:\Crypto\historique\` depuis le 2026-07-19 — le même contenu que
 > `historique\data\` (jonction NTFS vers H:).
 

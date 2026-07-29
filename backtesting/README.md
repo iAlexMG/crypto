@@ -32,9 +32,9 @@ le frère indices s'y réfère aussi.
 ## La formation
 
 La formation LEAN/vectorbt qui s'appuie sur ces backtests vit dans
-`Portfolio/Formations/Trading` (déménagée le 2026-07-19, avec les cours Python
+`Portfolio/Formations/Backtesting` (déménagée le 2026-07-19, avec les cours Python
 et GitHub). Ses scripts de figures se lancent toujours depuis ce dossier-ci :
 
 ```bash
-python ../../Formations/Trading/01-lean/scripts/fig_metriques.py
+python ../../Formations/Backtesting/LEAN/scripts/fig_metriques.py
 ```
