@@ -51,19 +51,23 @@ SEC_MS = 1_000
 MIN_MS = 60 * SEC_MS
 HOUR_MS = 60 * MIN_MS
 DAY_MS = 24 * HOUR_MS
-UNIT_MS = {"s": SEC_MS, "m": MIN_MS, "h": HOUR_MS, "d": DAY_MS}
+UNIT_MS = {"ms": 1, "s": SEC_MS, "m": MIN_MS, "h": HOUR_MS, "d": DAY_MS}
 TF_DEFAULT = ["1m", "1H", "D"]        # scalping : le 1m est la vue de travail, 1H/D le contexte
 
 
 def parse_tf(spec: str) -> tuple[str, int]:
-    """`30s` / `1m` / `4H` / `D` -> (nom canonique, largeur en ms). Pas libre, unité s/m/H/D."""
-    m = re.fullmatch(r"(\d*)([smhdSMHD])", spec.strip())
+    """`250ms` / `30s` / `1m` / `4H` / `D` -> (nom canonique, largeur en ms). Pas libre,
+    unité ms/s/m/H/D (le sous-seconde sert au scalping/HFT)."""
+    m = re.fullmatch(r"(\d*)(ms|[smhdSMHD])", spec.strip())
     n = int(m.group(1) or 1) if m else 0
     if not m or n <= 0:
         raise argparse.ArgumentTypeError(
-            f"pas de temps invalide : « {spec} » (attendu <n>s|m|H|D, ex. 30s, 1m, 4H, D)")
+            f"pas de temps invalide : « {spec} » (attendu <n>ms|s|m|H|D, ex. 250ms, 30s, 1m, 4H, D)")
     unit = m.group(2).lower()
-    canon = "D" if (unit == "d" and n == 1) else f"{n}{'H' if unit == 'h' else 'D' if unit == 'd' else unit}"
+    if unit == "ms":
+        canon = f"{n}ms"
+    else:
+        canon = "D" if (unit == "d" and n == 1) else f"{n}{'H' if unit == 'h' else 'D' if unit == 'd' else unit}"
     return canon, n * UNIT_MS[unit]
 
 # Index d'une chandelle (tuple compact, pas d'objet par chandelle).
@@ -74,12 +78,24 @@ START, OPEN, HIGH, LOW, CLOSE, VOL, BUYVOL, N = range(8)
 # Construction des chandelles au pas de base en streaming (une passe sur la table)
 # --------------------------------------------------------------------------- #
 def build_base(conn: sqlite3.Connection, width_ms: int,
-               limit: int = 0, progress: bool = True) -> list[tuple]:
-    """Parcourt les trades dans l'ordre du trade_id et émet les chandelles au pas donné."""
-    sql = "SELECT ts, price, size, side='buy' FROM trades ORDER BY trade_id"
+               limit: int = 0, progress: bool = True,
+               start_ms: int | None = None, end_ms: int | None = None) -> list[tuple]:
+    """Parcourt les trades dans l'ordre du trade_id et émet les chandelles au pas donné.
+    Fenêtre optionnelle [start_ms, end_ms) : NOT INDEXED force le SCAN séquentiel par
+    rowid (= ordre trade_id), sinon l'index ts + ORDER BY déclenche un tri géant."""
+    params: list = []
+    if start_ms is not None or end_ms is not None:
+        sql = "SELECT ts, price, size, side='buy' FROM trades NOT INDEXED WHERE 1=1"
+        if start_ms is not None:
+            sql += " AND ts>=?"; params.append(start_ms)
+        if end_ms is not None:
+            sql += " AND ts<?"; params.append(end_ms)
+        sql += " ORDER BY trade_id"
+    else:
+        sql = "SELECT ts, price, size, side='buy' FROM trades ORDER BY trade_id"
     if limit > 0:
         sql += f" LIMIT {int(limit)}"
-    cur = conn.execute(sql)
+    cur = conn.execute(sql, params)
 
     out: list[tuple] = []
     cur_b = -1
@@ -153,10 +169,12 @@ def rollup(base: list[tuple], width_ms: int) -> list[tuple]:
 # Affichage / écriture
 # --------------------------------------------------------------------------- #
 def fdate(ms: int, width_ms: int) -> str:
-    """Date UTC adaptée au pas : jour seul (>= 1D), +heures:minutes, +secondes (< 1m)."""
+    """Date UTC adaptée au pas : jour seul (>= 1D), +HH:MM, +secondes (< 1m), +ms (< 1s)."""
     d = dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc)
     if width_ms >= DAY_MS:
         return d.strftime("%Y-%m-%d")
+    if width_ms < SEC_MS:
+        return d.strftime("%Y-%m-%d %H:%M:%S") + f".{ms % 1000:03d}"
     if width_ms < MIN_MS:
         return d.strftime("%Y-%m-%d %H:%M:%S")
     return d.strftime("%Y-%m-%d %H:%M")
@@ -194,6 +212,105 @@ def write_csv(path: str, candles: list[tuple]) -> None:
         for c in candles:
             w.writerow([c[START], fdate(c[START], SEC_MS), c[OPEN], c[HIGH], c[LOW],
                         c[CLOSE], c[VOL], c[BUYVOL], c[VOL] - c[BUYVOL], c[N]])
+
+
+def stream_to_csv(conn: sqlite3.Connection, tf_ms: dict, base_ms: int, csv_dir: str,
+                  symbol: str, market: str, start_ms: int | None = None,
+                  end_ms: int | None = None, limit: int = 0, progress: bool = True) -> dict:
+    """Écrit les CSV EN FLUX : agrège les trades au pas base_ms et roule à la volée vers
+    chaque pas demandé, en écrivant chaque chandelle DÈS qu'elle est close. Mémoire
+    O(nb de pas) — jamais toute la série en RAM (indispensable au sous-seconde, où une
+    liste de tuples exploserait la RAM ; ici le CSV va sur disque). Toujours stdlib seule.
+    Produit un résultat IDENTIQUE à build_base + rollup. Renvoie {tf: nb de chandelles}."""
+    files, writers, cur, counts = {}, {}, {}, {}
+    for tf in tf_ms:
+        f = open(os.path.join(csv_dir, f"{symbol}-{market}-{tf}.csv"),
+                 "w", newline="", encoding="utf-8")
+        w = csv.writer(f)
+        w.writerow(["ts", "date_utc", "open", "high", "low", "close",
+                    "volume", "buy_volume", "sell_volume", "trades"])
+        files[tf], writers[tf], cur[tf], counts[tf] = f, w, None, 0
+
+    def flush(tf):
+        st = cur[tf]
+        if st is None:
+            return
+        b, o, hi, lo, cl, vol, bvol, n = st
+        # date_utc : secondes comme write_csv pour >= 1 s ; précision ms en sous-seconde.
+        largeur_date = tf_ms[tf] if tf_ms[tf] < SEC_MS else SEC_MS
+        writers[tf].writerow([b, fdate(b, largeur_date), o, hi, lo, cl, vol, bvol, vol - bvol, n])
+        counts[tf] += 1
+
+    def roll(tf, bb):                       # bb = chandelle de base close
+        width = tf_ms[tf]
+        bucket = bb[START] // width * width
+        st = cur[tf]
+        if st is None or bucket != st[0]:
+            flush(tf)
+            cur[tf] = [bucket, bb[OPEN], bb[HIGH], bb[LOW], bb[CLOSE], bb[VOL], bb[BUYVOL], bb[N]]
+        else:
+            if bb[HIGH] > st[2]:
+                st[2] = bb[HIGH]
+            if bb[LOW] < st[3]:
+                st[3] = bb[LOW]
+            st[4] = bb[CLOSE]; st[5] += bb[VOL]; st[6] += bb[BUYVOL]; st[7] += bb[N]
+
+    params: list = []
+    if start_ms is not None or end_ms is not None:
+        sql = "SELECT ts, price, size, side='buy' FROM trades NOT INDEXED WHERE 1=1"
+        if start_ms is not None:
+            sql += " AND ts>=?"; params.append(start_ms)
+        if end_ms is not None:
+            sql += " AND ts<?"; params.append(end_ms)
+        sql += " ORDER BY trade_id"
+    else:
+        sql = "SELECT ts, price, size, side='buy' FROM trades ORDER BY trade_id"
+    if limit > 0:
+        sql += f" LIMIT {int(limit)}"
+    q = conn.execute(sql, params)
+
+    cb = -1
+    o = hi = lo = cl = vol = bvol = 0.0
+    n = 0
+    seen = 0
+    t0 = time.monotonic()
+    for ts, price, size, isbuy in q:
+        b = ts // base_ms * base_ms
+        if b != cb:
+            if cb >= 0:
+                bb = (cb, o, hi, lo, cl, vol, bvol, n)
+                for tf in tf_ms:
+                    roll(tf, bb)
+            cb = b
+            o = hi = lo = cl = price
+            vol = size
+            bvol = size if isbuy else 0.0
+            n = 1
+        else:
+            if price > hi:
+                hi = price
+            elif price < lo:
+                lo = price
+            cl = price
+            vol += size
+            if isbuy:
+                bvol += size
+            n += 1
+        if progress:
+            seen += 1
+            if seen % 20_000_000 == 0:
+                el = time.monotonic() - t0
+                print(f"  … {seen // 1_000_000} M trades scannés "
+                      f"({int(seen / el):,}/s)".replace(",", " "), file=sys.stderr)
+    if cb >= 0:
+        bb = (cb, o, hi, lo, cl, vol, bvol, n)
+        for tf in tf_ms:
+            roll(tf, bb)
+    for tf in tf_ms:
+        flush(tf)
+    for f in files.values():
+        f.close()
+    return counts
 
 
 # --------------------------------------------------------------------------- #
@@ -442,7 +559,15 @@ def main() -> int:
                    help="ouvrir le graphique (--chart) dans le navigateur après écriture")
     p.add_argument("--limit", type=int, default=0,
                    help="ne scanner que les N premiers trades (aperçu rapide ; 0 = tout)")
+    p.add_argument("--start", default=None, metavar="AAAA-MM-JJ",
+                   help="borne de début UTC incluse (fenêtre — utile pour le sous-seconde volumineux)")
+    p.add_argument("--end", default=None, metavar="AAAA-MM-JJ", help="borne de fin UTC exclue")
     args = p.parse_args()
+
+    def _jour_ms(s):
+        return (int(dt.datetime.strptime(s, "%Y-%m-%d")
+                    .replace(tzinfo=dt.timezone.utc).timestamp() * 1000) if s else None)
+    start_ms, end_ms = _jour_ms(args.start), _jour_ms(args.end)
 
     # Pas demandés, dédoublonnés, du plus large au plus fin ; base de streaming = leur PGCD
     # (tout pas demandé en est un multiple -> chaque rollup est exact).
@@ -465,11 +590,33 @@ def main() -> int:
         except sqlite3.Error:
             pass
 
+        # Fast-path SOUS-SECONDE : pas de base < 1 s -> écriture EN FLUX (RAM bornée), au
+        # lieu d'accumuler des dizaines/centaines de millions de tuples. Ne change RIEN
+        # pour s/m/H/D/1s (in-RAM, chemin historique). Le graphique exige la série en
+        # mémoire -> le sous-seconde en flux est incompatible avec --chart.
+        if args.csv and not args.chart and base_ms < SEC_MS:
+            os.makedirs(args.csv, exist_ok=True)
+            fen = (f" [{args.start or '…'} → {args.end or '…'}]"
+                   if (start_ms or end_ms) else "")
+            print(f"Streaming des trades{fen} vers CSV (pas de base {base_ms} ms, "
+                  "mémoire bornée)…")
+            t0 = time.monotonic()
+            counts = stream_to_csv(conn, tf_ms, base_ms, args.csv, symbol, market,
+                                   start_ms=start_ms, end_ms=end_ms, limit=args.limit)
+            dt_s = time.monotonic() - t0
+            print(f"{sum(counts.values()):,}".replace(",", " ")
+                  + f" chandelles écrites en {dt_s:.0f}s : "
+                  + " / ".join(f"{counts[tf]} {tf}" for tf in tf_order) + ".")
+            for tf in tf_order:
+                chemin = os.path.join(args.csv, f"{symbol}-{market}-{tf}.csv")
+                print(f"  CSV : {chemin}  ({counts[tf]} chandelles)")
+            return 0
+
         print(f"Lecture des trades depuis {args.db}"
               + (f" (limite {args.limit:,} trades)".replace(",", " ") if args.limit else "")
               + " — une passe, peut prendre 1–2 min sur l'historique complet…")
         t0 = time.monotonic()
-        base = build_base(conn, base_ms, limit=args.limit)
+        base = build_base(conn, base_ms, limit=args.limit, start_ms=start_ms, end_ms=end_ms)
     finally:
         conn.close()
 
