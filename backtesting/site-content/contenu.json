@@ -592,6 +592,75 @@
       "numero": "08"
     },
     {
+      "id": "carry-funding",
+      "titre": {
+        "fr": "Carry de funding — l'edge structurel",
+        "en": "Funding carry — the structural edge"
+      },
+      "accroche": {
+        "fr": "Pas une stratégie directionnelle de plus : un carry neutre qui encaisse le funding des perpétuels. Le seul avantage du banc qui survit aux frais.",
+        "en": "Not one more directional strategy: a neutral carry that collects perpetual funding. The bench's only edge that survives fees."
+      },
+      "intro": {
+        "fr": "Long spot, short perp, delta nul : on encaisse le funding — positif 85 % du temps sur BTC — sans parier sur la direction. Sept ans de données publiques, net de frais, jugé hors échantillon.",
+        "en": "Long spot, short perp, zero delta: collecting funding — positive 85% of the time on BTC — without betting on direction. Seven years of public data, net of fees, judged out of sample."
+      },
+      "statut": {
+        "fr": "+12 %/an, neutre au marché",
+        "en": "+12%/yr, market-neutral"
+      },
+      "pastille": {
+        "nom": "Funding carry",
+        "monogramme": "FC",
+        "couleur": "#2E9E5B"
+      },
+      "fiche": {
+        "metriques": [
+          { "libelle": { "fr": "Rendement 7 ans", "en": "7-year return" }, "valeur": { "fr": "+12,3 %/an", "en": "+12.3%/yr" } },
+          { "libelle": { "fr": "Hors échantillon (2023-26)", "en": "Out-of-sample (2023-26)" }, "valeur": { "fr": "+7,4 %/an", "en": "+7.4%/yr" } },
+          { "libelle": { "fr": "Régime actuel (12 mois)", "en": "Current regime (12 mo)" }, "valeur": { "fr": "+3,2 %/an", "en": "+3.2%/yr" } },
+          { "libelle": { "fr": "Funding positif", "en": "Positive funding" }, "valeur": { "fr": "85 % du temps", "en": "85% of the time" } },
+          { "libelle": { "fr": "Frais (statique)", "en": "Fees (static)" }, "valeur": { "fr": "2 trades / 7 ans", "en": "2 trades / 7 years" } }
+        ],
+        "verdict": {
+          "fr": "Un edge structurel qui survit aux frais — parce qu'on tient, pas qu'on trade.",
+          "en": "A structural edge that survives fees — because you hold, not trade."
+        }
+      },
+      "texte": {
+        "fr": "## L'idée\n\nUn perpétuel n'a pas d'échéance. Pour rattacher son prix au spot, l'exchange fait payer un **funding** toutes les huit heures : quand le perp se paie plus cher que le spot — le cas 85 % du temps sur BTC, parce que les longs paient pour tenir du levier — ce sont les longs qui versent aux shorts. Une position **neutre** — long spot, short perp, mêmes quantités — encaisse donc ce funding sans parier sur la direction : les deux jambes bougent ensemble, le mouvement de prix s'annule, il ne reste que le carry. C'est le cash and carry, transposé aux perpétuels.\n\n## Le résultat — mesuré sur sept ans\n\nSur sept ans de funding BTCUSDT (2019-2026), la position neutre tenue en continu rend **+12,3 %/an, net de frais** — et positive chaque année, même le bear 2022 (+4,2 %). Hors échantillon — les réglages figés sur 2019-2023, testés sur 2023-2026 — elle tient : **+7,4 %/an**. Le carry est réel et structurel, mais **régime-dépendant** : +36 % dans la fièvre du bull 2021, +2 % aujourd'hui, funding comprimé. Sur les douze derniers mois, +3,2 %/an.\n\n## On récolte en tenant, pas en tradant\n\nC'est la leçon contre-intuitive. Tenir la position ne coûte que **deux transactions sur sept ans** — les frais sont dans le bruit. Le réflexe naïf, « short seulement quand le funding est positif », fait basculer la position plus de mille fois (le funding change de signe souvent au grain de huit heures) et **les frais cumulés dépassent le capital de départ (151 %)** : −8,3 %/an. La règle intelligente, à hystérésis — ne sortir qu'après plusieurs funding négatifs d'affilée —, ne fait pas mieux : ses meilleurs réglages **dégénèrent en position statique**. Timer le funding n'ajoute rien ; le geste gagnant, c'est de ne rien faire.\n\n## Le contrepoint du banc\n\nLes huit stratégies LEAN cherchaient un avantage directionnel et n'en trouvaient pas — les frais du scalping suffisaient à tout ruiner. Le carry funding est l'exact contrepoint : un avantage **structurel**, pas prédictif, qui survit aux frais **précisément parce qu'on tient la position** au lieu de la retourner. Il ne bat pas l'achat-conservation en rendement (+12 contre +30 %/an) ; il le bat en risque — un drawdown de quelques pour cent contre −77 %. Le bon cadrage n'est pas « battre le marché » mais « rendement neutre au marché ».\n\n## La rigueur — lire le rendement, pas le Sharpe\n\nUn mot d'honnêteté, qui est tout l'intérêt. Le modèle suppose une couverture parfaite et ne regarde le marché que toutes les huit heures : dans ces conditions, la volatilité s'effondre et le Sharpe grimpe à huit — un chiffre **irréaliste**. Le vrai risque n'est pas là : il vit dans les écarts de basis **intra-journée**, les appels de marge ou la liquidation pendant ces écarts, et la dérive du hedge — rien de tout cela n'est visible dans des données au pas de huit heures. On lit donc le rendement et la neutralité, jamais le Sharpe. Et pour déployer pour de vrai, il faut la jambe **spot** — le pilier Automatisation exécute sur le perp Bitget — et une marge partagée entre les deux jambes.\n\n## Portée\n\nComme le reste du banc : la plomberie honnête est le livrable — données gratuites, backtest causal, jugement hors échantillon. Les extensions se voient déjà : les alts, à funding plus gros ; quantifier le vrai risque de queue avec des données plus fines ; brancher la jambe spot exécutable. Ce qui est établi ici, c'est qu'un edge existe — structurel, modeste, honnête.",
+        "en": "## The idea\n\nA perpetual has no expiry. To tether its price to spot, the exchange charges a **funding** payment every eight hours: when the perp trades richer than spot — the case 85% of the time on BTC, because longs pay to hold leverage — longs pay shorts. A **neutral** position — long spot, short perp, equal quantities — therefore collects that funding without betting on direction: both legs move together, the price move cancels, only the carry is left. It's the cash and carry, transposed to perpetuals.\n\n## The result — measured over seven years\n\nOver seven years of BTCUSDT funding (2019-2026), the neutral position held continuously returns **+12.3%/yr, net of fees** — and positive every year, even the 2022 bear (+4.2%). Out of sample — settings frozen on 2019-2023, tested on 2023-2026 — it holds: **+7.4%/yr**. The carry is real and structural, but **regime-dependent**: +36% in the fever of the 2021 bull, +2% today, funding compressed. Over the last twelve months, +3.2%/yr.\n\n## You harvest by holding, not trading\n\nThis is the counter-intuitive lesson. Holding the position costs only **two transactions over seven years** — fees are in the noise. The naive reflex, \"short only when funding is positive,\" flips the position over a thousand times (funding changes sign often at the eight-hour grain) and **cumulative fees end up exceeding the starting capital (151%)**: −8.3%/yr. The smart rule, hysteresis — only exit after several negative fundings in a row — does no better: its best settings **degenerate into a static position**. Timing the funding adds nothing; the winning move is to do nothing.\n\n## The bench's counterpoint\n\nThe eight LEAN strategies looked for a directional edge and found none — scalping fees alone were enough to ruin everything. The funding carry is the exact counterpoint: a **structural** edge, not a predictive one, that survives fees **precisely because you hold the position** instead of flipping it. It doesn't beat buy-and-hold on return (+12 versus +30%/yr); it beats it on risk — a drawdown of a few percent against −77%. The right framing isn't \"beat the market\" but \"market-neutral return.\"\n\n## The rigor — read the return, not the Sharpe\n\nA word of honesty, which is the whole point. The model assumes a perfect hedge and only looks at the market every eight hours: under those conditions volatility collapses and the Sharpe climbs to eight — an **unrealistic** figure. The real risk isn't there: it lives in **intraday** basis gaps, in margin calls or liquidation during those gaps, and in the hedge's drift — none of which is visible in data sampled every eight hours. So we read the return and the neutrality, never the Sharpe. And to deploy for real, you need the **spot** leg — the Automation pillar executes on the Bitget perp — and margin shared between the two legs.\n\n## Scope\n\nLike the rest of the bench: the honest plumbing is the deliverable — free data, causal backtest, out-of-sample judgment. The extensions are already visible: alts, with bigger funding; quantifying the real tail risk with finer data; wiring the executable spot leg. What's established here is that an edge exists — structural, modest, honest."
+      },
+      "items": [
+        {
+          "id": "fig-equite",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/carry-equite.png",
+          "titre": {
+            "fr": "Sept ans d'équité, net de frais",
+            "en": "Seven years of equity, net of fees"
+          },
+          "description": {
+            "fr": "La position neutre tenue en continu (bleu) grimpe régulièrement, +12,3 %/an ; la règle à hystérésis (tireté) se confond avec elle ; le naïf « short si funding > 0 » (vert) meurt du churn ; le buy & hold (rose) monte plus haut mais encaisse −77 % de drawdown. Frontière in / out-of-sample en pointillé.",
+            "en": "The neutral position held continuously (blue) climbs steadily, +12.3%/yr; the hysteresis rule (dashed) overlaps it; the naive \"short if funding > 0\" (green) dies of churn; buy & hold (pink) climbs higher but takes a −77% drawdown. In / out-of-sample boundary dotted."
+          }
+        },
+        {
+          "id": "fig-regime",
+          "type": "figure",
+          "url": "assets/crypto/backtesting/figures/carry-regime.png",
+          "titre": {
+            "fr": "Un carry structurel mais régime-dépendant",
+            "en": "A structural but regime-dependent carry"
+          },
+          "description": {
+            "fr": "Le carry annualisé année par année, et la part du temps où le funding est positif. Toujours positif — même le bear 2022 —, mais de +2 % aujourd'hui à +36 % dans le bull 2021.",
+            "en": "The annualized carry year by year, and the share of time funding is positive. Always positive — even the 2022 bear — but from +2% today to +36% in the 2021 bull."
+          }
+        }
+      ]
+    },
+    {
       "id": "moteur-vbt",
       "titre": {
         "fr": "vectorbt PRO — le moteur vectorisé",

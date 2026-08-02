@@ -1,6 +1,9 @@
 # Dépôt externe : moteur LEAN cloné depuis GitHub (reconstructible)
 backtests/lean/
 
+# Données du carry (funding + klines) — régénérées par carry/fetch_data.py
+carry/data/
+
 # Python
 __pycache__/
 *.pyc
